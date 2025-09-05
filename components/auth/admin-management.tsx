@@ -168,7 +168,7 @@ export function AdminManagement() {
               </div>
 
               <div className="mt-2 text-sm text-muted-foreground">
-                Joined: {preacher.created_at?.toLocaleDateString() || "Unknown"}
+                Joined: {preacher.created_at?.toDate().toLocaleDateString() || "Unknown"}
               </div>
             </CardContent>
           </Card>

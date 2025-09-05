@@ -234,7 +234,7 @@ export function MyBeneficiaries() {
                 )}
 
                 <div className="text-xs text-muted-foreground">
-                  Added: {beneficiary.created_at?.toLocaleDateString() || "Unknown"}
+                  Added: {beneficiary.created_at?.toDate().toLocaleDateString() || "Unknown"}
                 </div>
               </CardContent>
             </Card>
