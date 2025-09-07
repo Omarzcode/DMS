@@ -4,14 +4,14 @@ import { db } from "./firebase"
 // User roles
 export type UserRole = "admin" | "da'i"
 
-// Da'wa stages for beneficiaries
+// Da'wa stages for beneficiaries (Arabic)
 export const DAWA_STAGES = [
-  "New Contact",
-  "Initial Interest",
-  "Regular Attendee",
-  "Committed Learner",
-  "Active Participant",
-  "Community Leader",
+  "تواصل جديد",
+  "اهتمام أولي", 
+  "حضور منتظم",
+  "متعلم ملتزم",
+  "مشارك نشط",
+  "قائد مجتمعي",
 ] as const
 
 export type DawaStage = (typeof DAWA_STAGES)[number]
