@@ -1,6 +1,6 @@
 import { collection, type CollectionReference } from "firebase/firestore"
 import { db } from "./firebase"
-
+export const attendanceCollection = collection(db, "attendance") as CollectionReference<AttendanceRecord>
 // User roles
 export type UserRole = "admin" | "da'i"
 
@@ -59,6 +59,17 @@ export interface ProgressLog {
   performed_by: string
   performed_by_name: string
   timestamp: Date
+}
+export interface AttendanceRecord {
+  id: string
+  activity_id: string
+  activity_type: string // e.g., 'maqari', 'events'
+  beneficiary_id: string
+  beneficiary_name: string
+  present: boolean
+  logged_by_id: string
+  logged_by_name: string
+  logged_at: Date
 }
 
 // Collection references

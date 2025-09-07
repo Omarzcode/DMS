@@ -153,19 +153,19 @@ export function CreateActivityDialog({ onActivityCreated, activityType, children
           {!activityType && (
             <div className="space-y-2">
               <Label htmlFor="type">Activity Type *</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+              <Select value={formData.type} onValueChange={(value: "maqari" | "events" | "lessons" | "sections") => setFormData({ ...formData, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="maqari">Maqra'a (Personal)</SelectItem>
-                  {userRole === "admin" && (
+                 
                     <>
                       <SelectItem value="events">Event (Central)</SelectItem>
                       <SelectItem value="lessons">Lesson (Central)</SelectItem>
                       <SelectItem value="sections">Section (Central)</SelectItem>
                     </>
-                  )}
+                 
                 </SelectContent>
               </Select>
             </div>

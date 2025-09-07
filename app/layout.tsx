@@ -17,8 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <head>
+<html lang="en" suppressHydrationWarning={true}>      <head>
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
