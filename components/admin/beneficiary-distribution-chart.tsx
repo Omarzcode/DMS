@@ -155,13 +155,13 @@ export function BeneficiaryDistributionChart() {
             className="h-48 sm:h-64"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="stage" 
                   angle={-45} 
                   textAnchor="end" 
-                  height={60} 
+                  height={80} 
                   fontSize={10}
                   interval={0}
                 />
