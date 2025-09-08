@@ -18,8 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, BookOpen, TrendingUp, Activity } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Logo } from "@/components/ui/logo"
+import { usePathname, useRouter } from "next/navigation" // قم بتعديل هذا السطرimport { Logo } from "@/components/ui/logo"
 
 const adminMenuItems = [
   {
@@ -78,10 +77,11 @@ const managementMenuItems = [
 export function AdminSidebar() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
-
+  const router = useRouter()
   const handleLogout = async () => {
     try {
       await logout()
+      router.push('/')
     } catch (error) {
       console.error("Error logging out:", error)
     }
