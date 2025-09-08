@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BarChart3, Users, BookOpen, Calendar, LogOut, Activity, Heart } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation" // قم بتعديل هذا السطرimport { Logo } from "../ui/logo"
+import { Logo } from "../ui/logo"
 
 const preacherMenuItems = [
   {

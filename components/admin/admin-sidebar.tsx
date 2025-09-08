@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, BookOpen, TrendingUp, Activity } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation" // قم بتعديل هذا السطرimport { Logo } from "@/components/ui/logo"
+import { Logo } from "../ui/logo"
 
 const adminMenuItems = [
   {
