@@ -285,7 +285,7 @@ export function BeneficiaryAnalytics() {
               className="h-64"
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.stageProgression} margin={{ bottom: 80 }}>
+                <BarChart data={analytics.stageProgression} margin={{ bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="stage" angle={-45} textAnchor="end" height={80} fontSize={12} />
                   <YAxis />

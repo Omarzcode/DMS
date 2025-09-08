@@ -68,11 +68,7 @@ const managementMenuItems = [
     url: "/admin/activities",
     icon: Calendar,
   },
-  {
-    title: "الدروس",
-    url: "/admin/lessons",
-    icon: BookOpen,
-  },
+  
 ]
 
 export function AdminSidebar() {
