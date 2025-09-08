@@ -26,28 +26,28 @@ export function SignInForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-4">
-      <div className="w-full max-w-md animate-scale-in">
-        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-6 pb-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-4 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-sm sm:max-w-md animate-scale-in">
+        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm card-responsive">
+          <CardHeader className="text-center space-y-4 sm:space-y-6 pb-6 sm:pb-8">
             <div className="mx-auto relative">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-bg-primary shadow-xl">
-                <BookOpen className="h-8 w-8 text-white" />
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl sm:rounded-2xl gradient-bg-primary shadow-xl">
+                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-              <div className="absolute -top-2 -right-2 h-6 w-6 gradient-bg-secondary rounded-full flex items-center justify-center shadow-lg">
-                <Sparkles className="h-3 w-3 text-white" />
+              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 h-4 w-4 sm:h-6 sm:w-6 gradient-bg-secondary rounded-full flex items-center justify-center shadow-lg">
+                <Sparkles className="h-2 w-2 sm:h-3 sm:w-3 text-white" />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <CardTitle className="text-3xl font-bold gradient-text-primary">مرحباً بعودتك</CardTitle>
-              <CardDescription className="text-lg text-muted-foreground">
+            <div className="space-y-1 sm:space-y-2">
+              <CardTitle className="text-2xl sm:text-3xl font-bold gradient-text-primary">مرحباً بعودتك</CardTitle>
+              <CardDescription className="text-base sm:text-lg text-muted-foreground">
                 سجل دخولك للوصول إلى نظام إدارة الدعوة المتطور
               </CardDescription>
             </div>
           </CardHeader>
           
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {error && (
               <Alert variant="destructive" className="border-red-200 bg-red-50">
                 <AlertCircle className="h-4 w-4" />
@@ -58,8 +58,7 @@ export function SignInForm() {
             <Button
               onClick={handleGoogleSignIn}
               disabled={loading || isSigningIn}
-              className="w-full gradient-bg-primary hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-              size="lg"
+              className="w-full gradient-bg-primary hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 h-12 sm:h-14 text-base sm:text-lg"
             >
               {isSigningIn ? (
                 <>
@@ -71,7 +70,7 @@ export function SignInForm() {
                 </>
               ) : (
                 <>
-                  <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -94,18 +93,18 @@ export function SignInForm() {
               )}
             </Button>
 
-            <div className="space-y-4 pt-6 border-t border-purple-100">
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Shield className="h-4 w-4 text-purple-500" />
+            <div className="space-y-3 sm:space-y-4 pt-4 sm:pt-6 border-t border-purple-100">
+              <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
                 <span>فقط الموظفون المصرح لهم يمكنهم الوصول إلى هذا النظام</span>
               </div>
               
               <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                   تواصل مع المسؤول إذا كنت بحاجة إلى صلاحية الدخول
                 </p>
-                <div className="flex items-center justify-center gap-1 text-xs text-purple-600">
-                  <Heart className="h-3 w-3" />
+                <div className="flex items-center justify-center gap-1 text-xs sm:text-sm text-purple-600">
+                  <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   <span>صُنع بحب لخدمة الدعوة الإسلامية</span>
                 </div>
               </div>

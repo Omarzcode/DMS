@@ -82,24 +82,36 @@ export function AllActivities() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 min-w-0">
           <Calendar className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">All Activities</h2>
+          <h2 className="text-xl sm:text-2xl font-bold truncate">All Activities</h2>
           <Badge variant="secondary">{activities.length}</Badge>
         </div>
-        <CreateActivityDialog onActivityCreated={handleActivityCreated}>
-          <Button> <Plus className="h-4 w-4 mr-2" /> Create Activity </Button>
-        </CreateActivityDialog>
+        <div className="w-full sm:w-auto">
+          <CreateActivityDialog onActivityCreated={handleActivityCreated}>
+            <Button className="w-full sm:w-auto"> 
+              <Plus className="h-4 w-4 mr-2" /> 
+              Create Activity 
+            </Button>
+          </CreateActivityDialog>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search activities..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          <Input 
+            placeholder="Search activities..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="pl-10 h-10 sm:h-11" 
+          />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Filter by type" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             {Object.entries(activityTypeLabels).map(([key, label]) => (
@@ -109,28 +121,60 @@ export function AllActivities() {
         </Select>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {filteredActivities.map((activity) => {
           const IconComponent = activityTypeIcons[activity.type] || Calendar;
           return (
-            <Card key={`${activity.type}-${activity.id}`}>
+            <Card key={`${activity.type}-${activity.id}`} className="card-responsive">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2"><IconComponent className="h-5 w-5" />{activity.name}</CardTitle>
-                  <Badge variant={activity.type === "maqari" ? "secondary" : "default"}>{activityTypeLabels[activity.type]}</Badge>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
+                    <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    <span className="truncate">{activity.name}</span>
+                  </CardTitle>
+                  <Badge 
+                    variant={activity.type === "maqari" ? "secondary" : "default"}
+                    className="text-xs flex-shrink-0"
+                  >
+                    {activityTypeLabels[activity.type]}
+                  </Badge>
                 </div>
-                <CardDescription>Created by {activity.creator_name}</CardDescription>
+                <CardDescription className="truncate">Created by {activity.creator_name}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {activity.description && <p className="text-sm text-muted-foreground">{activity.description}</p>}
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="h-4 w-4" /><span>{attendanceCounts[activity.id] || 0} attendees</span></div>
-                  <div className="flex items-center gap-2">
-                    <ViewAttendeesDialog activity={activity}><Button variant="secondary" size="sm" disabled={(attendanceCounts[activity.id] || 0) === 0}>View</Button></ViewAttendeesDialog>
-                    <AttendanceDialog activity={activity} onAttendanceSaved={handleAttendanceSaved}><Button variant="outline" size="sm">Log Attendance</Button></AttendanceDialog>
+              <CardContent className="space-y-3 p-4 sm:p-6 pt-0">
+                {activity.description && (
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                    {activity.description}
+                  </p>
+                )}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>{attendanceCounts[activity.id] || 0} attendees</span>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <ViewAttendeesDialog activity={activity}>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        disabled={(attendanceCounts[activity.id] || 0) === 0}
+                        className="flex-1 sm:flex-none text-xs"
+                      >
+                        View
+                      </Button>
+                    </ViewAttendeesDialog>
+                    <AttendanceDialog activity={activity} onAttendanceSaved={handleAttendanceSaved}>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="flex-1 sm:flex-none text-xs"
+                      >
+                        Log Attendance
+                      </Button>
+                    </AttendanceDialog>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground truncate">
                   Created: {activity.created_at ? format(new Date(activity.created_at.seconds * 1000), "PPp") : 'Unknown'}
                 </div>
               </CardContent>

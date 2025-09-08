@@ -94,7 +94,7 @@ export function BeneficiaryDistributionChart() {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Da'wa Stage Distribution</CardTitle>
@@ -108,7 +108,7 @@ export function BeneficiaryDistributionChart() {
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-64"
+            className="h-48 sm:h-64"
           >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -118,7 +118,7 @@ export function BeneficiaryDistributionChart() {
                   cy="50%"
                   labelLine={false}
                   label={({ stage, percentage }) => (percentage > 5 ? `${percentage.toFixed(0)}%` : "")}
-                  outerRadius={80}
+                  outerRadius="80%"
                   fill="#8884d8"
                   dataKey="count"
                 >
@@ -152,12 +152,19 @@ export function BeneficiaryDistributionChart() {
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-64"
+            className="h-48 sm:h-64"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="stage" angle={-45} textAnchor="end" height={80} fontSize={12} />
+                <XAxis 
+                  dataKey="stage" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={60} 
+                  fontSize={10}
+                  interval={0}
+                />
                 <YAxis />
                 <ChartTooltip
                   content={<ChartTooltipContent />}
