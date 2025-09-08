@@ -26,7 +26,7 @@ export default function PreacherDashboard() {
           </header>
 
           <div className="flex flex-1 flex-col gap-6 p-6">
-            <div className="space-y-3 animate-fade-in mb-6">
+            <div className="space-y-3 animate-fade-in mb-60">
               <div className="flex items-center gap-3">
                 <div className="p-2 gradient-bg-primary rounded-xl shadow-lg">
                   <Heart className="h-6 w-6 text-white" />
