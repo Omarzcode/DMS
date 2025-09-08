@@ -26,28 +26,20 @@ export default function PreacherDashboard() {
           </header>
 
           <div className="flex flex-1 flex-col gap-6 p-6">
-            <div className="space-y-4 animate-fade-in">
-  <div className="flex flex-wrap items-center gap-4">
-    {/* الأيقونة */}
-    <div className="p-3 gradient-bg-primary rounded-2xl shadow-lg flex-shrink-0">
-      <Heart className="h-7 w-7 text-white" />
-    </div>
-
-    {/* النصوص */}
-    <div className="min-w-0">
-      <h1 className="text-3xl sm:text-4xl font-bold gradient-text-primary leading-snug">
-        أهلاً وسهلاً بعودتك!
-      </h1>
-      <p className="text-base sm:text-lg text-muted-foreground flex items-center gap-2 mt-2 leading-relaxed">
-        <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0" />
-        <span className="truncate sm:whitespace-normal">
-          نظرة عامة على أنشطتك الدعوية والمستفيدين المكلفين بك
-        </span>
-      </p>
-    </div>
-  </div>
-</div>
-
+            <div className="space-y-3 animate-fade-in ">
+              <div className="flex items-center gap-3">
+                <div className="p-2 gradient-bg-primary rounded-xl shadow-lg">
+                  <Heart className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-6xl font-bold gradient-text-primary">أهلاً وسهلاً بعودتك!</h1>
+                  <p className="text-lg text-muted-foreground flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    نظرة عامة على أنشطتك الدعوية والمستفيدين المكلفين بك
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="animate-slide-up">
               <PreacherStats />
