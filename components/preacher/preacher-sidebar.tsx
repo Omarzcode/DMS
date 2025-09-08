@@ -45,11 +45,6 @@ const activitiesMenuItems = [
     url: "/dashboard/activities",
     icon: Calendar,
   },
-  {
-    title: "تسجيل الحضور",
-    url: "/dashboard/attendance",
-    icon: Activity,
-  },
 ]
 
 export function PreacherSidebar() {
