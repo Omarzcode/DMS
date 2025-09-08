@@ -189,29 +189,29 @@ export function DashboardStats() {
   ]
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {statCards.map((stat, index) => (
-        <Card key={stat.title} className="group hover:scale-105 transition-all duration-300 animate-scale-in" style={{ animationDelay: `${index * 0.1}s` }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">{stat.title}</CardTitle>
-            <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-              <stat.icon className="h-4 w-4 text-white" />
+        <Card key={stat.title} className="group hover:scale-105 transition-all duration-300 animate-scale-in card-responsive" style={{ animationDelay: `${index * 0.1}s` }}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">{stat.title}</CardTitle>
+            <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+              <stat.icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold gradient-text-primary mb-2">{stat.value.toLocaleString()}</div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-primary mb-1 sm:mb-2">{stat.value.toLocaleString()}</div>
+            <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground">
               {stat.trend && (
                 <>
                   {stat.trend === "up" ? (
-                    <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                    <ArrowUpIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
                   ) : (
-                    <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                    <ArrowDownIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-500" />
                   )}
                 </>
               )}
-              <span className="flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-purple-500" />
+              <span className="flex items-center gap-0.5 sm:gap-1">
+                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-purple-500" />
                 {stat.description}
               </span>
             </div>
