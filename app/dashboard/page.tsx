@@ -26,7 +26,7 @@ export default function PreacherDashboard() {
           </header>
 
           <div className="flex flex-1 flex-col gap-6 p-6">
-            <div className="space-y-3 animate-fade-in">
+            <div className="space-y-3 animate-fade-in mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 gradient-bg-primary rounded-xl shadow-lg">
                   <Heart className="h-6 w-6 text-white" />
@@ -45,46 +45,7 @@ export default function PreacherDashboard() {
               <PreacherStats />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 animate-scale-in" style={{ animationDelay: '0.2s' }}>
-              <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-white to-blue-50/50 p-6 shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 gradient-bg-secondary rounded-lg">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-blue-800">الإجراءات السريعة</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <div className="h-2 w-2 gradient-bg-primary rounded-full"></div>
-                    <span>إضافة مستفيدين جدد</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <div className="h-2 w-2 gradient-bg-primary rounded-full"></div>
-                    <span>إنشاء مقارئ شخصية</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <div className="h-2 w-2 gradient-bg-primary rounded-full"></div>
-                    <span>تسجيل حضور الأنشطة</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <div className="h-2 w-2 gradient-bg-primary rounded-full"></div>
-                    <span>تحديث تقدم المستفيدين</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-purple-200 bg-gradient-to-br from-white to-purple-50/50 p-6 shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 gradient-bg-accent rounded-lg">
-                    <Sparkles className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-purple-800">النشاط الأخير</h3>
-                </div>
-                <p className="text-sm text-purple-700 leading-relaxed">
-                  أنشطتك وتحديثاتك الأخيرة ستظهر هنا. ابدأ بإضافة مستفيدين جدد أو إنشاء أنشطة لرؤية التقدم.
-                </p>
-              </div>
-            </div>
+            
           </div>
         </SidebarInset>
       </SidebarProvider>
