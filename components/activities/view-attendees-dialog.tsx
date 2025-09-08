@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { collection, query, where, getDocs, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { useAuth } from "@/hooks/use-auth"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +17,6 @@ interface ViewAttendeesDialogProps {
 }
 
 export function ViewAttendeesDialog({ activity, children, onAttendanceUpdated }: ViewAttendeesDialogProps) {
-  const { userRole } = useAuth()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [attendees, setAttendees] = useState<AttendanceRecord[]>([])
@@ -43,7 +41,9 @@ export function ViewAttendeesDialog({ activity, children, onAttendanceUpdated }:
   }
 
   useEffect(() => {
-    fetchAttendees()
+    if(open) {
+      fetchAttendees()
+    }
   }, [open, activity.id])
 
   const handleRemoveAttendance = async (recordId: string) => {
@@ -52,7 +52,6 @@ export function ViewAttendeesDialog({ activity, children, onAttendanceUpdated }:
             await deleteDoc(doc(db, "attendance", recordId));
             const updatedAttendees = attendees.filter(att => att.id !== recordId);
             setAttendees(updatedAttendees);
-            // Notify parent component to update the count
             onAttendanceUpdated?.(activity.id, updatedAttendees.length);
         } catch (error) {
             console.error("Error removing attendance:", error);
@@ -87,11 +86,11 @@ export function ViewAttendeesDialog({ activity, children, onAttendanceUpdated }:
                     <Badge variant="secondary">
                         {(record.logged_at as any)?.toDate ? format((record.logged_at as any).toDate(), "PP") : ''}
                     </Badge>
-                    {userRole === "admin" && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => handleRemoveAttendance(record.id)}>
-                            <Trash2 className="h-4 w-4"/>
-                        </Button>
-                    )}
+                    {/* ******** بداية التعديل: تم حذف الشرط من هنا ******** */}
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => handleRemoveAttendance(record.id)}>
+                        <Trash2 className="h-4 w-4"/>
+                    </Button>
+                    {/* ******** نهاية التعديل ******** */}
                 </div>
               </div>
             ))
@@ -106,3 +105,4 @@ export function ViewAttendeesDialog({ activity, children, onAttendanceUpdated }:
     </Dialog>
   )
 }
+
