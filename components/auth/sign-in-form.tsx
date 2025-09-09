@@ -105,7 +105,7 @@ export function SignInForm() {
                 </p>
                 <div className="flex items-center justify-center gap-1 text-xs sm:text-sm text-purple-600">
                   <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  <span>صُنع بحب لخدمة الأعمال الإسلامية</span>
+                  <span>صُنع بحب لخدمة الأعمال الهندسية</span>
                 </div>
               </div>
             </div>

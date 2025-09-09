@@ -73,7 +73,7 @@ export default function HomePage() {
                 <span className="gradient-text-primary">نظام إدارة</span> <br /> <span className="text-foreground">الأعمال الذكي</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-                حل شامل ومتطور للمنظمات الإسلامية لإدارة الموظفون، وتتبع تقدم المستفيدين، وتحليل فعالية الأعمال 
+                حل شامل ومتطور للمنظمات الهندسية لإدارة الموظفون، وتتبع تقدم المستفيدين، وتحليل فعالية الأعمال 
                 بدقة واحترافية مع واجهة عصرية وسهلة الاستخدام.
               </p>
             </div>
