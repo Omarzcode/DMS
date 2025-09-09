@@ -33,7 +33,7 @@ export default function AdminDashboard() {
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold gradient-text-primary">لوحة التحكم الرئيسية</h1>
+                  <h1 className="text-4xl font-bold gradient-text-primary leading-normal">لوحة التحكم الرئيسية</h1>
                   <p className="text-lg text-muted-foreground flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-purple-500" />
                     نظرة شاملة على أداء نظام إدارة الدعوة والمقاييس الرئيسية
