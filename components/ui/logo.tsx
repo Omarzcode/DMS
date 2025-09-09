@@ -12,7 +12,7 @@ export function Logo() {
         </div>
       </div>
       <div className="flex flex-col">
-        <span className="text-lg font-bold gradient-text-primary">نظام الدعوة</span>
+        <span className="text-lg font-bold gradient-text-primary">نظام الأعمال</span>
         <span className="text-xs text-muted-foreground">لوحة التحكم المتطورة</span>
       </div>
     </div>

@@ -50,8 +50,8 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className="text-2xl font-bold gradient-text-primary">نظام إدارة الدعوة</span>
-                <span className="text-sm text-muted-foreground">منصة متطورة لإدارة الأنشطة الدعوية</span>
+                <span className="text-2xl font-bold gradient-text-primary">نظام إدارة الأعمال</span>
+                <span className="text-sm text-muted-foreground">منصة متطورة لإدارة الأنشطة الهندسية</span>
               </div>
             </div>
             <Button 
@@ -70,10 +70,10 @@ export default function HomePage() {
           <div className="container mx-auto px-4 py-20">
             <div className="max-w-5xl mx-auto text-center animate-slide-up">
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-8 leading-tight">
-                <span className="gradient-text-primary">نظام إدارة</span> <br /> <span className="text-foreground">الدعوة الذكي</span>
+                <span className="gradient-text-primary">نظام إدارة</span> <br /> <span className="text-foreground">الأعمال الذكي</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-                حل شامل ومتطور للمنظمات الإسلامية لإدارة الدعاة، وتتبع تقدم المستفيدين، وتحليل فعالية الدعوة 
+                حل شامل ومتطور للمنظمات الإسلامية لإدارة الموظفون، وتتبع تقدم المستفيدين، وتحليل فعالية الأعمال 
                 بدقة واحترافية مع واجهة عصرية وسهلة الاستخدام.
               </p>
             </div>

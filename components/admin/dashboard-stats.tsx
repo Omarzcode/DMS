@@ -165,7 +165,7 @@ export function DashboardStats() {
       gradient: "from-blue-500 to-purple-600",
     },
     {
-      title: "الدعاة النشطون",
+      title: "الموظفون النشطون",
       value: stats.totalPreachers,
       description: `${stats.preacherGrowth >= 0 ? "+" : ""}${stats.preacherGrowth.toFixed(1)}% من الشهر الماضي`,
       icon: UserCheck,

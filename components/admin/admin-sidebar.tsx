@@ -41,7 +41,7 @@ const analyticsMenuItems = [
     icon: TrendingUp,
   },
   {
-    title: "الدعاة",
+    title: "الموظفون",
     url: "/admin/analytics/preachers",
     icon: UserCheck,
   },

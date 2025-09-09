@@ -35,7 +35,7 @@ export default function PreacherDashboard() {
                   <h1 className="text-4xl font-bold gradient-text-primary leading-normal">أهلاً وسهلاً بعودتك!</h1>
                   <p className="text-lg text-muted-foreground flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-blue-500" />
-                    نظرة عامة على أنشطتك الدعوية والمستفيدين المكلفين بك
+                    نظرة عامة على أنشطتك الهندسية والمستفيدين المكلفين بك
                   </p>
                 </div>
               </div>

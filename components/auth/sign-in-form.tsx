@@ -42,7 +42,7 @@ export function SignInForm() {
             <div className="space-y-1 sm:space-y-2">
               <CardTitle className="text-2xl sm:text-3xl font-bold gradient-text-primary">مرحباً بعودتك</CardTitle>
               <CardDescription className="text-base sm:text-lg text-muted-foreground">
-                سجل دخولك للوصول إلى نظام إدارة الدعوة المتطور
+                سجل دخولك للوصول إلى نظام إدارة الأعمال المتطور
               </CardDescription>
             </div>
           </CardHeader>
@@ -105,7 +105,7 @@ export function SignInForm() {
                 </p>
                 <div className="flex items-center justify-center gap-1 text-xs sm:text-sm text-purple-600">
                   <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  <span>صُنع بحب لخدمة الدعوة الإسلامية</span>
+                  <span>صُنع بحب لخدمة الأعمال الإسلامية</span>
                 </div>
               </div>
             </div>
