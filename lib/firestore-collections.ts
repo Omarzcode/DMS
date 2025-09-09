@@ -2,7 +2,7 @@ import { collection, type CollectionReference } from "firebase/firestore"
 import { db } from "./firebase"
 export const attendanceCollection = collection(db, "attendance") as CollectionReference<AttendanceRecord>
 // User roles
-export type UserRole = "admin" | "da'i"
+export type UserRole = "admin" | "da'i" | "pending"
 
 // Da'wa stages for beneficiaries (Arabic)
 export const DAWA_STAGES = [
@@ -17,14 +17,14 @@ export const DAWA_STAGES = [
 export type DawaStage = (typeof DAWA_STAGES)[number]
 
 // Firestore document types
+
 export interface Preacher {
   id: string
   name: string
   email: string
-  role: "da'i"
+  role: UserRole
   created_at: Date
 }
-
 export interface Beneficiary {
   id: string
   name: string

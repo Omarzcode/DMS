@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, createContext, useContext } from "react"
 import { type User, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import type { Preacher, UserRole } from "@/lib/firestore-collections"
 
@@ -35,38 +34,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user)
-
       if (user) {
-        // Check if user exists in Firestore
-        const userDoc = await getDoc(doc(db, "preachers", user.uid))
+        const userDocRef = doc(db, "preachers", user.uid);
+        const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const userData = userDoc.data() as Preacher
+          setUser(user)
           setUserProfile(userData)
           setUserRole(userData.role)
         } else {
-          const initialAdminEmail = process.env.NEXT_PUBLIC_INITIAL_ADMIN_EMAIL
-          const isInitialAdmin = initialAdminEmail && user.email === initialAdminEmail
-
-          // Create new preacher profile with appropriate role
+          // New user signing in, create a pending account
           const newPreacher: Preacher = {
             id: user.uid,
             name: user.displayName || user.email || "Unknown",
             email: user.email || "",
-            role: isInitialAdmin ? "admin" : "da'i", // Assign admin role to initial admin email
-            created_at: new Date(),
+            role: "pending", // New role for users awaiting approval
+            created_at: serverTimestamp() as any,
           }
-
-          await setDoc(doc(db, "preachers", user.uid), newPreacher)
-          setUserProfile(newPreacher)
-          setUserRole(newPreacher.role)
-
-          if (isInitialAdmin) {
-            console.log("[v0] Initial admin account created for:", user.email)
-          }
+          await setDoc(userDocRef, newPreacher);
+          setUser(user);
+          setUserProfile(newPreacher);
+          setUserRole("pending");
         }
       } else {
+        setUser(null)
         setUserProfile(null)
         setUserRole(null)
       }
@@ -82,50 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithPopup(auth, googleProvider)
     } catch (error: any) {
       console.error("Error signing in with Google:", error)
-
-      if (error.code === "auth/unauthorized-domain") {
-        const currentDomain = window.location.hostname
-        console.error(`
-🔒 FIREBASE CONFIGURATION REQUIRED:
-
-The domain "${currentDomain}" is not authorized for Firebase Authentication.
-
-TO FIX THIS:
-1. Go to Firebase Console: https://console.firebase.google.com/
-2. Select your project: d-m-s-e87c0
-3. Go to Authentication > Settings > Authorized domains
-4. Click "Add domain" and add: ${currentDomain}
-5. Save and try signing in again
-
-Current unauthorized domain: ${currentDomain}
-        `)
-
-        alert(
-          `Domain authorization required!\n\nAdd "${currentDomain}" to Firebase Console > Authentication > Settings > Authorized domains`,
-        )
-      }
-
-      if (error.code === "auth/operation-not-allowed") {
-        console.error(`
-🔒 GOOGLE SIGN-IN NOT ENABLED:
-
-Google Sign-In provider is not enabled in Firebase Console.
-
-TO FIX THIS:
-1. Go to Firebase Console: https://console.firebase.google.com/
-2. Select your project: d-m-s-e87c0
-3. Go to Authentication > Sign-in method
-4. Click on "Google" provider
-5. Click "Enable" toggle
-6. Add your email to "Authorized domains" if needed
-7. Save and try signing in again
-        `)
-
-        alert(
-          `Google Sign-In not enabled!\n\nGo to Firebase Console > Authentication > Sign-in method and enable Google provider`,
-        )
-      }
-
       throw error
     }
   }
@@ -140,13 +88,11 @@ TO FIX THIS:
   }
 
   const value = {
-    user,
-    userRole,
-    userProfile,
+    user, userRole, userProfile,
     loading,
-    signInWithGoogle,
-    logout,
+    signInWithGoogle, logout,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+
