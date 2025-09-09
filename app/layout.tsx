@@ -6,9 +6,9 @@ import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 
 export const metadata: Metadata = {
-  title: "Da'wa Management System",
-  description: "Professional CRM for Islamic outreach organizations",
-  generator: "v0.app",
+  title: "Engineering Management System",
+  description: "Professional CRM for Engineering organizations",
+  generator: "theta.app",
 }
 
 export default function RootLayout({
