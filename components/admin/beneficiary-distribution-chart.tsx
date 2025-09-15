@@ -152,25 +152,39 @@ export function BeneficiaryDistributionChart() {
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-48 sm:h-64"
+            className="h-80 sm:h-96"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <BarChart 
+                data={data} 
+                margin={{ top: 30, right: 40, left: 40, bottom: 120 }}
+                barCategoryGap="15%"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis 
                   dataKey="stage" 
                   angle={-45} 
                   textAnchor="end" 
-                  height={60} 
+                  height={120} 
                   fontSize={10}
                   interval={0}
+                  tick={{ fontSize: 10 }}
+                  tickMargin={15}
                 />
-                <YAxis />
+                <YAxis 
+                  fontSize={11}
+                  tickMargin={10}
+                  width={50}
+                />
                 <ChartTooltip
                   content={<ChartTooltipContent />}
                   formatter={(value, name, props) => [`${value} beneficiaries`, props.payload.stage]}
                 />
-                <Bar dataKey="count" fill="hsl(var(--chart-1))" />
+                <Bar 
+                  dataKey="count" 
+                  fill="hsl(var(--chart-1))" 
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>

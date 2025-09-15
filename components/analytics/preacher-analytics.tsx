@@ -1,19 +1,16 @@
-"use client"
-
-import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
+import { Badge } from "../ui/badge"
+import { useEffect, useState } from "react"
 import { collection, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
+import { Preacher, Beneficiary, DAWA_STAGES } from "@/lib/firestore-collections"
+import { cn } from "@/lib/utils"
 import { UserCheck, Users, TrendingUp, Award } from "lucide-react"
-import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
-import { DAWA_STAGES } from "@/lib/firestore-collections"
+import { ResponsiveContainer, CartesianGrid, XAxis, YAxis, Bar, BarChart } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
+import { Skeleton } from "../ui/skeleton"
 
-interface PreacherPerformance {
+type PreacherPerformance = {
   id: string
   name: string
   email: string
@@ -100,16 +97,49 @@ export function PreacherAnalytics() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center gap-2">
-            <UserCheck className="h-6 w-6" />
-            <h2 className="text-2xl font-bold">Preacher Analytics</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Preachers</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalPreachers}</div></CardContent></Card>
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Beneficiaries</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalBeneficiaries}</div></CardContent></Card>
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Average per Preacher</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{averageBeneficiariesPerPreacher.toFixed(1)}</div></CardContent></Card>
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Top Performer</CardTitle><Award className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-lg font-bold">{topPerformer?.name || "N/A"}</div><div className="text-sm text-muted-foreground">{topPerformer?.totalBeneficiaries || 0} beneficiaries</div></CardContent></Card>
-        </div>
+      <div className="flex items-center gap-2">
+        <UserCheck className="h-6 w-6" />
+        <h2 className="text-2xl font-bold">Preacher Analytics</h2>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Preachers</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalPreachers}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Beneficiaries</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalBeneficiaries}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average per Preacher</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{averageBeneficiariesPerPreacher.toFixed(1)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Performer</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{topPerformer?.name || "N/A"}</div>
+            <div className="text-sm text-muted-foreground">{topPerformer?.totalBeneficiaries || 0} beneficiaries</div>
+          </CardContent>
+        </Card>
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -117,8 +147,37 @@ export function PreacherAnalytics() {
             <CardDescription>Top 10 preachers by number of beneficiaries</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ beneficiaries: { label: "Beneficiaries", color: "hsl(var(--chart-1))" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={12} /><YAxis /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="beneficiaries" fill="hsl(var(--chart-1))" /></BarChart></ResponsiveContainer>
+            <ChartContainer config={{ beneficiaries: { label: "Beneficiaries", color: "hsl(var(--chart-1))" } }} className="h-80 sm:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={chartData} 
+                  margin={{ top: 30, right: 40, left: 40, bottom: 100 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100} 
+                    fontSize={11}
+                    interval={0}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={10}
+                  />
+                  <YAxis 
+                    fontSize={11}
+                    tickMargin={10}
+                    width={50}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="beneficiaries" 
+                    fill="hsl(var(--chart-1))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
@@ -128,8 +187,37 @@ export function PreacherAnalytics() {
             <CardDescription>New beneficiaries added in last 30 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ recentGrowth: { label: "New Beneficiaries", color: "hsl(var(--chart-2))" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={12} /><YAxis /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="recentGrowth" fill="hsl(var(--chart-2))" /></BarChart></ResponsiveContainer>
+            <ChartContainer config={{ recentGrowth: { label: "New Beneficiaries", color: "hsl(var(--chart-2))" } }} className="h-80 sm:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={chartData} 
+                  margin={{ top: 30, right: 40, left: 40, bottom: 100 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100} 
+                    fontSize={11}
+                    interval={0}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={10}
+                  />
+                  <YAxis 
+                    fontSize={11}
+                    tickMargin={10}
+                    width={50}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="recentGrowth" 
+                    fill="hsl(var(--chart-2))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>

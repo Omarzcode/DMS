@@ -58,7 +58,15 @@ export function ActivityAnalytics() {
 
       const recentActivities = allActivities
         .filter(a => a.created_at)
-        .sort((a, b) => (b.created_at as any).toDate() - (a.created_at as any).toDate())
+        .sort((a, b) => {
+          const aDate = (a.created_at && typeof (a.created_at as any).toDate === "function")
+            ? (a.created_at as any).toDate()
+            : new Date(0);
+          const bDate = (b.created_at && typeof (b.created_at as any).toDate === "function")
+            ? (b.created_at as any).toDate()
+            : new Date(0);
+          return bDate - aDate;
+        })
         .slice(0, 10);
       
       const creatorCounts = allActivities.reduce((acc, activity) => {
@@ -79,7 +87,9 @@ export function ActivityAnalytics() {
         const monthEnd = endOfMonth(date);
         const count = allActivities.filter(activity => {
           if (!activity.created_at) return false;
-          const activityDate = (activity.created_at as any).toDate();
+          const activityDate = (activity.created_at && typeof (activity.created_at as any).toDate === "function")
+            ? (activity.created_at as any).toDate()
+            : new Date(0);
           return activityDate >= monthStart && activityDate <= monthEnd;
         }).length;
         return { month: format(monthStart, "MMM yyyy"), count };
@@ -119,26 +129,112 @@ export function ActivityAnalytics() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Activities</CardTitle><Calendar className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{analytics.totalActivities}</div></CardContent></Card>
-        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Most Active Creator</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-lg font-bold">{analytics.topCreators[0]?.name || "N/A"}</div><div className="text-sm text-muted-foreground">{analytics.topCreators[0]?.count || 0} activities</div></CardContent></Card>
-        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">This Month</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{analytics.activitiesOverTime[analytics.activitiesOverTime.length - 1]?.count || 0}</div><div className="text-sm text-muted-foreground">New activities</div></CardContent></Card>
-        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Most Popular Type</CardTitle><BookOpen className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-lg font-bold">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.type || "N/A"}</div><div className="text-sm text-muted-foreground">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.count || 0} activities</div></CardContent></Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Activities</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.totalActivities}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Most Active Creator</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{analytics.topCreators[0]?.name || "N/A"}</div>
+            <div className="text-sm text-muted-foreground">{analytics.topCreators[0]?.count || 0} activities</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.activitiesOverTime[analytics.activitiesOverTime.length - 1]?.count || 0}</div>
+            <div className="text-sm text-muted-foreground">New activities</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Most Popular Type</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.type || "N/A"}</div>
+            <div className="text-sm text-muted-foreground">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.count || 0} activities</div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Activities by Type</CardTitle><CardDescription>Distribution of different activity types</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle>Activities by Type</CardTitle>
+            <CardDescription>Distribution of different activity types</CardDescription>
+          </CardHeader>
           <CardContent>
             <ChartContainer config={{ count: { label: "Activities" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={analytics.activitiesByType} cx="50%" cy="50%" labelLine={false} label={({ type, count }) => (count > 0 ? `${type}: ${count}` : "")} outerRadius={80} fill="#8884d8" dataKey="count">{analytics.activitiesByType.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><ChartTooltip content={<ChartTooltipContent />} /></PieChart></ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.activitiesByType}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ type, count }) => (count > 0 ? `${type}: ${count}` : "")}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {analytics.activitiesByType.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Activities Over Time</CardTitle><CardDescription>Activity creation trends over the last 6 months</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle>Activities Over Time</CardTitle>
+            <CardDescription>Activity creation trends over the last 6 months</CardDescription>
+          </CardHeader>
           <CardContent>
-            <ChartContainer config={{ count: { label: "Activities", color: "hsl(var(--chart-2))" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={analytics.activitiesOverTime}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis allowDecimals={false} /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="count" fill="hsl(var(--chart-2))" /></BarChart></ResponsiveContainer>
+            <ChartContainer config={{ count: { label: "Activities", color: "hsl(var(--chart-2))" } }} className="h-80 sm:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={analytics.activitiesOverTime}
+                  margin={{ top: 30, right: 40, left: 40, bottom: 80 }}
+                  barCategoryGap="15%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="month" 
+                    fontSize={11}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={10}
+                    height={60}
+                  />
+                  <YAxis 
+                    allowDecimals={false} 
+                    fontSize={11}
+                    tickMargin={10}
+                    width={50}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--chart-2))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
@@ -146,15 +242,53 @@ export function ActivityAnalytics() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Top Activity Creators</CardTitle><CardDescription>Most active users in creating activities</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle>Top Activity Creators</CardTitle>
+            <CardDescription>Most active users in creating activities</CardDescription>
+          </CardHeader>
           <CardContent>
-            <div className="space-y-2">{analytics.topCreators.map((creator, index) => (<div key={index} className="flex items-center justify-between p-3 border rounded-lg"><div className="flex items-center gap-3"><Badge variant="outline">#{index + 1}</Badge><div className="font-medium">{creator.name}</div></div><div className="text-right"><div className="font-bold">{creator.count}</div><div className="text-xs text-muted-foreground">Activities</div></div></div>))}</div>
+            <div className="space-y-2">
+              {analytics.topCreators.map((creator, index) => (
+                <div key={`${creator.name}-${creator.count}-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline">#{index + 1}</Badge>
+                    <div className="font-medium">{creator.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold">{creator.count}</div>
+                    <div className="text-xs text-muted-foreground">Activities</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Recent Activities</CardTitle><CardDescription>Latest activities created in the system</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle>Recent Activities</CardTitle>
+            <CardDescription>Latest activities created in the system</CardDescription>
+          </CardHeader>
           <CardContent>
-            <div className="space-y-2">{analytics.recentActivities.map((activity) => (<div key={`${activity.type}-${activity.id}`} className="flex items-center justify-between p-3 border rounded-lg"><div><div className="font-medium">{activity.name}</div><div className="text-sm text-muted-foreground">Created by {getCreatorName(activity.creator_id)}</div></div><div className="text-right"><Badge variant="secondary">{activityTypeLabels[activity.type]}</Badge><div className="text-xs text-muted-foreground mt-1">{format(new Date((activity.created_at as any).seconds * 1000), "MMM dd, yyyy")}</div></div></div>))}</div>
+            <div className="space-y-2">
+              {analytics.recentActivities.map((activity) => (
+                <div key={`${activity.type}-${activity.id}`} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <div className="font-medium">{activity.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Created by {getCreatorName(activity.creator_id)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="secondary">{activityTypeLabels[activity.type]}</Badge>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {activity.created_at && typeof (activity.created_at as any).seconds === "number"
+                        ? format(new Date((activity.created_at as any).seconds * 1000), "MMM dd, yyyy")
+                        : "Unknown"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
