@@ -129,6 +129,7 @@ export function ActivityAnalytics() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+<<<<<<< HEAD
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Activities</CardTitle>
@@ -168,6 +169,12 @@ export function ActivityAnalytics() {
             <div className="text-sm text-muted-foreground">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.count || 0} activities</div>
           </CardContent>
         </Card>
+=======
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Activities</CardTitle><Calendar className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{analytics.totalActivities}</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Most Active Creator</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-lg font-bold">{analytics.topCreators[0]?.name || "N/A"}</div><div className=\"text-sm text-muted-foreground">{analytics.topCreators[0]?.count || 0} activities</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">This Month</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{analytics.activitiesOverTime[analytics.activitiesOverTime.length - 1]?.count || 0}</div><div className="text-sm text-muted-foreground">New activities</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Most Popular Type</CardTitle><BookOpen className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-lg font-bold">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.type || "N/A"}</div><div className=\"text-sm text-muted-foreground">{[...analytics.activitiesByType].sort((a, b) => b.count - a.count)[0]?.count || 0} activities</div></CardContent></Card>
+>>>>>>> 8d12bdf1606e2cd272cc1104bcbbb137593bad85
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
