@@ -137,8 +137,35 @@ export function ActivityAnalytics() {
         <Card>
           <CardHeader><CardTitle>Activities Over Time</CardTitle><CardDescription>Activity creation trends over the last 6 months</CardDescription></CardHeader>
           <CardContent>
-            <ChartContainer config={{ count: { label: "Activities", color: "hsl(var(--chart-2))" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={analytics.activitiesOverTime}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis allowDecimals={false} /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="count" fill="hsl(var(--chart-2))" /></BarChart></ResponsiveContainer>
+            <ChartContainer config={{ count: { label: "Activities", color: "hsl(var(--chart-2))" } }} className="h-80 sm:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={analytics.activitiesOverTime}
+                  margin={{ top: 30, right: 40, left: 40, bottom: 80 }}
+                  barCategoryGap="15%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="month" 
+                    fontSize={11}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={10}
+                    height={60}
+                  />
+                  <YAxis 
+                    allowDecimals={false} 
+                    fontSize={11}
+                    tickMargin={10}
+                    width={50}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--chart-2))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>

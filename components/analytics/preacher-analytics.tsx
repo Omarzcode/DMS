@@ -117,8 +117,37 @@ export function PreacherAnalytics() {
             <CardDescription>Top 10 preachers by number of beneficiaries</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ beneficiaries: { label: "Beneficiaries", color: "hsl(var(--chart-1))" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={12} /><YAxis /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="beneficiaries" fill="hsl(var(--chart-1))" /></BarChart></ResponsiveContainer>
+            <ChartContainer config={{ beneficiaries: { label: "Beneficiaries", color: "hsl(var(--chart-1))" } }} className="h-80 sm:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={chartData} 
+                  margin={{ top: 30, right: 40, left: 40, bottom: 100 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100} 
+                    fontSize={11}
+                    interval={0}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={10}
+                  />
+                  <YAxis 
+                    fontSize={11}
+                    tickMargin={10}
+                    width={50}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="beneficiaries" 
+                    fill="hsl(var(--chart-1))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
@@ -128,8 +157,37 @@ export function PreacherAnalytics() {
             <CardDescription>New beneficiaries added in last 30 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ recentGrowth: { label: "New Beneficiaries", color: "hsl(var(--chart-2))" } }} className="h-64">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={12} /><YAxis /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="recentGrowth" fill="hsl(var(--chart-2))" /></BarChart></ResponsiveContainer>
+            <ChartContainer config={{ recentGrowth: { label: "New Beneficiaries", color: "hsl(var(--chart-2))" } }} className="h-80 sm:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={chartData} 
+                  margin={{ top: 30, right: 40, left: 40, bottom: 100 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100} 
+                    fontSize={11}
+                    interval={0}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={10}
+                  />
+                  <YAxis 
+                    fontSize={11}
+                    tickMargin={10}
+                    width={50}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="recentGrowth" 
+                    fill="hsl(var(--chart-2))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
