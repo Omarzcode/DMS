@@ -147,8 +147,10 @@ useEffect(() => {
             <BeneficiaryDetailsDialog key={beneficiary.id} beneficiaryId={beneficiary.id} onUpdate={fetchData}>
               <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-5 cursor-pointer hover:bg-muted/50 transition-colors touch-target ${index < filteredBeneficiaries.length - 1 ? 'border-b' : ''}`}>
                 <div className="flex-1 min-w-0 mb-2 sm:mb-0">
-                  <div className="font-medium text-sm sm:text-base truncate">{beneficiary.name}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground truncate">{getPreacherName(beneficiary.da_i_id)}</div>
+                 <div className="font-medium text-sm sm:text-base truncate">{beneficiary.name}</div>
+                    {/* أضف هذا السطر الجديد */}
+                    <div className="text-xs text-blue-500">{beneficiary.number}</div> 
+                    <div className="text-xs sm:text-sm text-muted-foreground truncate">{getPreacherName(beneficiary.da_i_id)}</div>
                 </div>
                 <div className="flex-shrink-0">
                   <Badge variant="outline" className="text-xs">{beneficiary.batch}</Badge>
