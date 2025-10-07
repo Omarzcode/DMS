@@ -41,19 +41,38 @@ export function AllBeneficiaries() {
 
   useEffect(() => { fetchData() }, [])
 
- useEffect(() => {
-    let filtered = beneficiaries
-    if (searchTerm) { 
-      const lowercasedSearchTerm = searchTerm.toLowerCase()
-      filtered = filtered.filter(b => 
-        b.name.toLowerCase().includes(lowercasedSearchTerm) ||
-        (b.number && b.number.toString().includes(searchTerm))
-      ) 
-    }
-    if (stageFilter !== "all") { filtered = filtered.filter(b => b.da_wa_stage === stageFilter) }
-    if (preacherFilter !== "all") { filtered = filtered.filter(b => b.da_i_id === preacherFilter) }
-    setFilteredBeneficiaries(filtered)
-}, [beneficiaries, searchTerm, stageFilter, preacherFilter])
+useEffect(() => {
+  // نبدأ دائمًا بالقائمة الكاملة للمستفيدين
+  let filteredData = beneficiaries;
+
+  // 1. الفلترة بناءً على نص البحث (الاسم أو الرقم)
+  if (searchTerm.trim() !== "") {
+    const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+    filteredData = filteredData.filter(beneficiary => {
+      // التحقق من تطابق الاسم (بدون حساسية لحالة الأحرف)
+      const nameMatch = beneficiary.name.toLowerCase().includes(lowercasedSearchTerm);
+      
+      // التحقق من تطابق الرقم
+      // نتأكد أولاً أن حقل الرقم موجود وقيمته ليست فارغة
+      const numberAsString = beneficiary.number ? String(beneficiary.number) : "";
+      const numberMatch = numberAsString.includes(lowercasedSearchTerm);
+
+      return nameMatch || numberMatch;
+    });
+  }
+
+  // 2. الفلترة بناءً على المرحلة الدعوية
+  if (stageFilter !== "all") {
+    filteredData = filteredData.filter(b => b.da_wa_stage === stageFilter);
+  }
+
+  // 3. الفلترة بناءً على الداعية
+  if (preacherFilter !== "all") {
+    filteredData = filteredData.filter(b => b.da_i_id === preacherFilter);
+  }
+
+  setFilteredBeneficiaries(filteredData);
+}, [beneficiaries, searchTerm, stageFilter, preacherFilter]);
 
   const getPreacherName = (preacherId: string) => preachers.find(p => p.id === preacherId)?.name || "Unknown"
   
