@@ -41,13 +41,19 @@ export function AllBeneficiaries() {
 
   useEffect(() => { fetchData() }, [])
 
-  useEffect(() => {
+ useEffect(() => {
     let filtered = beneficiaries
-    if (searchTerm) { filtered = filtered.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase())) }
+    if (searchTerm) { 
+      const lowercasedSearchTerm = searchTerm.toLowerCase()
+      filtered = filtered.filter(b => 
+        b.name.toLowerCase().includes(lowercasedSearchTerm) ||
+        (b.number && b.number.toString().includes(searchTerm))
+      ) 
+    }
     if (stageFilter !== "all") { filtered = filtered.filter(b => b.da_wa_stage === stageFilter) }
     if (preacherFilter !== "all") { filtered = filtered.filter(b => b.da_i_id === preacherFilter) }
     setFilteredBeneficiaries(filtered)
-  }, [beneficiaries, searchTerm, stageFilter, preacherFilter])
+}, [beneficiaries, searchTerm, stageFilter, preacherFilter])
 
   const getPreacherName = (preacherId: string) => preachers.find(p => p.id === preacherId)?.name || "Unknown"
   
