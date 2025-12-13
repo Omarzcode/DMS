@@ -76,8 +76,8 @@ export function CreateActivityDialog({ onActivityCreated, activityType, children
   }
 
   const canCreateActivityType = (type: string) => {
-    if (type === "maqari") return true // Both admin and preacher can create maqari
-    return userRole === "admin" // Only admin can create central activities
+    // ✅ Both admin and preacher can create all activity types
+    return userRole === "admin" || userRole === "da'i"
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,13 +159,9 @@ export function CreateActivityDialog({ onActivityCreated, activityType, children
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="maqari">Maqra'a (Personal)</SelectItem>
-                 
-                    <>
-                      <SelectItem value="events">Event (Central)</SelectItem>
-                      <SelectItem value="lessons">Lesson (Central)</SelectItem>
-                      <SelectItem value="sections">Section (Central)</SelectItem>
-                    </>
-                 
+                  <SelectItem value="events">Event (Central)</SelectItem>
+                  <SelectItem value="lessons">Lesson (Central)</SelectItem>
+                  <SelectItem value="sections">Section (Central)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
