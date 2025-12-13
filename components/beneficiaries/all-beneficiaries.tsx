@@ -42,12 +42,40 @@ export function AllBeneficiaries() {
   useEffect(() => { fetchData() }, [])
 
   useEffect(() => {
-    let filtered = beneficiaries
-    if (searchTerm) { filtered = filtered.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase())) }
-    if (stageFilter !== "all") { filtered = filtered.filter(b => b.da_wa_stage === stageFilter) }
-    if (preacherFilter !== "all") { filtered = filtered.filter(b => b.da_i_id === preacherFilter) }
-    setFilteredBeneficiaries(filtered)
-  }, [beneficiaries, searchTerm, stageFilter, preacherFilter])
+    // نبدأ دائمًا بالقائمة الكاملة للمستفيدين
+    let filteredData = beneficiaries;
+
+    // 1. الفلترة بناءً على نص البحث (الاسم أو رقم الهاتف أو الرقم)
+    if (searchTerm.trim() !== "") {
+      const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+      filteredData = filteredData.filter(beneficiary => {
+        // التحقق من تطابق الاسم (بدون حساسية لحالة الأحرف)
+        const nameMatch = beneficiary.name.toLowerCase().includes(lowercasedSearchTerm);
+        
+        // ✅ التحقق من تطابق رقم الهاتف
+        const phoneMatch = beneficiary.phone.toLowerCase().includes(lowercasedSearchTerm);
+        
+        // التحقق من تطابق الرقم (إذا كان موجوداً)
+        const numberAsString = beneficiary.phone ? String(beneficiary.phone) : "";
+        const numberMatch = numberAsString.includes(lowercasedSearchTerm);
+
+        // إرجاع true إذا تطابق أي من: الاسم، الهاتف، أو الرقم
+        return nameMatch || phoneMatch || numberMatch;
+      });
+    }
+
+    // 2. الفلترة بناءً على المرحلة الدعوية
+    if (stageFilter !== "all") {
+      filteredData = filteredData.filter(b => b.da_wa_stage === stageFilter);
+    }
+
+    // 3. الفلترة بناءً على الداعية
+    if (preacherFilter !== "all") {
+      filteredData = filteredData.filter(b => b.da_i_id === preacherFilter);
+    }
+
+    setFilteredBeneficiaries(filteredData);
+  }, [beneficiaries, searchTerm, stageFilter, preacherFilter]);
 
   const getPreacherName = (preacherId: string) => preachers.find(p => p.id === preacherId)?.name || "Unknown"
   
@@ -68,7 +96,7 @@ export function AllBeneficiaries() {
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name..."
+            placeholder="Search by name or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 h-10 sm:h-11"
@@ -123,6 +151,10 @@ export function AllBeneficiaries() {
               <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-5 cursor-pointer hover:bg-muted/50 transition-colors touch-target ${index < filteredBeneficiaries.length - 1 ? 'border-b' : ''}`}>
                 <div className="flex-1 min-w-0 mb-2 sm:mb-0">
                   <div className="font-medium text-sm sm:text-base truncate">{beneficiary.name}</div>
+                  {/* عرض رقم الهاتف */}
+                  <div className="text-xs text-muted-foreground">{beneficiary.phone}</div>
+                  {/* عرض الرقم إذا كان موجوداً */}
+                  {beneficiary.phone && <div className="text-xs text-blue-500">{beneficiary.phone}</div>}
                   <div className="text-xs sm:text-sm text-muted-foreground truncate">{getPreacherName(beneficiary.da_i_id)}</div>
                 </div>
                 <div className="flex-shrink-0">
