@@ -55,12 +55,9 @@ export function AllBeneficiaries() {
         // ✅ التحقق من تطابق رقم الهاتف
         const phoneMatch = beneficiary.phone.toLowerCase().includes(lowercasedSearchTerm);
         
-        // التحقق من تطابق الرقم (إذا كان موجوداً)
-        const numberAsString = beneficiary.phone ? String(beneficiary.phone) : "";
-        const numberMatch = numberAsString.includes(lowercasedSearchTerm);
-
+        
         // إرجاع true إذا تطابق أي من: الاسم، الهاتف، أو الرقم
-        return nameMatch || phoneMatch || numberMatch;
+        return nameMatch || phoneMatch ;
       });
     }
 
@@ -153,8 +150,6 @@ export function AllBeneficiaries() {
                   <div className="font-medium text-sm sm:text-base truncate">{beneficiary.name}</div>
                   {/* عرض رقم الهاتف */}
                   <div className="text-xs text-muted-foreground">{beneficiary.phone}</div>
-                  {/* عرض الرقم إذا كان موجوداً */}
-                  {beneficiary.phone && <div className="text-xs text-blue-500">{beneficiary.phone}</div>}
                   <div className="text-xs sm:text-sm text-muted-foreground truncate">{getPreacherName(beneficiary.da_i_id)}</div>
                 </div>
                 <div className="flex-shrink-0">
