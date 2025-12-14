@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Plus, AlertCircle } from "lucide-react"
 import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
 import { DAWA_STAGES } from "@/lib/firestore-collections"
-
+import { toast } from 'sonner'
 interface AddBeneficiaryDialogProps {
   onBeneficiaryAdded?: (beneficiary: Beneficiary) => void
   assignedPreacherId?: string
@@ -114,12 +114,17 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
 
       const docRef = await addDoc(collection(db, "beneficiaries"), newBeneficiary)
       const createdBeneficiary = { id: docRef.id, ...newBeneficiary }
-
+      toast.success('تم إضافة المستفيد بنجاح!', {
+  description: `${formData.name} تمت إضافته إلى النظام`,
+})
       onBeneficiaryAdded?.(createdBeneficiary)
       setOpen(false)
 
     } catch (error) {
       console.error("Error adding beneficiary:", error)
+      toast.error('فشلت العملية', {
+    description: 'حدث خطأ أثناء إضافة المستفيد',
+  })
       setError("Failed to add beneficiary. Please try again.")
     } finally {
       setLoading(false)

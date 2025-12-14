@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Search, Plus, BookOpen, Users, ActivityIcon } from "lucide-react"
 import { format } from "date-fns"
 import type { Activity as BaseActivity } from "@/lib/firestore-collections"
+import { EmptyState } from "@/components/ui/empty-state"
+import { HighlightText } from "@/components/ui/highlight-text"
+import { toast } from 'sonner'
 
 type Activity = BaseActivity & {
   description?: string
@@ -38,8 +41,8 @@ export function AllActivities() {
       setLoading(true)
       const activityTypes = ["maqari", "events", "lessons", "sections"];
       const snapshots = await Promise.all(activityTypes.map(type => getDocs(collection(db, type))));
-      
-      const allActivities = snapshots.flatMap((snapshot, index) => 
+
+      const allActivities = snapshots.flatMap((snapshot, index) =>
         snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: activityTypes[index] }))
       ) as (Activity & { type: string })[];
 
@@ -54,7 +57,7 @@ export function AllActivities() {
       }
       setAttendanceCounts(counts);
 
-    } catch (error) { console.error("Error fetching activities:", error) } 
+    } catch (error) { console.error("Error fetching activities:", error) }
     finally { setLoading(false) }
   }
 
@@ -90,7 +93,7 @@ export function AllActivities() {
           <Button> <Plus className="h-4 w-4 mr-2" /> Create Activity </Button>
         </CreateActivityDialog>
       </div>
-      
+
       <div className="flex flex-col md:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -113,7 +116,13 @@ export function AllActivities() {
           return (
             <Card key={`${activity.type}-${activity.id}`}>
               <CardHeader>
-                <div className="flex items-center justify-between"><CardTitle className="text-lg flex items-center gap-2"><IconComponent className="h-5 w-5" />{activity.name}</CardTitle><Badge variant={activity.type === "maqari" ? "secondary" : "default"}>{activityTypeLabels[activity.type]}</Badge></div>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <IconComponent className="h-5 w-5" />
+                    <HighlightText text={activity.name} highlight={searchTerm} />
+                  </CardTitle>
+                  <Badge variant={activity.type === "maqari" ? "secondary" : "default"}>{activityTypeLabels[activity.type]}</Badge>
+                </div>
                 <CardDescription>Created by {activity.creator_name}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -130,6 +139,21 @@ export function AllActivities() {
             </Card>
           )
         })}
+        {filteredActivities.length === 0 && (
+          <EmptyState
+            icon={Calendar}
+            title="لا توجد أنشطة"
+            description="ابدأ بإنشاء نشاط جديد لتتبع حضور المستفيدين"
+            action={
+              <CreateActivityDialog onActivityCreated={fetchAllActivities}>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  إنشاء نشاط
+                </Button>
+              </CreateActivityDialog>
+            }
+          />
+        )}
       </div>
     </div>
   )

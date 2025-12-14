@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Edit, AlertCircle } from "lucide-react"
 import type { Beneficiary, ProgressLog } from "@/lib/firestore-collections"
 import { DAWA_STAGES } from "@/lib/firestore-collections"
+import { toast } from 'sonner'
 
 interface EditBeneficiaryDialogProps {
   beneficiary: Beneficiary
@@ -94,6 +95,9 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       }
 
       await updateDoc(doc(db, "beneficiaries", beneficiary.id), updateData)
+      toast.success('تم تحديث البيانات', {
+        description: `تم تحديث بيانات ${formData.name} بنجاح`,
+      })
 
       // Log changes if any
       if (changes.length > 0) {
@@ -115,6 +119,9 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       setOpen(false)
     } catch (error) {
       console.error("Error updating beneficiary:", error)
+      toast.error('فشل التحديث', {
+        description: 'حدث خطأ أثناء تحديث البيانات',
+      })
       setError("Failed to update beneficiary. Please try again.")
     } finally {
       setLoading(false)

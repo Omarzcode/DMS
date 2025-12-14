@@ -13,7 +13,8 @@ import type { Beneficiary, AttendanceRecord, Preacher } from "@/lib/firestore-co
 import { format } from "date-fns"
 import { EditBeneficiaryDialog } from "./edit-beneficiary-dialog"
 import { TransferBeneficiaryDialog } from "./transfer-beneficiary-dialog"
-
+import { toast } from 'sonner'
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 interface AttendanceStats {
   maqari: { attended: number; total: number };
   events: { attended: number; total: number };
@@ -42,6 +43,7 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
   const [preacher, setPreacher] = useState<Preacher | null>(null)
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null)
   const [groupedAttendance, setGroupedAttendance] = useState<GroupedAttendance>({})
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,7 +54,7 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
       try {
         const beneficiaryDoc = await getDoc(doc(db, "beneficiaries", beneficiaryId))
         if (!beneficiaryDoc.exists()) { setLoading(false); return; }
-        
+
         const beneficiaryData = { id: beneficiaryDoc.id, ...beneficiaryDoc.data() } as Beneficiary
         setBeneficiary(beneficiaryData)
 
@@ -70,8 +72,8 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
         ]);
 
         if (preacherDoc && preacherDoc.exists()) setPreacher(preacherDoc.data() as Preacher)
-        
-        const attendanceHistory = attendanceSnap.docs.map(d => ({...d.data(), id: d.id }) as AttendanceRecord)
+
+        const attendanceHistory = attendanceSnap.docs.map(d => ({ ...d.data(), id: d.id }) as AttendanceRecord)
 
         const stats: AttendanceStats = {
           maqari: { total: maqariSnap.size, attended: attendanceHistory.filter(r => r.activity_type === 'maqari').length },
@@ -89,7 +91,7 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
         });
         setGroupedAttendance(grouped);
 
-      } catch (error) { console.error("Error fetching details:", error); } 
+      } catch (error) { console.error("Error fetching details:", error); }
       finally { setLoading(false); }
     }
     fetchData()
@@ -102,28 +104,40 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
 
   const handleDeleteBeneficiary = async () => {
     if (!beneficiary) return;
-    if (window.confirm(`Are you sure you want to permanently delete ${beneficiary.name}? This action cannot be undone.`)) {
-        try {
-            setLoading(true);
-            // Also delete their attendance records
-            const attendanceQuery = query(collection(db, "attendance"), where("beneficiary_id", "==", beneficiary.id));
-            const attendanceSnapshot = await getDocs(attendanceQuery);
-            const batch = writeBatch(db);
-            attendanceSnapshot.docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
 
-            // Delete the beneficiary itself
-            await deleteDoc(doc(db, "beneficiaries", beneficiary.id));
-            handleUpdate();
-        } catch (error) {
-            console.error("Failed to delete beneficiary:", error);
-            alert("An error occurred while deleting the beneficiary.");
-            setLoading(false);
-        }
+    try {
+      setLoading(true);
+      setShowDeleteConfirm(false); // Close confirmation dialog
+
+      // Delete attendance records
+      const attendanceQuery = query(collection(db, "attendance"), where("beneficiary_id", "==", beneficiary.id));
+      const attendanceSnapshot = await getDocs(attendanceQuery);
+      const batch = writeBatch(db);
+      attendanceSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
+      // Delete beneficiary
+      await deleteDoc(doc(db, "beneficiaries", beneficiary.id));
+
+      // ✅ Success toast
+      toast.success('تم حذف المستفيد', {
+        description: `تم حذف ${beneficiary.name} وجميع بياناته بنجاح`,
+      });
+
+      handleUpdate();
+    } catch (error) {
+      console.error("Failed to delete beneficiary:", error);
+
+      // ✅ Error toast
+      toast.error('فشل الحذف', {
+        description: 'حدث خطأ أثناء حذف المستفيد',
+      });
+
+      setLoading(false);
     }
   }
-  
-  const StatItem = ({ title, attended, total }: {title: string, attended: number, total: number}) => (
+
+  const StatItem = ({ title, attended, total }: { title: string, attended: number, total: number }) => (
     total > 0 ? (
       <div>
         <div className="flex justify-between items-center mb-1">
@@ -145,8 +159,8 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
             {beneficiary ? `Assigned to: ${preacher?.name || 'N/A'}` : "Details about the beneficiary will appear here."}
           </DialogDescription>
         </DialogHeader>
-        
-        {loading ? ( <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin" /></div>
+
+        {loading ? (<div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : beneficiary ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
@@ -158,7 +172,7 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
                   <div className="flex items-center gap-2"><BarChart className="h-4 w-4 text-muted-foreground" /> <Badge>{beneficiary.da_wa_stage}</Badge></div>
                 </div>
                 {beneficiary.notes && <div className="flex items-start gap-2 pt-2"><StickyNote className="h-4 w-4 mt-1 text-muted-foreground" /> <p className="text-sm text-muted-foreground bg-muted p-2 rounded-md flex-1">{beneficiary.notes}</p></div>}
-                
+
                 {attendanceStats && (
                   <div className="space-y-3 pt-4 border-t">
                     <h3 className="font-semibold">Quick Stats</h3>
@@ -195,10 +209,22 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
                   <TransferBeneficiaryDialog beneficiary={beneficiary} onTransferComplete={handleUpdate}>
                     <Button variant="secondary">Transfer</Button>
                   </TransferBeneficiaryDialog>
-                  <Button variant="destructive" onClick={handleDeleteBeneficiary}>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteConfirm(true)} // ✅ Changed
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Beneficiary
+                    حذف المستفيد
                   </Button>
+                  <ConfirmDialog
+                    open={showDeleteConfirm}
+                    onOpenChange={setShowDeleteConfirm}
+                    onConfirm={handleDeleteBeneficiary}
+                    title="هل أنت متأكد من حذف هذا المستفيد؟"
+                    description="هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع البيانات المرتبطة بهذا المستفيد نهائياً."
+                    confirmText="نعم، احذف"
+                    cancelText="إلغاء"
+                  />
                 </>
               )}
               <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
@@ -211,15 +237,15 @@ export function BeneficiaryDetailsDialog({ beneficiaryId, children, onUpdate }: 
 }
 
 const AttendanceCategory = ({ title, records, icon: Icon }: { title: string, records: AttendanceRecord[], icon: React.ElementType }) => (
-    <div>
-        <h4 className="font-semibold text-sm mb-1 flex items-center gap-1.5"><Icon className="h-4 w-4" /> {title}</h4>
-        <div className="space-y-1 pl-2">
-            {records.map((att, index) => (
-                <div key={`${att.id}-${index}`} className="text-muted-foreground flex justify-between items-center text-xs">
-                    <span>{att.activity_name}</span>
-                    <span>{(att.logged_at as any)?.toDate ? format((att.logged_at as any).toDate(), "PP") : ''}</span>
-                </div>
-            ))}
+  <div>
+    <h4 className="font-semibold text-sm mb-1 flex items-center gap-1.5"><Icon className="h-4 w-4" /> {title}</h4>
+    <div className="space-y-1 pl-2">
+      {records.map((att, index) => (
+        <div key={`${att.id}-${index}`} className="text-muted-foreground flex justify-between items-center text-xs">
+          <span>{att.activity_name}</span>
+          <span>{(att.logged_at as any)?.toDate ? format((att.logged_at as any).toDate(), "PP") : ''}</span>
         </div>
+      ))}
     </div>
+  </div>
 );

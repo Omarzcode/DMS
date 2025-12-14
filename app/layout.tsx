@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
+import { Toaster } from "sonner" // ✅ Add this
 
 export const metadata: Metadata = {
   title: "Engineering Management System",
@@ -17,7 +18,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-<html lang="en" suppressHydrationWarning={true}>      <head>
+    <html lang="en" suppressHydrationWarning={true}>
+      <head>
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
@@ -27,7 +29,10 @@ html {
         `}</style>
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <Toaster position="top-center" richColors /> {/* ✅ Add this */}
+        </AuthProvider>
       </body>
     </html>
   )
