@@ -159,17 +159,7 @@ export function AllBeneficiaries() {
             value={beneficiaries.length}
             icon={Users}
           />
-          <StatsCard
-            title="نشط هذا الشهر"
-            value={stats.activeThisMonth}
-            icon={Activity}
-            trend="+12%"
-          />
-          <StatsCard
-            title="في مرحلة متقدمة"
-            value={stats.advancedStage}
-            icon={TrendingUp}
-          />
+         
           <StatsCard
             title="نتائج البحث"
             value={filteredBeneficiaries.length}
