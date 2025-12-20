@@ -799,46 +799,44 @@ const SidebarMenuButton = React.forwardRef<HTMLButtonElement, SidebarMenuButtonP
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        data-badge={badge}
-        onTouchStart={() => setIsPressed(true)}
-        onTouchEnd={() => setIsPressed(false)}
-        onMouseDown={() => setIsPressed(true)}
-        onMouseUp={() => setIsPressed(false)}
-        onMouseLeave={() => setIsPressed(false)}
         className={cn(
           sidebarMenuButtonVariants({ variant, size }),
           isPressed && "scale-95",
           isCollapsed && "justify-center",
           className
         )}
+        // Handlers for touch/mouse feedback
+        onTouchStart={() => setIsPressed(true)}
+        onTouchEnd={() => setIsPressed(false)}
+        onMouseDown={() => setIsPressed(true)}
+        onMouseUp={() => setIsPressed(false)}
+        onMouseLeave={() => setIsPressed(false)}
         {...props}
       >
-        {icon && (
-          <span className={cn(
-            "shrink-0 transition-transform duration-200",
-            isCollapsed && "scale-110"
-          )}>
-            {icon}
-          </span>
-        )}
-        
-        {!isCollapsed && (
-          <span className="flex-1 text-left truncate">
-            {children}
-          </span>
-        )}
-        
-        {!isCollapsed && badge && (
-          <Badge variant="secondary" className="ml-auto h-5 min-w-5 px-1 text-xs">
-            {badge}
-          </Badge>
+        {asChild ? (
+          /* When asChild is true, we render children directly. 
+             The icon and span are already inside the <Link> in your sidebar files. */
+          children
+        ) : (
+          /* Standard behavior when not using a Link */
+          <>
+            {icon && (
+              <span className={cn("shrink-0 transition-transform", isCollapsed && "scale-110")}>
+                {icon}
+              </span>
+            )}
+            {!isCollapsed && <span className="flex-1 text-left truncate">{children}</span>}
+            {!isCollapsed && badge && (
+              <Badge variant="secondary" className="ml-auto h-5 min-w-5 px-1 text-xs">
+                {badge}
+              </Badge>
+            )}
+          </>
         )}
       </Comp>
     )
 
-    if (!tooltip) {
-      return button
-    }
+    if (!tooltip) return button
 
     const tooltipProps = typeof tooltip === "string" ? { children: tooltip } : tooltip
 
@@ -856,6 +854,7 @@ const SidebarMenuButton = React.forwardRef<HTMLButtonElement, SidebarMenuButtonP
     )
   }
 )
+SidebarMenuButton.displayName = "SidebarMenuButton"
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
 // ============================================================================
