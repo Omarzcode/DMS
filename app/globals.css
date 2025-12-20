@@ -428,7 +428,26 @@ body {
 .shadow-responsive {
   @apply shadow-sm sm:shadow-md lg:shadow-lg xl:shadow-xl;
 }
+/* Safe area support */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
 
+/* Remove tap highlight */
+.tap-highlight-transparent {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch scrolling */
+.sidebar-content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
 /* Print styles */
 @media print {
   .print-hide {
