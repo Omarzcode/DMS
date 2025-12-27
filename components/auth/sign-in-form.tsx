@@ -93,9 +93,9 @@ export function SignInForm() {
               )}
             </Button>
 
-            <div className="space-y-3 sm:space-y-4 pt-4 sm:pt-6 border-t border-purple-100">
+            <div className="space-y-3 sm:space-y-4 pt-4 sm:pt-6 border-t border-border">
               <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-secondary" />
                 <span>فقط الموظفون المصرح لهم يمكنهم الوصول إلى هذا النظام</span>
               </div>
               
@@ -103,7 +103,7 @@ export function SignInForm() {
                 <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                   تواصل مع المسؤول إذا كنت بحاجة إلى صلاحية الدخول
                 </p>
-                <div className="flex items-center justify-center gap-1 text-xs sm:text-sm text-purple-600">
+                <div className="flex items-center justify-center gap-1 text-xs sm:text-sm text-primary">
                   <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   <span>صُنع بحب لخدمة الأعمال الهندسية</span>
                 </div>

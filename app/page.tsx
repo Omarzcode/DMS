@@ -25,7 +25,7 @@ export default function HomePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
         <div className="flex items-center gap-3 animate-fade-in">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="text-lg font-medium text-muted-foreground">جاري التحميل...</span>
         </div>
       </div>
@@ -136,8 +136,8 @@ export default function HomePage() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-purple-100">
-                  <CheckCircle className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-border">
+                  <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     تسجيل الدخول آمن ومشفر بالكامل
                   </p>
@@ -190,7 +190,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="text-lg font-medium text-muted-foreground">جاري التحويل إلى لوحة التحكم...</span>
       </div>
     </div>

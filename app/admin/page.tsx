@@ -12,15 +12,15 @@ export default function AdminDashboard() {
   return (
     <AuthGuard requiredRole="admin">
       <SidebarProvider>
-        <AdminSidebar />
-        <SidebarInset className="bg-gradient-to-br from-purple-50/30 via-pink-50/30 to-orange-50/30">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-purple-100 bg-white/80 backdrop-blur-sm px-4">
-            <SidebarTrigger className="-ml-1 text-purple-600 hover:bg-purple-100" />
-            <Separator orientation="vertical" className="mr-2 h-4 bg-purple-200" />
+        <AdminSidebar />from-primary/5 via-secondary/5 to-background
+        <SidebarInset className="bg-gradient-to-br ">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-white/80 backdrop-blur-sm px-4">
+            <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
+            <Separator orientation="vertical" className="mr-2 h-4 bg-muted" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-purple-800 font-semibold">لوحة تحكم المدير</BreadcrumbPage>
+                  <BreadcrumbPage className="text-foreground font-semibold">لوحة تحكم المدير</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
                 <div>
                   <h1 className="text-4xl font-bold gradient-text-primary leading-normal">لوحة التحكم الرئيسية</h1>
                   <p className="text-lg text-muted-foreground flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    <Sparkles className="h-4 w-4 text-secondary" />
                     نظرة شاملة على أداء نظام إدارة الأعمال والمقاييس الرئيسية
                   </p>
                 </div>

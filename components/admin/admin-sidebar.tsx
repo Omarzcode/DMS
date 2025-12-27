@@ -85,8 +85,8 @@ export function AdminSidebar() {
   }
 
   return (
-    <Sidebar className="bg-gradient-to-b from-white to-purple-50/50 border-r border-purple-100">
-      <SidebarHeader className="border-b border-purple-100 bg-gradient-to-r from-purple-50 to-pink-50">
+    <Sidebar className="bg-gradient-to-b from-white to-purple-50/50 border-r border-border">
+      <SidebarHeader className="border-b border-border bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="px-2 py-3">
           <Logo />
         </div>
@@ -103,10 +103,10 @@ export function AdminSidebar() {
                     asChild 
                     isActive={pathname === item.url} 
                     tooltip={item.title}
-                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-purple-800 transition-all duration-200"
+                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-foreground transition-all duration-200"
                   >
                     <Link href={item.url}>
-                      <item.icon className="text-purple-600" />
+                      <item.icon className="text-primary" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -116,7 +116,7 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="bg-purple-200" />
+        <SidebarSeparator className="bg-muted" />
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-purple-700 font-semibold">التحليلات المتقدمة</SidebarGroupLabel>
@@ -128,10 +128,10 @@ export function AdminSidebar() {
                     asChild 
                     isActive={pathname === item.url} 
                     tooltip={item.title}
-                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-purple-800 transition-all duration-200"
+                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-foreground transition-all duration-200"
                   >
                     <Link href={item.url}>
-                      <item.icon className="text-purple-600" />
+                      <item.icon className="text-primary" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -141,7 +141,7 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="bg-purple-200" />
+        <SidebarSeparator className="bg-muted" />
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-purple-700 font-semibold">الإدارة الشاملة</SidebarGroupLabel>
@@ -153,10 +153,10 @@ export function AdminSidebar() {
                     asChild 
                     isActive={pathname === item.url} 
                     tooltip={item.title}
-                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-purple-800 transition-all duration-200"
+                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-foreground transition-all duration-200"
                   >
                     <Link href={item.url}>
-                      <item.icon className="text-purple-600" />
+                      <item.icon className="text-primary" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -167,7 +167,7 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-purple-100 bg-gradient-to-r from-purple-50 to-pink-50">
+      <SidebarFooter className="border-t border-border bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="flex items-center gap-3 px-2 py-3">
           <div className="relative">
             <Avatar className="h-10 w-10 ring-2 ring-purple-200">
@@ -181,16 +181,16 @@ export function AdminSidebar() {
             </div>
           </div>
           <div className="flex flex-1 flex-col min-w-0">
-            <span className="text-sm font-semibold text-purple-800 truncate">
+            <span className="text-sm font-semibold text-foreground truncate">
               {user?.displayName || "المدير"}
             </span>
-            <span className="text-xs text-purple-600 truncate">{user?.email}</span>
+            <span className="text-xs text-primary truncate">{user?.email}</span>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            className="h-9 w-9 text-purple-600 hover:text-purple-800 hover:bg-purple-100 transition-all duration-200"
+            className="h-9 w-9 text-primary hover:text-foreground hover:bg-muted transition-all duration-200"
             aria-label="تسجيل الخروج"
           >
             <LogOut className="h-4 w-4" />

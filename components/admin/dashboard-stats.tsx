@@ -211,7 +211,7 @@ export function DashboardStats() {
                 </>
               )}
               <span className="flex items-center gap-0.5 sm:gap-1">
-                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-purple-500" />
+                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-secondary" />
                 {stat.description}
               </span>
             </div>
