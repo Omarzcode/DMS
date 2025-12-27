@@ -162,7 +162,7 @@ export function DashboardStats() {
       description: `${stats.beneficiaryGrowth >= 0 ? "+" : ""}${stats.beneficiaryGrowth.toFixed(1)}% من الشهر الماضي`,
       icon: Users,
       trend: stats.beneficiaryGrowth >= 0 ? "up" : "down",
-      gradient: "from-blue-500 to-purple-600",
+      gradient: "from-primary to-secondary",
     },
     {
       title: "الموظفون النشطون",
@@ -170,14 +170,14 @@ export function DashboardStats() {
       description: `${stats.preacherGrowth >= 0 ? "+" : ""}${stats.preacherGrowth.toFixed(1)}% من الشهر الماضي`,
       icon: UserCheck,
       trend: stats.preacherGrowth >= 0 ? "up" : "down",
-      gradient: "from-purple-500 to-pink-600",
+      gradient: "from-primary to-secondary",
     },
     {
       title: "إجمالي الأنشطة",
       value: stats.totalActivities,
       description: "فعاليات ودروس ومقارئ",
       icon: Calendar,
-      gradient: "from-pink-500 to-orange-600",
+      gradient: "from-primary to-secondary",
     },
     {
       title: "جديد هذا الشهر",

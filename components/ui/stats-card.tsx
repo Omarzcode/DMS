@@ -31,7 +31,7 @@ export function StatsCard({
               </p>
             )}
           </div>
-          <div className="p-2 sm:p-3 rounded-full bg-gradient-to-br from-purple-100 to-pink-100">
+          <div className="p-2 sm:p-3 rounded-full bg-gradient-to-br from-primary/10 to-secondary/20">
             <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
         </div>

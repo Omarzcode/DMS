@@ -26,7 +26,7 @@ export function SignInForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-4 safe-area-top safe-area-bottom">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br bg-background p-4 safe-area-top safe-area-bottom">
       <div className="w-full max-w-sm sm:max-w-md animate-scale-in">
         <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm card-responsive">
           <CardHeader className="text-center space-y-4 sm:space-y-6 pb-6 sm:pb-8">

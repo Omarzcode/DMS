@@ -23,7 +23,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br bg-background">
         <div className="flex items-center gap-3 animate-fade-in">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="text-lg font-medium text-muted-foreground">جاري التحميل...</span>
@@ -34,12 +34,12 @@ export default function HomePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 overflow-hidden">
+      <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-br bg-background overflow-hidden">
         {/* Left Side - Hero Section */}
         <div className="flex-1 flex flex-col justify-center p-8 lg:p-16 relative">
           {/* Decorative Elements */}
-          <div className="absolute top-20 right-20 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-pink-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-20 right-20 w-72 h-72 bg-primary rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 left-20 w-96 h-96 bg-primary rounded-full blur-3xl animate-pulse delay-1000"></div>
           
           <div className="relative z-10 max-w-2xl mx-auto lg:mx-0">
             {/* Logo */}
@@ -136,14 +136,14 @@ export default function HomePage() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-border">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-primary border border-border">
                   <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     تسجيل الدخول آمن ومشفر بالكامل
                   </p>
                 </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-pink-50 border border-pink-100">
-                  <Zap className="h-5 w-5 text-pink-600 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-primary border border-border">
+                  <Zap className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     وصول سريع إلى جميع الميزات
                   </p>
@@ -158,7 +158,7 @@ export default function HomePage() {
 
   if (userRole === "pending") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br bg-background p-4">
         <Card className="max-w-md w-full shadow-2xl border-0 bg-white/90 backdrop-blur-sm animate-fade-in">
           <CardHeader className="text-center space-y-4 pb-8">
             <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center">
@@ -188,7 +188,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br bg-background">
       <div className="flex items-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="text-lg font-medium text-muted-foreground">جاري التحويل إلى لوحة التحكم...</span>

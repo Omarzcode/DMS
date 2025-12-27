@@ -64,7 +64,7 @@ export function PreacherAnalytics() {
 
   const getPerformanceLevel = (averageStage: number) => {
     if (averageStage >= 4) return { label: "Excellent", color: "bg-green-500" }
-    if (averageStage >= 3) return { label: "Good", color: "bg-blue-500" }
+    if (averageStage >= 3) return { label: "Good", color: "bg-primary" }
     if (averageStage >= 2) return { label: "Average", color: "bg-yellow-500" }
     return { label: "Needs Support", color: "bg-red-500" }
   }

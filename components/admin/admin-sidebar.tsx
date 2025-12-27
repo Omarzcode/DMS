@@ -16,65 +16,33 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, BookOpen, TrendingUp, Activity } from "lucide-react"
+import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, TrendingUp, Activity } from "lucide-react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation" // قم بتعديل هذا السطرimport { Logo } from "@/components/ui/logo"
+import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "../ui/logo"
 
 const adminMenuItems = [
-  {
-    title: "لوحة التحكم",
-    url: "/admin",
-    icon: BarChart3,
-  },
-  {
-    title: "إدارة المستخدمين",
-    url: "/admin/users",
-    icon: Shield,
-  },
+  { title: "لوحة التحكم", url: "/admin", icon: BarChart3 },
+  { title: "إدارة المستخدمين", url: "/admin/users", icon: Shield },
 ]
 
 const analyticsMenuItems = [
-  {
-    title: "نظرة عامة",
-    url: "/admin/analytics",
-    icon: TrendingUp,
-  },
-  {
-    title: "الموظفون",
-    url: "/admin/analytics/preachers",
-    icon: UserCheck,
-  },
-  {
-    title: "المستفيدون",
-    url: "/admin/analytics/beneficiaries",
-    icon: Users,
-  },
-  {
-    title: "الأنشطة",
-    url: "/admin/analytics/activities",
-    icon: Activity,
-  },
+  { title: "نظرة عامة", url: "/admin/analytics", icon: TrendingUp },
+  { title: "الموظفون", url: "/admin/analytics/preachers", icon: UserCheck },
+  { title: "المستفيدون", url: "/admin/analytics/beneficiaries", icon: Users },
+  { title: "الأنشطة", url: "/admin/analytics/activities", icon: Activity },
 ]
 
 const managementMenuItems = [
-  {
-    title: "المستفيدون",
-    url: "/admin/beneficiaries",
-    icon: Users,
-  },
-  {
-    title: "الأنشطة",
-    url: "/admin/activities",
-    icon: Calendar,
-  },
-  
+  { title: "المستفيدون", url: "/admin/beneficiaries", icon: Users },
+  { title: "الأنشطة", url: "/admin/activities", icon: Calendar },
 ]
 
 export function AdminSidebar() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+
   const handleLogout = async () => {
     try {
       await logout()
@@ -85,16 +53,17 @@ export function AdminSidebar() {
   }
 
   return (
-    <Sidebar className="bg-gradient-to-b from-white to-purple-50/50 border-r border-border">
-      <SidebarHeader className="border-b border-border bg-gradient-to-r from-purple-50 to-pink-50">
+    <Sidebar className="bg-sidebar border-r border-border">
+      <SidebarHeader className="border-b border-border bg-gradient-to-r from-secondary/10 to-background">
         <div className="px-2 py-3">
           <Logo />
         </div>
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Main Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-purple-700 font-semibold">الرئيسية</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">الرئيسية</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminMenuItems.map((item) => (
@@ -103,7 +72,7 @@ export function AdminSidebar() {
                     asChild 
                     isActive={pathname === item.url} 
                     tooltip={item.title}
-                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-foreground transition-all duration-200"
+                    className="hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
@@ -116,10 +85,11 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="bg-muted" />
+        <SidebarSeparator className="bg-border/50" />
 
+        {/* Analytics Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-purple-700 font-semibold">التحليلات المتقدمة</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">التحليلات المتقدمة</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {analyticsMenuItems.map((item) => (
@@ -128,7 +98,7 @@ export function AdminSidebar() {
                     asChild 
                     isActive={pathname === item.url} 
                     tooltip={item.title}
-                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-foreground transition-all duration-200"
+                    className="hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
@@ -141,10 +111,11 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="bg-muted" />
+        <SidebarSeparator className="bg-border/50" />
 
+        {/* Management Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-purple-700 font-semibold">الإدارة الشاملة</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">الإدارة الشاملة</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {managementMenuItems.map((item) => (
@@ -153,7 +124,7 @@ export function AdminSidebar() {
                     asChild 
                     isActive={pathname === item.url} 
                     tooltip={item.title}
-                    className="hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 data-[active=true]:bg-gradient-to-r data-[active=true]:from-purple-200 data-[active=true]:to-pink-200 data-[active=true]:text-foreground transition-all duration-200"
+                    className="hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
@@ -167,16 +138,16 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border bg-gradient-to-r from-purple-50 to-pink-50">
+      <SidebarFooter className="border-t border-border bg-gradient-to-r from-secondary/10 to-background">
         <div className="flex items-center gap-3 px-2 py-3">
           <div className="relative">
-            <Avatar className="h-10 w-10 ring-2 ring-purple-200">
+            <Avatar className="h-10 w-10 ring-2 ring-primary/20">
               <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || ""} />
-              <AvatarFallback className="gradient-bg-primary text-white font-semibold">
+              <AvatarFallback className="bg-primary text-white font-semibold">
                 {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "م"}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -top-1 -right-1 h-4 w-4 gradient-bg-secondary rounded-full flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 h-4 w-4 bg-secondary rounded-full flex items-center justify-center border-2 border-background">
               <Shield className="h-2 w-2 text-white" />
             </div>
           </div>
@@ -184,13 +155,13 @@ export function AdminSidebar() {
             <span className="text-sm font-semibold text-foreground truncate">
               {user?.displayName || "المدير"}
             </span>
-            <span className="text-xs text-primary truncate">{user?.email}</span>
+            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            className="h-9 w-9 text-primary hover:text-foreground hover:bg-muted transition-all duration-200"
+            className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-sidebar-accent transition-all duration-200"
             aria-label="تسجيل الخروج"
           >
             <LogOut className="h-4 w-4" />

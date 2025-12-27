@@ -12,14 +12,14 @@ export default function PreacherDashboard() {
     <AuthGuard requiredRole="da'i">
       <SidebarProvider>
         <PreacherSidebar />
-        <SidebarInset className="bg-gradient-to-br from-blue-50/30 via-purple-50/30 to-pink-50/30">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-blue-100 bg-white/80 backdrop-blur-sm px-4">
-            <SidebarTrigger className="-ml-1 text-blue-600 hover:bg-blue-100" />
-            <Separator orientation="vertical" className="mr-2 h-4 bg-blue-200" />
+        <SidebarInset className="bg-gradient-to-br bg-background">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-white/80 backdrop-blur-sm px-4">
+            <SidebarTrigger className="-ml-1 text-primary hover:bg-primary" />
+            <Separator orientation="vertical" className="mr-2 h-4 bg-primary" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-blue-800 font-semibold">لوحة تحكم الداعية</BreadcrumbPage>
+                  <BreadcrumbPage className="text-primary font-semibold">لوحة تحكم الداعية</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -34,7 +34,7 @@ export default function PreacherDashboard() {
                 <div>
                   <h1 className="text-4xl font-bold gradient-text-primary leading-normal">أهلاً وسهلاً بعودتك!</h1>
                   <p className="text-lg text-muted-foreground flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    <Sparkles className="h-4 w-4 text-primary" />
                     نظرة عامة على أنشطتك الهندسية والمستفيدين المكلفين بك
                   </p>
                 </div>
