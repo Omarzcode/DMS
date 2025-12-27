@@ -12,8 +12,8 @@ export default function AdminDashboard() {
   return (
     <AuthGuard requiredRole="admin">
       <SidebarProvider>
-        <AdminSidebar />from-primary/5 via-secondary/5 to-background
-        <SidebarInset className="bg-gradient-to-br ">
+        <AdminSidebar />
+        <SidebarInset className="bg-gradient-to-br from-primary/5 via-secondary/5 to-background">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-white/80 backdrop-blur-sm px-4">
             <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
             <Separator orientation="vertical" className="mr-2 h-4 bg-muted" />
