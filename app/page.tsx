@@ -134,21 +134,6 @@ export default function HomePage() {
                   <span className="bg-white px-2 text-muted-foreground"></span>
                 </div>
               </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-primary border border-border">
-                  <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground">
-                    تسجيل الدخول آمن ومشفر بالكامل
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-primary border border-border">
-                  <Zap className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground">
-                    وصول سريع إلى جميع الميزات
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

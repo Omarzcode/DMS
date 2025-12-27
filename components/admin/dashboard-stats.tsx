@@ -184,7 +184,7 @@ export function DashboardStats() {
       value: stats.activeThisMonth,
       description: "مستفيدون جدد انضموا",
       icon: TrendingUp,
-      gradient: "from-orange-500 to-red-600",
+      gradient: "from-primary to-secondary",
     },
   ]
 
