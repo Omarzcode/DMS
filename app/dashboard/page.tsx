@@ -13,8 +13,7 @@ export default function PreacherDashboard() {
       <SidebarProvider>
         <PreacherSidebar />
         <SidebarInset className="bg-gradient-to-br bg-background">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-white/80 backdrop-blur-sm px-4">
-            <SidebarTrigger className="-ml-1 text-primary hover:bg-primary" />
+<header className="flex h-16 shrink-0 items-center gap-2 border-b border-border glass-effect px-4">            <SidebarTrigger className="-ml-1 text-primary hover:bg-primary" />
             <Separator orientation="vertical" className="mr-2 h-4 bg-primary" />
             <Breadcrumb>
               <BreadcrumbList>

@@ -9,6 +9,36 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Add these to your globals.css for more color options */
+  .text-subtle {
+    color: hsl(var(--muted-foreground));
+  }
+  
+  .bg-subtle {
+    background-color: hsl(var(--muted));
+  }
+  
+  .border-subtle {
+    border-color: hsl(var(--border));
+  }
+  
+  /* Opacity variations */
+  .text-muted-foreground\/60 {
+    color: hsl(var(--muted-foreground) / 0.6);
+  }
+  
+  .text-muted-foreground\/80 {
+    color: hsl(var(--muted-foreground) / 0.8);
+  }
+  
+  .bg-muted\/50 {
+    background-color: hsl(var(--muted) / 0.5);
+  }
+  
+  .border-border\/50 {
+    border-color: hsl(var(--border) / 0.5);
+  }
 }
 
 @layer base {
@@ -67,43 +97,55 @@
   }
 
   .dark {
-    /* Background: Deep Night Forest #0B0B08 */
-    --background: 60 30% 3%;
-    --foreground: 48 33% 90%;
+    /* Background: Deeper, richer version of Deep Night Forest */
+    --background: 60 25% 5%;
+    --foreground: 48 20% 92%;
     
-    --card: 60 30% 5%;
-    --card-foreground: 48 33% 90%;
+    --card: 60 20% 8%;
+    --card-foreground: 48 20% 92%;
     
-    --popover: 60 30% 5%;
-    --popover-foreground: 48 33% 90%;
+    --popover: 60 20% 9%;
+    --popover-foreground: 48 20% 92%;
     
-    --primary: 48 33% 85%;
-    --primary-foreground: 60 30% 3%;
+    /* Primary: Soft warm beige instead of stark white */
+    --primary: 45 40% 78%;
+    --primary-foreground: 60 25% 8%;
     
-    --secondary: 69 8% 45%;
-    --secondary-foreground: 48 33% 90%;
+    /* Secondary: Desaturated sage that works in dark mode */
+    --secondary: 67 12% 45%;
+    --secondary-foreground: 48 20% 92%;
     
-    --muted: 60 30% 12%;
-    --muted-foreground: 69 8% 65%;
+    /* Muted: Darker background for subtle elements */
+    --muted: 60 15% 12%;
+    --muted-foreground: 67 12% 65%;
     
-    --accent: 45 64% 15%;
-    --accent-foreground: 45 64% 85%;
+    /* Accent: Dark olive gold */
+    --accent: 45 40% 20%;
+    --accent-foreground: 45 40% 85%;
     
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 35%;
+    --destructive-foreground: 0 0% 98%;
     
-    --border: 60 30% 15%;
-    --input: 60 30% 15%;
-    --ring: 45 64% 52%;
+    /* Border & Inputs: Subtle olive borders */
+    --border: 67 15% 20%;
+    --input: 60 15% 18%;
+    --ring: 45 40% 60%;
     
-    --sidebar-background: 60 30% 4%;
-    --sidebar-foreground: 48 33% 90%;
-    --sidebar-primary: 48 33% 85%;
-    --sidebar-primary-foreground: 60 30% 3%;
-    --sidebar-accent: 60 30% 10%;
-    --sidebar-accent-foreground: 48 33% 90%;
-    --sidebar-border: 60 30% 15%;
-    --sidebar-ring: 45 64% 52%;
+    /* Chart Colors - adjusted for dark mode */
+    --chart-1: 45 40% 70%;
+    --chart-2: 67 25% 55%;
+    --chart-3: 60 15% 45%;
+    --chart-4: 45 30% 30%;
+    --chart-5: 67 20% 35%;
+    
+    --sidebar-background: 60 20% 7%;
+    --sidebar-foreground: 48 20% 88%;
+    --sidebar-primary: 45 40% 78%;
+    --sidebar-primary-foreground: 60 25% 8%;
+    --sidebar-accent: 60 15% 15%;
+    --sidebar-accent-foreground: 45 40% 85%;
+    --sidebar-border: 67 15% 20%;
+    --sidebar-ring: 45 40% 60%;
   }
 }
 
@@ -161,6 +203,33 @@
   border: 1px solid hsla(0, 0%, 100%, 0.2);
 }
 
+/* Dark mode glass effect */
+.dark .glass-effect {
+  background: hsla(60, 20%, 8%, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsla(67, 15%, 20%, 0.3);
+}
+
+/* Dark mode gradient adjustments */
+.dark .gradient-bg-primary {
+  background: linear-gradient(135deg, hsl(67 25% 30%) 0%, hsl(67 12% 45%) 100%);
+}
+
+.dark .gradient-bg-secondary {
+  background: linear-gradient(135deg, hsl(45 40% 40%) 0%, hsl(45 40% 60%) 100%);
+}
+
+.dark .gradient-bg-accent {
+  background: linear-gradient(135deg, hsl(67 25% 30%) 0%, hsl(45 40% 40%) 100%);
+}
+
+.dark .gradient-text-primary {
+  background: linear-gradient(135deg, hsl(45 40% 70%) 0%, hsl(67 25% 55%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Animations */
 .animate-fade-in { animation: fadeIn 0.6s ease-out; }
 .animate-slide-up { animation: slideUp 0.6s ease-out; }
@@ -178,6 +247,20 @@
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover { background: hsl(67 32% 25%); }
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track { 
+  background: hsl(var(--muted)); 
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, hsl(45 40% 40%) 0%, hsl(67 25% 45%) 100%);
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover { 
+  background: hsl(45 40% 50%); 
+}
 
 /* Responsive utilities */
 .container-responsive { @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
@@ -221,12 +304,18 @@
   @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
 }
 
-@media (max-width: 640px) {
-  .text-muted-foreground { @apply text-gray-700; }
+/* Dark mode focus enhancement */
+.dark .focus-enhanced:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-1 ring-offset-background;
 }
 
 .card-responsive {
   @apply rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm sm:shadow-md lg:shadow-lg;
+}
+
+/* Dark mode card adjustments */
+.dark .card-responsive {
+  @apply border border-border;
 }
 
 .space-responsive-y > * + * { @apply mt-4 sm:mt-6 lg:mt-8; }
@@ -256,6 +345,12 @@
 .rounded-responsive { @apply rounded-md sm:rounded-lg lg:rounded-xl; }
 .shadow-responsive { @apply shadow-sm sm:shadow-md lg:shadow-lg xl:shadow-xl; }
 
+/* Improved dark mode shadows */
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.dark .shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); }
+.dark .shadow-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5); }
+.dark .shadow-xl { box-shadow: 0 20px 25px rgba(0, 0, 0, 0.5); }
+
 @supports (padding: env(safe-area-inset-bottom)) {
   .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
   .pt-safe { padding-top: env(safe-area-inset-top); }
@@ -263,6 +358,21 @@
 
 .tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
 .sidebar-content { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+/* Dark mode form elements */
+.dark input,
+.dark textarea,
+.dark select {
+  background: hsl(var(--input));
+  border-color: hsl(var(--border));
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
 
 @media print {
   .print-hide { @apply hidden; }

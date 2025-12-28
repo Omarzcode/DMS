@@ -16,10 +16,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BarChart3, Users, BookOpen, Calendar, LogOut, Heart } from "lucide-react"
+import { BarChart3, Users, BookOpen, Calendar, LogOut, Heart, Palette } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "../ui/logo"
+import { ThemeToggleButton } from "@/components/ui/theme-toggle" // ✅ Add this import
 
 const preacherMenuItems = [
   { title: "لوحة التحكم", url: "/dashboard", icon: BarChart3 },
@@ -47,12 +48,20 @@ export function PreacherSidebar() {
 
   return (
     <Sidebar className="bg-background border-r border-border">
-      {/* Header with subtle Olive/Sage wash */}
       <SidebarHeader className="border-b border-border bg-gradient-to-r from-secondary/10 to-background">
         <div className="px-2 py-3">
           <Logo />
         </div>
       </SidebarHeader>
+
+      {/* ✅ ADD THEME TOGGLE RIGHT HERE - After Header, Before Content */}
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Palette className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">المظهر</span>
+        </div>
+        <ThemeToggleButton />
+      </div>
 
       <SidebarContent>
         <SidebarGroup>
@@ -104,7 +113,6 @@ export function PreacherSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer with consistent theme */}
       <SidebarFooter className="border-t border-border bg-gradient-to-r from-secondary/10 to-background">
         <div className="flex items-center gap-3 px-2 py-3">
           <div className="relative">

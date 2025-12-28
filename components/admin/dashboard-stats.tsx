@@ -193,8 +193,9 @@ export function DashboardStats() {
       {statCards.map((stat, index) => (
         <Card key={stat.title} className="group hover:scale-105 transition-all duration-300 animate-scale-in card-responsive" style={{ animationDelay: `${index * 0.1}s` }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-            <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">{stat.title}</CardTitle>
-            <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+<CardTitle className="text-xs sm:text-sm font-semibold text-muted-foreground leading-tight">
+  {stat.title}
+</CardTitle>          <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
               <stat.icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
             </div>
           </CardHeader>

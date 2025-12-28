@@ -4,7 +4,8 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
-import { Toaster } from "sonner" // ✅ Add this
+import { Toaster } from "sonner"
+import { ThemeProvider } from "next-themes" // ✅ Add this
 
 export const metadata: Metadata = {
   title: "Engineering Management System",
@@ -29,10 +30,18 @@ html {
         `}</style>
       </head>
       <body>
-        <AuthProvider>
-          {children}
-          <Toaster position="top-center" richColors /> {/* ✅ Add this */}
-        </AuthProvider>
+        {/* ✅ Wrap everything in ThemeProvider */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster position="top-center" richColors />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

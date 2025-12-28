@@ -16,10 +16,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, TrendingUp, Activity } from "lucide-react"
+import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, TrendingUp, Activity, Palette } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "../ui/logo"
+import { ThemeToggleButton } from "@/components/ui/theme-toggle" // ✅ Already imported
 
 const adminMenuItems = [
   { title: "لوحة التحكم", url: "/admin", icon: BarChart3 },
@@ -59,6 +60,15 @@ export function AdminSidebar() {
           <Logo />
         </div>
       </SidebarHeader>
+
+      {/* ✅ ADD THEME TOGGLE RIGHT HERE - After Header, Before Content */}
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Palette className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">المظهر</span>
+        </div>
+        <ThemeToggleButton />
+      </div>
 
       <SidebarContent>
         {/* Main Section */}
