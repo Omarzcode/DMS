@@ -208,13 +208,7 @@ export function AdminManagement() {
     <>
       {/* Confirmation Dialog - Enhanced UI */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md border-border bg-background shadow-xl">
-          {/* Enhanced Exit Button */}
-          <DialogClose className="absolute right-4 top-4 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group">
-            <XCircle className="h-5 w-5 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
-
+        <DialogContent className="sm:max-w-md [&>button]:hidden ">
           <DialogHeader className="pr-2">
             <div className="flex items-start gap-3">
               <div className={`p-2 rounded-lg ${dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject"
