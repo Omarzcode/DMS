@@ -16,8 +16,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog"
-import { Loader2, Users, Shield, Trash2, AlertCircle, Check, X, UserX, AlertTriangle } from "lucide-react"
+import { Loader2, Users, Shield, Trash2, AlertCircle, Check, X, UserX, AlertTriangle, XCircle } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
 export function AdminManagement() {
@@ -54,7 +55,7 @@ export function AdminManagement() {
       setPreachers(usersData.filter(u => u.role === 'admin' || u.role === 'da\'i'))
       setPendingUsers(usersData.filter(u => u.role === 'pending'))
     } catch (err) {
-      setError("فشل في تحميل المستخدمين. الرجاء المحاولة مرة أخرى لاحقًا.")
+      setError("Failed to load users. Please try again later.")
     } finally {
       setLoading(false)
     }
@@ -84,9 +85,9 @@ export function AdminManagement() {
         ))
       }
 
-      setSuccessMessage("تم تحديث صلاحية المستخدم بنجاح")
+      setSuccessMessage("User role updated successfully")
     } catch (err) {
-      setError("فشل في تحديث صلاحية المستخدم. الرجاء المحاولة مرة أخرى.")
+      setError("Failed to update user role. Please try again.")
       fetchUsers() // Refresh on error
     } finally {
       setProcessingUser(null)
@@ -103,9 +104,9 @@ export function AdminManagement() {
       setPreachers(prev => prev.filter(user => user.id !== userId))
       setPendingUsers(prev => prev.filter(user => user.id !== userId))
 
-      setSuccessMessage("تم حذف المستخدم بنجاح")
+      setSuccessMessage("User deleted successfully")
     } catch (err) {
-      setError("فشل في حذف المستخدم. الرجاء المحاولة مرة أخرى.")
+      setError("Failed to delete user. Please try again.")
       fetchUsers() // Refresh on error
     } finally {
       setProcessingUser(null)
@@ -115,8 +116,8 @@ export function AdminManagement() {
   // Dialog handlers
   const showApproveDialog = (user: Preacher) => {
     setDialogConfig({
-      title: "الموافقة على المستخدم",
-      description: `هل أنت متأكد من أنك تريد الموافقة على ${user.name} كداعية؟`,
+      title: "Approve User",
+      description: `Are you sure you want to approve ${user.name} as a Preacher?`,
       action: () => updateUserRole(user.id, 'da\'i'),
       variant: "approve",
       userName: user.name
@@ -126,8 +127,8 @@ export function AdminManagement() {
 
   const showRejectDialog = (user: Preacher) => {
     setDialogConfig({
-      title: "رفض المستخدم",
-      description: `هل أنت متأكد من أنك تريد رفض تسجيل ${user.name}؟ لا يمكن التراجع عن هذا الإجراء.`,
+      title: "Reject User",
+      description: `Are you sure you want to reject ${user.name}'s registration? This action cannot be undone.`,
       action: () => deleteUser(user.id),
       variant: "reject",
       userName: user.name
@@ -137,8 +138,8 @@ export function AdminManagement() {
 
   const showDeleteDialog = (user: Preacher) => {
     setDialogConfig({
-      title: "حذف المستخدم",
-      description: `هل أنت متأكد من أنك تريد حذف ${user.name} نهائيًا؟ سيتم إزالة جميع بياناته. لا يمكن التراجع عن هذا الإجراء.`,
+      title: "Delete User",
+      description: `Are you sure you want to permanently delete ${user.name}? All their data will be removed. This action cannot be undone.`,
       action: () => deleteUser(user.id),
       variant: "delete",
       userName: user.name
@@ -147,10 +148,10 @@ export function AdminManagement() {
   }
 
   const showRoleChangeDialog = (user: Preacher, newRole: UserRole) => {
-    const roleName = newRole === 'admin' ? 'مدير' : 'داعية'
+    const roleName = newRole === 'admin' ? 'Administrator' : 'Preacher'
     setDialogConfig({
-      title: "تغيير صلاحية المستخدم",
-      description: `تغيير صلاحية ${user.name} إلى ${roleName}؟`,
+      title: "Change User Role",
+      description: `Change ${user.name}'s role to ${roleName}?`,
       action: () => updateUserRole(user.id, newRole),
       variant: "changeRole",
       userName: user.name,
@@ -176,15 +177,15 @@ export function AdminManagement() {
         <CardHeader className="text-center">
           <CardTitle className="text-destructive flex items-center justify-center gap-2 text-lg">
             <AlertCircle className="h-5 w-5" />
-            دخول غير مصرح به
+            Access Denied
           </CardTitle>
-          <CardDescription className="text-right">
-            تحتاج إلى صلاحيات المدير للوصول إلى هذه الصفحة
+          <CardDescription>
+            You need administrator privileges to access this page
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-sm text-muted-foreground mb-4">
-            صلاحيتك الحالية: <Badge variant="outline" className="mr-2">{userRole || "غير معروف"}</Badge>
+            Your current role: <Badge variant="outline" className="ml-2">{userRole || "unknown"}</Badge>
           </p>
         </CardContent>
       </Card>
@@ -196,8 +197,8 @@ export function AdminManagement() {
       <Card className="mx-auto max-w-md mt-8">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <CardTitle className="text-lg mb-2 text-center">جاري تحميل المستخدمين</CardTitle>
-          <CardDescription className="text-center">الرجاء الانتظار أثناء جلب بيانات المستخدمين...</CardDescription>
+          <CardTitle className="text-lg mb-2 text-center">Loading Users</CardTitle>
+          <CardDescription className="text-center">Please wait while we fetch user data...</CardDescription>
         </CardContent>
       </Card>
     )
@@ -205,36 +206,47 @@ export function AdminManagement() {
 
   return (
     <>
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog - Enhanced UI */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent
-          /* FIX 1: Targets only the Radix close button to hide it, keeping your custom button visible */
-          className="sm:max-w-md [&>button[data-radix-collection-item]]:hidden"
-          dir="rtl"
-        >
-          {/* FIX 2: In RTL, 'right-4' positions the element on the physical LEFT side */}
-          <button
-            onClick={() => setDialogOpen(false)}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-            dir="ltr"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">إغلاق</span>
-          </button>
+        <DialogContent className="sm:max-w-md border-border bg-background shadow-xl">
+          {/* Enhanced Exit Button */}
+          <DialogClose className="absolute right-4 top-4 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group">
+            <XCircle className="h-5 w-5 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
 
-          <DialogHeader className="text-right pt-6">
-            <DialogTitle className="flex items-center gap-2 justify-end">
-              {dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject" ? (
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-              ) : (
-                <AlertCircle className="h-5 w-5" />
-              )}
-              {dialogConfig?.title}
-            </DialogTitle>
-            <DialogDescription className="text-right">{dialogConfig?.description}</DialogDescription>
+          <DialogHeader className="pr-2">
+            <div className="flex items-start gap-3">
+              <div className={`p-2 rounded-lg ${dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-primary/10 text-primary"
+                }`}>
+                {dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject" ? (
+                  <AlertTriangle className="h-6 w-6" />
+                ) : dialogConfig?.variant === "approve" ? (
+                  <Check className="h-6 w-6" />
+                ) : (
+                  <AlertCircle className="h-6 w-6" />
+                )}
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-xl font-bold">{dialogConfig?.title}</DialogTitle>
+                <DialogDescription className="mt-2 text-base text-gray-600 dark:text-gray-300">
+                  {dialogConfig?.description}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <DialogFooter className="gap-2 sm:gap-0 flex flex-row-reverse">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              disabled={processingUser === dialogConfig?.userName}
+              className="flex-1 sm:flex-none order-2 sm:order-1"
+            >
+              Cancel
+            </Button>
             <Button
               variant={
                 dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject"
@@ -248,43 +260,36 @@ export function AdminManagement() {
                 setDialogOpen(false)
               }}
               disabled={processingUser === dialogConfig?.userName}
-              className="ml-2"
+              className="flex-1 order-1 sm:order-2"
             >
               {processingUser === dialogConfig?.userName ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري المعالجة...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
                 </>
               ) : (
                 <>
-                  {dialogConfig?.variant === "approve" && <Check className="ml-2 h-4 w-4" />}
-                  {dialogConfig?.variant === "reject" && <X className="ml-2 h-4 w-4" />}
-                  {dialogConfig?.variant === "delete" && <Trash2 className="ml-2 h-4 w-4" />}
-                  {dialogConfig?.variant === "changeRole" && "تغيير الصلاحية"}
-                  {!["changeRole", "approve", "reject", "delete"].includes(dialogConfig?.variant || "") && "تأكيد"}
+                  {dialogConfig?.variant === "approve" && <Check className="mr-2 h-4 w-4" />}
+                  {dialogConfig?.variant === "reject" && <X className="mr-2 h-4 w-4" />}
+                  {dialogConfig?.variant === "delete" && <Trash2 className="mr-2 h-4 w-4" />}
+                  {dialogConfig?.variant === "changeRole" && "Change Role"}
+                  {!["changeRole", "approve", "reject", "delete"].includes(dialogConfig?.variant || "") && "Confirm"}
                 </>
               )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-              disabled={processingUser === dialogConfig?.userName}
-            >
-              إلغاء
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-8 p-4 md:p-6" dir="rtl">
+      <div className="space-y-8 p-4 md:p-6">
         {/* Messages */}
         {error && (
           <Card className="border-destructive/50 bg-destructive/5">
             <CardContent className="pt-6">
-              <Alert variant="destructive" className="border-none bg-transparent p-0 text-right">
-                <AlertCircle className="h-4 w-4 ml-2" />
+              <Alert variant="destructive" className="border-none bg-transparent p-0">
+                <AlertCircle className="h-4 w-4 mr-2" />
                 <div className="flex-1">
-                  <AlertTitle className="font-semibold">خطأ</AlertTitle>
+                  <AlertTitle className="font-semibold">Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </div>
               </Alert>
@@ -295,10 +300,10 @@ export function AdminManagement() {
         {successMessage && (
           <Card className="border-green-500/50 bg-green-500/5">
             <CardContent className="pt-6">
-              <Alert className="border-none bg-transparent p-0 text-green-600 text-right">
-                <Check className="h-4 w-4 ml-2" />
+              <Alert className="border-none bg-transparent p-0 text-green-600">
+                <Check className="h-4 w-4 mr-2" />
                 <div className="flex-1">
-                  <AlertTitle className="font-semibold">نجاح</AlertTitle>
+                  <AlertTitle className="font-semibold">Success</AlertTitle>
                   <AlertDescription>{successMessage}</AlertDescription>
                 </div>
               </Alert>
@@ -308,24 +313,24 @@ export function AdminManagement() {
 
         {/* Pending Users Section */}
         <div>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 justify-end">
-            <Users className="h-6 w-6" /> المستخدمين المنتظرين الموافقة
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Users className="h-6 w-6" /> Pending Approval
           </h2>
           {pendingUsers.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {pendingUsers.map(user => (
-                <Card key={user.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
+                <Card key={user.id} className="relative overflow-hidden hover:shadow-lg transition-shadow border-l-4 border-l-yellow-500">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{user.name}</CardTitle>
                       <Badge variant="outline" className="animate-pulse bg-yellow-50 text-yellow-700 border-yellow-200">
-                        في الانتظار
+                        Pending
                       </Badge>
-                      <CardTitle className="text-lg text-left">{user.name}</CardTitle>
                     </div>
-                    <CardDescription className="text-right text-muted-foreground">{user.email}</CardDescription>
+                    <CardDescription className="text-muted-foreground">{user.email}</CardDescription>
                     {user.created_at && (
-                      <p className="text-xs text-muted-foreground text-right mt-2">
-                        تاريخ الطلب: {new Date(user.created_at).toLocaleDateString('ar-EG')}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Requested on: {new Date(user.created_at).toLocaleDateString()}
                       </p>
                     )}
                   </CardHeader>
@@ -338,11 +343,11 @@ export function AdminManagement() {
                         className="flex-1"
                       >
                         {processingUser === user.id ? (
-                          <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
-                          <Check className="h-4 w-4 ml-2" />
+                          <Check className="h-4 w-4 mr-2" />
                         )}
-                        الموافقة كداعية
+                        Approve as Preacher
                       </Button>
                       <Button
                         variant="destructive"
@@ -352,11 +357,11 @@ export function AdminManagement() {
                         className="flex-1"
                       >
                         {processingUser === user.id ? (
-                          <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
-                          <X className="h-4 w-4 ml-2" />
+                          <X className="h-4 w-4 mr-2" />
                         )}
-                        رفض
+                        Reject
                       </Button>
                     </div>
                   </CardFooter>
@@ -367,8 +372,8 @@ export function AdminManagement() {
             <Card className="border-dashed opacity-75">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Users className="h-12 w-12 mb-4 text-muted-foreground" />
-                <CardTitle className="text-lg mb-2 text-muted-foreground text-center">لا توجد طلبات انتظار</CardTitle>
-                <CardDescription className="text-center">تمت معالجة جميع طلبات التسجيل</CardDescription>
+                <CardTitle className="text-lg mb-2 text-muted-foreground text-center">No Pending Approvals</CardTitle>
+                <CardDescription className="text-center">All registration requests have been processed</CardDescription>
               </CardContent>
             </Card>
           )}
@@ -376,31 +381,31 @@ export function AdminManagement() {
 
         {/* Approved Users Section */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 justify-end">
-            <Shield className="h-6 w-6" /> المستخدمين المعتمدين
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Shield className="h-6 w-6" /> Approved Users
           </h2>
           {preachers.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {preachers.map((preacher) => (
-                <Card key={preacher.id} className="relative hover:shadow-lg transition-shadow">
+                <Card key={preacher.id} className="relative hover:shadow-lg transition-shadow border-l-4 border-l-primary">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <CardTitle className="text-lg text-right">{preacher.name}</CardTitle>
-                        <CardDescription className="text-right text-muted-foreground mt-1">{preacher.email}</CardDescription>
+                        <CardTitle className="text-lg">{preacher.name}</CardTitle>
+                        <CardDescription className="text-muted-foreground mt-1">{preacher.email}</CardDescription>
                       </div>
                       <Badge
                         variant={preacher.role === "admin" ? "default" : "secondary"}
                         className="whitespace-nowrap"
                       >
-                        {preacher.role === "admin" ? "مدير" : "داعية"}
+                        {preacher.role === "admin" ? "Administrator" : "Preacher"}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-right block">تغيير الصلاحية</label>
-                      <div className="flex items-center gap-2 justify-end">
+                      <label className="text-sm font-medium block">Role Assignment</label>
+                      <div className="flex items-center gap-2">
                         <Select
                           value={preacher.role}
                           onValueChange={(value: UserRole) => {
@@ -408,12 +413,12 @@ export function AdminManagement() {
                           }}
                           disabled={processingUser === preacher.id}
                         >
-                          <SelectTrigger className="w-full text-right" dir="rtl">
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent dir="rtl">
-                            <SelectItem value="da'i">داعية</SelectItem>
-                            <SelectItem value="admin">مدير</SelectItem>
+                          <SelectContent>
+                            <SelectItem value="da'i">Preacher</SelectItem>
+                            <SelectItem value="admin">Administrator</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -428,11 +433,11 @@ export function AdminManagement() {
                       className="w-full"
                     >
                       {processingUser === preacher.id ? (
-                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <Trash2 className="h-4 w-4 ml-2" />
+                        <Trash2 className="h-4 w-4 mr-2" />
                       )}
-                      حذف المستخدم
+                      Remove User
                     </Button>
                   </CardFooter>
                 </Card>
@@ -442,8 +447,8 @@ export function AdminManagement() {
             <Card className="border-dashed opacity-75">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <UserX className="h-12 w-12 mb-4 text-muted-foreground" />
-                <CardTitle className="text-lg mb-2 text-muted-foreground text-center">لا يوجد مستخدمين معتمدين</CardTitle>
-                <CardDescription className="text-center">لم يتم الموافقة على أي مستخدمين بعد</CardDescription>
+                <CardTitle className="text-lg mb-2 text-muted-foreground text-center">No Approved Users</CardTitle>
+                <CardDescription className="text-center">No users have been approved yet</CardDescription>
               </CardContent>
             </Card>
           )}
