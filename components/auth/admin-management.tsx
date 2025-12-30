@@ -322,11 +322,6 @@ export function AdminManagement() {
                       </Badge>
                     </div>
                     <CardDescription className="text-muted-foreground">{user.email}</CardDescription>
-                    {user.created_at && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Requested on: {new Date(user.created_at).toLocaleDateString()}
-                      </p>
-                    )}
                   </CardHeader>
                   <CardFooter className="flex flex-col gap-3 pt-3 border-t">
                     <div className="flex gap-2 w-full">
@@ -341,7 +336,7 @@ export function AdminManagement() {
                         ) : (
                           <Check className="h-4 w-4 mr-2" />
                         )}
-                        Approve as Preacher
+                        Approve
                       </Button>
                       <Button
                         variant="destructive"
