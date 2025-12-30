@@ -5,11 +5,11 @@ import { collection, query, getDocs, doc, updateDoc, deleteDoc } from "firebase/
 import { db } from "@/lib/firebase"
 import type { Preacher, UserRole } from "@/lib/firestore-collections"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Users, Shield, Trash2, AlertCircle, Check, X } from "lucide-react"
+import { Loader2, Users, Shield, Trash2, AlertCircle, Check, X, UserX } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
 export function AdminManagement() {
@@ -21,14 +21,10 @@ export function AdminManagement() {
   const [processingUser, setProcessingUser] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (userRole !== "admin") return
-    fetchUsers()
-  }, [userRole])
-
   const fetchUsers = async () => {
     try {
       setLoading(true)
+      setError(null)
       const q = query(collection(db, "preachers"))
       const querySnapshot = await getDocs(q)
       const usersData = querySnapshot.docs.map((doc) => ({
@@ -38,17 +34,21 @@ export function AdminManagement() {
       
       setPreachers(usersData.filter(u => u.role === 'admin' || u.role === 'da\'i'))
       setPendingUsers(usersData.filter(u => u.role === 'pending'))
-    } catch (error) {
-      console.error("Error fetching users:", error)
-      setError("Failed to load users")
+    } catch (err) {
+      setError("Failed to load users. Please try again later.")
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
       setProcessingUser(userId)
+      setError(null)
       await updateDoc(doc(db, "preachers", userId), { role: newRole })
       
       // Optimistic update
@@ -66,21 +66,18 @@ export function AdminManagement() {
       }
       
       setSuccessMessage("User role updated successfully")
-    } catch (error) {
-      console.error("Error updating user role:", error)
-      setError("Failed to update user role")
-      fetchUsers() // Fallback refresh on error
+    } catch (err) {
+      setError("Failed to update user role. Please try again.")
+      fetchUsers() // Refresh on error
     } finally {
       setProcessingUser(null)
     }
   }
   
   const deleteUser = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
-      return
-    }
     try {
       setProcessingUser(userId)
+      setError(null)
       await deleteDoc(doc(db, "preachers", userId))
       
       // Optimistic update
@@ -88,58 +85,88 @@ export function AdminManagement() {
       setPendingUsers(prev => prev.filter(user => user.id !== userId))
       
       setSuccessMessage("User deleted successfully")
-    } catch (error) {
-      console.error("Error deleting user:", error)
-      setError("Failed to delete user")
-      fetchUsers() // Fallback refresh on error
+    } catch (err) {
+      setError("Failed to delete user. Please try again.")
+      fetchUsers() // Refresh on error
     } finally {
       setProcessingUser(null)
     }
   }
 
-  // Clear success message after 3 seconds
+  // Clear messages after 5 seconds
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000)
+    if (error || successMessage) {
+      const timer = setTimeout(() => {
+        setError(null)
+        setSuccessMessage(null)
+      }, 5000)
       return () => clearTimeout(timer)
     }
-  }, [successMessage])
+  }, [error, successMessage])
 
+  // Show unauthorized card instead of console/log
   if (userRole !== "admin") {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          You don't have permission to access this page.
-        </AlertDescription>
-      </Alert>
+      <Card className="border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            Access Denied
+          </CardTitle>
+          <CardDescription>You need administrator privileges to access this page</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Your current role: <Badge variant="outline">{userRole || "unknown"}</Badge>
+          </p>
+        </CardContent>
+        <CardFooter>
+          <Button variant="outline" size="sm" onClick={() => window.history.back()}>
+            Go Back
+          </Button>
+        </CardFooter>
+      </Card>
     )
   }
 
+  // Show loading card
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading users...</span>
-      </div>
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          <CardTitle className="text-lg mb-2">Loading Users</CardTitle>
+          <CardDescription>Please wait while we fetch user data...</CardDescription>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
     <div className="space-y-8">
-      {/* Messages */}
+      {/* Messages as Cards */}
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <Alert variant="destructive" className="border-none bg-transparent p-0">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="font-semibold">Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       )}
       
       {successMessage && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{successMessage}</AlertDescription>
-        </Alert>
+        <Card className="border-green-500/50 bg-green-500/5">
+          <CardContent className="pt-6">
+            <Alert className="border-none bg-transparent p-0 text-green-600">
+              <Check className="h-4 w-4" />
+              <AlertTitle className="font-semibold">Success</AlertTitle>
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       )}
 
       {/* Pending Users Section */}
@@ -148,31 +175,43 @@ export function AdminManagement() {
           <Users className="h-6 w-6" /> Pending Approval
         </h2>
         {pendingUsers.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             {pendingUsers.map(user => (
-              <Card key={user.id}>
+              <Card key={user.id} className="relative overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="text-lg">{user.name}</CardTitle>
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    {user.name}
+                    <Badge variant="outline" className="animate-pulse">
+                      Pending
+                    </Badge>
+                  </CardTitle>
                   <CardDescription>{user.email}</CardDescription>
+                  
                 </CardHeader>
-                <CardContent className="flex items-center gap-4">
+                <CardFooter className="flex justify-between gap-2 pt-2">
                   <Button 
                     size="sm" 
                     onClick={() => updateUserRole(user.id, 'da\'i')} 
                     disabled={processingUser === user.id}
+                    className="flex-1"
                   >
                     {processingUser === user.id ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Check className="h-4 w-4 mr-2" />
                     )}
-                    Approve
+                    Approve as Preacher
                   </Button>
                   <Button 
                     variant="destructive" 
                     size="sm" 
-                    onClick={() => deleteUser(user.id)} 
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to reject ${user.name}?`)) {
+                        deleteUser(user.id)
+                      }
+                    }} 
                     disabled={processingUser === user.id}
+                    className="flex-1"
                   >
                     {processingUser === user.id ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -181,15 +220,16 @@ export function AdminManagement() {
                     )}
                     Reject
                   </Button>
-                </CardContent>
+                </CardFooter>
               </Card>
             ))}
           </div>
         ) : (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mb-4 opacity-50" />
-              <p>No new users are awaiting approval.</p>
+          <Card className="border-dashed opacity-75">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Users className="h-12 w-12 mb-4 text-muted-foreground" />
+              <CardTitle className="text-lg mb-2 text-muted-foreground">No Pending Approvals</CardTitle>
+              <CardDescription>All user requests have been processed</CardDescription>
             </CardContent>
           </Card>
         )}
@@ -200,53 +240,77 @@ export function AdminManagement() {
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Shield className="h-6 w-6" /> Approved Users
         </h2>
-        <div className="grid gap-4">
-          {preachers.map((preacher) => (
-            <Card key={preacher.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{preacher.name}</CardTitle>
-                    <CardDescription>{preacher.email}</CardDescription>
+        {preachers.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {preachers.map((preacher) => (
+              <Card key={preacher.id} className="relative">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{preacher.name}</CardTitle>
+                      <CardDescription>{preacher.email}</CardDescription>
+                    </div>
+                    <Badge 
+                      variant={preacher.role === "admin" ? "default" : "secondary"}
+                      className="ml-2"
+                    >
+                      {preacher.role === "admin" ? "Administrator" : "Preacher"}
+                    </Badge>
                   </div>
-                  <Badge variant={preacher.role === "admin" ? "default" : "secondary"}>
-                    {preacher.role}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium">Role:</label>
-                  <Select
-                    value={preacher.role}
-                    onValueChange={(value: UserRole) => updateUserRole(preacher.id, value)}
+                </CardHeader>
+                <CardContent className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Role Assignment</label>
+                    <Select
+                      value={preacher.role}
+                      onValueChange={(value: UserRole) => {
+                        if (confirm(`Change ${preacher.name}'s role to ${value}?`)) {
+                          updateUserRole(preacher.id, value)
+                        }
+                      }}
+                      disabled={processingUser === preacher.id}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="da'i">Preacher</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between pt-2">
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete ${preacher.name}? This action cannot be undone.`)) {
+                        deleteUser(preacher.id)
+                      }
+                    }} 
                     disabled={processingUser === preacher.id}
                   >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="da'i">Preacher</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button 
-                  variant="destructive" 
-                  size="icon" 
-                  onClick={() => deleteUser(preacher.id)} 
-                  disabled={processingUser === preacher.id}
-                >
-                  {processingUser === preacher.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    {processingUser === preacher.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Remove User
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="border-dashed opacity-75">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <UserX className="h-12 w-12 mb-4 text-muted-foreground" />
+              <CardTitle className="text-lg mb-2 text-muted-foreground">No Approved Users</CardTitle>
+              <CardDescription>No users have been approved yet</CardDescription>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
