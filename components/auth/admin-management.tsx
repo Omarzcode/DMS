@@ -205,16 +205,16 @@ export function AdminManagement() {
 
   return (
     <>
-      {/* Confirmation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="sm:max-w-md [&>button]:hidden"
+          /* 1. Added !important to hide the default button more aggressively */
+          className="sm:max-w-md [&>button]:!hidden"
           dir="rtl"
-        >         
-         {/* Exit button moved to LEFT side (top-left in RTL) */}
+        >
+          {/* 2. Added right-auto to ensure left-4 anchors to the physical left in RTL */}
           <button
             onClick={() => setDialogOpen(false)}
-            className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+            className="absolute left-4 top-4 right-auto rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
             dir="ltr"
           >
             <X className="h-4 w-4" />
@@ -232,6 +232,7 @@ export function AdminManagement() {
             </DialogTitle>
             <DialogDescription className="text-right">{dialogConfig?.description}</DialogDescription>
           </DialogHeader>
+
           <DialogFooter className="gap-2 sm:gap-0 flex flex-row-reverse">
             <Button
               variant={
