@@ -208,16 +208,10 @@ export function AdminManagement() {
       {/* Confirmation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="sm:max-w-md"
+          className="sm:max-w-md [&>button]:hidden"
           dir="rtl"
-          style={{ pointerEvents: 'auto' }}
-        >
-          {/* Hide the default close button */}
-          <style jsx>{`
-    :global([data-radix-dialog-content] > button[data-radix-dialog-close]) {
-      display: none !important;
-    }
-  `}</style>          {/* Exit button moved to LEFT side (top-left in RTL) */}
+        >         
+         {/* Exit button moved to LEFT side (top-left in RTL) */}
           <button
             onClick={() => setDialogOpen(false)}
             className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
