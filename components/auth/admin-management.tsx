@@ -18,7 +18,13 @@ export function AdminManagement() {
   const [pendingUsers, setPendingUsers] = useState<Preacher[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [updatingUser, setUpdatingUser] = useState<string | null>(null)
+  const [processingUser, setProcessingUser] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (userRole !== "admin") return
+    fetchUsers()
+  }, [userRole])
 
   const fetchUsers = async () => {
     try {
@@ -32,7 +38,6 @@ export function AdminManagement() {
       
       setPreachers(usersData.filter(u => u.role === 'admin' || u.role === 'da\'i'))
       setPendingUsers(usersData.filter(u => u.role === 'pending'))
-
     } catch (error) {
       console.error("Error fetching users:", error)
       setError("Failed to load users")
@@ -41,20 +46,32 @@ export function AdminManagement() {
     }
   }
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
-      setUpdatingUser(userId)
+      setProcessingUser(userId)
       await updateDoc(doc(db, "preachers", userId), { role: newRole })
-      await fetchUsers() // Refresh list
+      
+      // Optimistic update
+      if (newRole === 'pending') {
+        setPreachers(prev => prev.filter(user => user.id !== userId))
+        setPendingUsers(prev => {
+          const updatedUser = preachers.find(u => u.id === userId)
+          return updatedUser ? [...prev, { ...updatedUser, role: newRole }] : prev
+        })
+      } else {
+        setPendingUsers(prev => prev.filter(user => user.id !== userId))
+        setPreachers(prev => prev.map(user => 
+          user.id === userId ? { ...user, role: newRole } : user
+        ))
+      }
+      
+      setSuccessMessage("User role updated successfully")
     } catch (error) {
       console.error("Error updating user role:", error)
       setError("Failed to update user role")
+      fetchUsers() // Fallback refresh on error
     } finally {
-      setUpdatingUser(null)
+      setProcessingUser(null)
     }
   }
   
@@ -63,25 +80,73 @@ export function AdminManagement() {
       return
     }
     try {
-      setUpdatingUser(userId)
+      setProcessingUser(userId)
       await deleteDoc(doc(db, "preachers", userId))
-      await fetchUsers() // Refresh list
+      
+      // Optimistic update
+      setPreachers(prev => prev.filter(user => user.id !== userId))
+      setPendingUsers(prev => prev.filter(user => user.id !== userId))
+      
+      setSuccessMessage("User deleted successfully")
     } catch (error) {
       console.error("Error deleting user:", error)
       setError("Failed to delete user")
+      fetchUsers() // Fallback refresh on error
     } finally {
-      setUpdatingUser(null)
+      setProcessingUser(null)
     }
   }
 
-  if (userRole !== "admin") { /* ... Error handling ... */ }
-  if (loading) { /* ... Loading state ... */ }
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [successMessage])
+
+  if (userRole !== "admin") {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          You don't have permission to access this page.
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading users...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
+      {/* Messages */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {successMessage && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Pending Users Section */}
       <div>
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><Users className="h-6 w-6" /> Pending Approval</h2>
+        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <Users className="h-6 w-6" /> Pending Approval
+        </h2>
         {pendingUsers.length > 0 ? (
           <div className="grid gap-4">
             {pendingUsers.map(user => (
@@ -91,26 +156,52 @@ export function AdminManagement() {
                   <CardDescription>{user.email}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-center gap-4">
-                  <Button size="sm" onClick={() => updateUserRole(user.id, 'da\'i')} disabled={updatingUser === user.id}>
-                    <Check className="h-4 w-4 mr-2" /> Approve
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateUserRole(user.id, 'da\'i')} 
+                    disabled={processingUser === user.id}
+                  >
+                    {processingUser === user.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-2" />
+                    )}
+                    Approve
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => deleteUser(user.id)} disabled={updatingUser === user.id}>
-                    <X className="h-4 w-4 mr-2" /> Reject
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => deleteUser(user.id)} 
+                    disabled={processingUser === user.id}
+                  >
+                    {processingUser === user.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4 mr-2" />
+                    )}
+                    Reject
                   </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">No new users are awaiting approval.</p>
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <Users className="h-12 w-12 mb-4 opacity-50" />
+              <p>No new users are awaiting approval.</p>
+            </CardContent>
+          </Card>
         )}
       </div>
 
       {/* Approved Users Section */}
       <div>
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><Shield className="h-6 w-6" /> Approved Users</h2>
+        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <Shield className="h-6 w-6" /> Approved Users
+        </h2>
         <div className="grid gap-4">
-            {preachers.map((preacher) => (
+          {preachers.map((preacher) => (
             <Card key={preacher.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -129,17 +220,28 @@ export function AdminManagement() {
                   <Select
                     value={preacher.role}
                     onValueChange={(value: UserRole) => updateUserRole(preacher.id, value)}
-                    disabled={updatingUser === preacher.id}
+                    disabled={processingUser === preacher.id}
                   >
-                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="da'i">Preacher</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button variant="destructive" size="icon" onClick={() => deleteUser(preacher.id)} disabled={updatingUser === preacher.id}>
-                  {updatingUser === preacher.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  onClick={() => deleteUser(preacher.id)} 
+                  disabled={processingUser === preacher.id}
+                >
+                  {processingUser === preacher.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </CardContent>
             </Card>
