@@ -28,7 +28,7 @@ export function AdminManagement() {
   const [error, setError] = useState<string | null>(null)
   const [processingUser, setProcessingUser] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  
+
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogConfig, setDialogConfig] = useState<{
@@ -50,7 +50,7 @@ export function AdminManagement() {
         id: doc.id,
         ...doc.data(),
       })) as Preacher[]
-      
+
       setPreachers(usersData.filter(u => u.role === 'admin' || u.role === 'da\'i'))
       setPendingUsers(usersData.filter(u => u.role === 'pending'))
     } catch (err) {
@@ -69,7 +69,7 @@ export function AdminManagement() {
       setProcessingUser(userId)
       setError(null)
       await updateDoc(doc(db, "preachers", userId), { role: newRole })
-      
+
       // Optimistic update
       if (newRole === 'pending') {
         setPreachers(prev => prev.filter(user => user.id !== userId))
@@ -79,11 +79,11 @@ export function AdminManagement() {
         })
       } else {
         setPendingUsers(prev => prev.filter(user => user.id !== userId))
-        setPreachers(prev => prev.map(user => 
+        setPreachers(prev => prev.map(user =>
           user.id === userId ? { ...user, role: newRole } : user
         ))
       }
-      
+
       setSuccessMessage("تم تحديث صلاحية المستخدم بنجاح")
     } catch (err) {
       setError("فشل في تحديث صلاحية المستخدم. الرجاء المحاولة مرة أخرى.")
@@ -92,17 +92,17 @@ export function AdminManagement() {
       setProcessingUser(null)
     }
   }
-  
+
   const deleteUser = async (userId: string) => {
     try {
       setProcessingUser(userId)
       setError(null)
       await deleteDoc(doc(db, "preachers", userId))
-      
+
       // Optimistic update
       setPreachers(prev => prev.filter(user => user.id !== userId))
       setPendingUsers(prev => prev.filter(user => user.id !== userId))
-      
+
       setSuccessMessage("تم حذف المستخدم بنجاح")
     } catch (err) {
       setError("فشل في حذف المستخدم. الرجاء المحاولة مرة أخرى.")
@@ -207,8 +207,18 @@ export function AdminManagement() {
     <>
       {/* Confirmation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md text-right" dir="rtl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          {/* Exit button moved to LEFT side (top-left in RTL) */}
+          <button
+            onClick={() => setDialogOpen(false)}
+            className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+            dir="ltr"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">إغلاق</span>
+          </button>
+
+          <DialogHeader className="text-right pt-6">
             <DialogTitle className="flex items-center gap-2 justify-end">
               {dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject" ? (
                 <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -222,8 +232,8 @@ export function AdminManagement() {
           <DialogFooter className="gap-2 sm:gap-0 flex flex-row-reverse">
             <Button
               variant={
-                dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject" 
-                  ? "destructive" 
+                dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject"
+                  ? "destructive"
                   : "default"
               }
               onClick={() => {
@@ -276,7 +286,7 @@ export function AdminManagement() {
             </CardContent>
           </Card>
         )}
-        
+
         {successMessage && (
           <Card className="border-green-500/50 bg-green-500/5">
             <CardContent className="pt-6">
@@ -316,9 +326,9 @@ export function AdminManagement() {
                   </CardHeader>
                   <CardFooter className="flex flex-col gap-3 pt-3 border-t">
                     <div className="flex gap-2 w-full">
-                      <Button 
-                        size="sm" 
-                        onClick={() => showApproveDialog(user)} 
+                      <Button
+                        size="sm"
+                        onClick={() => showApproveDialog(user)}
                         disabled={processingUser === user.id}
                         className="flex-1"
                       >
@@ -329,10 +339,10 @@ export function AdminManagement() {
                         )}
                         الموافقة كداعية
                       </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => showRejectDialog(user)} 
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => showRejectDialog(user)}
                         disabled={processingUser === user.id}
                         className="flex-1"
                       >
@@ -374,7 +384,7 @@ export function AdminManagement() {
                         <CardTitle className="text-lg text-right">{preacher.name}</CardTitle>
                         <CardDescription className="text-right text-muted-foreground mt-1">{preacher.email}</CardDescription>
                       </div>
-                      <Badge 
+                      <Badge
                         variant={preacher.role === "admin" ? "default" : "secondary"}
                         className="whitespace-nowrap"
                       >
@@ -405,10 +415,10 @@ export function AdminManagement() {
                     </div>
                   </CardContent>
                   <CardFooter className="pt-4 border-t">
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       size="sm"
-                      onClick={() => showDeleteDialog(preacher)} 
+                      onClick={() => showDeleteDialog(preacher)}
                       disabled={processingUser === preacher.id}
                       className="w-full"
                     >
