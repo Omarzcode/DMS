@@ -205,16 +205,17 @@ export function AdminManagement() {
 
   return (
     <>
+      {/* Confirmation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          /* 1. Added !important to hide the default button more aggressively */
-          className="sm:max-w-md [&>button]:!hidden"
+          /* FIX 1: Targets only the Radix close button to hide it, keeping your custom button visible */
+          className="sm:max-w-md [&>button[data-radix-collection-item]]:hidden"
           dir="rtl"
         >
-          {/* 2. Added right-auto to ensure left-4 anchors to the physical left in RTL */}
+          {/* FIX 2: In RTL, 'right-4' positions the element on the physical LEFT side */}
           <button
             onClick={() => setDialogOpen(false)}
-            className="absolute left-4 top-4 right-auto rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
             dir="ltr"
           >
             <X className="h-4 w-4" />
