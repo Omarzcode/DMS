@@ -21,7 +21,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { StatsCard } from "@/components/ui/stats-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ContactImportDialog } from "./contact-import-dialog"
-
+import { DataHealthCheck } from "./data-health-check"
 type SortField = 'name' | 'phone' | 'da_wa_stage' | 'created_at'
 type SortDirection = 'asc' | 'desc'
 
@@ -287,6 +287,11 @@ export function AllBeneficiaries() {
             <Download className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Export ({filteredAndSortedBeneficiaries.length})</span>
           </Button>
+          <DataHealthCheck
+            beneficiaries={beneficiaries}
+            preachers={preachers}
+            onDataChanged={() => fetchData(true)}
+          />
           <ContactImportDialog onImportComplete={() => fetchData(true)} />
           <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
         </div>

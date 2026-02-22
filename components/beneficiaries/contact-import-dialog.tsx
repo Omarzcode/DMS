@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
@@ -23,14 +23,7 @@ import { Progress } from "@/components/ui/progress"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
   TableResponsive,
-  TableLoading,
   TableEmpty,
 } from "@/components/ui/table"
 import {
@@ -55,7 +48,7 @@ import {
   Undo2,
   RefreshCw,
 } from "lucide-react"
-import { toast } from 'sonner'
+import { toast } from "sonner"
 import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
 import { DAWA_STAGES } from "@/lib/firestore-collections"
 
@@ -72,17 +65,20 @@ interface ContactRecord {
   da_wa_stage: string
   da_i_id: string
   notes: string
-  status: 'pending' | 'success' | 'error' | 'duplicate' | 'invalid'
+  status: "pending" | "success" | "error" | "duplicate" | "invalid"
   error?: string
   selected: boolean
   isEdited?: boolean
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024
 const FIRESTORE_IN_LIMIT = 10
 const IMPORT_BATCH_SIZE = 25
 
-export function ContactImportDialog({ onImportComplete, assignedPreacherId }: ContactImportDialogProps) {
+export function ContactImportDialog({
+  onImportComplete,
+  assignedPreacherId,
+}: ContactImportDialogProps) {
   const { user, userRole } = useAuth()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -95,11 +91,11 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
   const [preachers, setPreachers] = useState<Preacher[]>([])
   const [loadingPreachers, setLoadingPreachers] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
-  const [importMethod, setImportMethod] = useState<'vcf' | 'csv'>('vcf')
+  const [importMethod, setImportMethod] = useState<"vcf" | "csv">("vcf")
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
   const [showSettings, setShowSettings] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
   const [duplicateCheckDone, setDuplicateCheckDone] = useState(false)
@@ -108,13 +104,14 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
     da_wa_stage: DAWA_STAGES[0],
     notes: "",
     assignToMe: !assignedPreacherId,
-    da_i_id: assignedPreacherId || (user?.uid || ""),
+    da_i_id: assignedPreacherId || user?.uid || "",
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  // Load preachers for admin
+  // ─── Load Preachers ────────────────────────────────────────────
+
   useEffect(() => {
     const loadPreachers = async () => {
       if (open && userRole === "admin" && !assignedPreacherId) {
@@ -138,6 +135,8 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
     loadPreachers()
   }, [open, userRole, assignedPreacherId, user])
 
+  // ─── Dialog State ──────────────────────────────────────────────
+
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
     if (!newOpen) resetImportState()
@@ -153,15 +152,15 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
       da_wa_stage: DAWA_STAGES[0],
       notes: "",
       assignToMe: !assignedPreacherId,
-      da_i_id: assignedPreacherId || (user?.uid || ""),
+      da_i_id: assignedPreacherId || user?.uid || "",
     })
     setError(null)
     setShowDetails(false)
-    setImportMethod('vcf')
+    setImportMethod("vcf")
     setCurrentStep(1)
     setShowSettings(false)
-    setFilterStatus('all')
-    setSearchQuery('')
+    setFilterStatus("all")
+    setSearchQuery("")
     setIsDragging(false)
     setFileName(null)
     setDuplicateCheckDone(false)
@@ -170,273 +169,291 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
   // ─── Phone Utilities ───────────────────────────────────────────
 
   const formatEgyptianPhone = useCallback((phone: string): string => {
-    let cleanPhone = phone.replace(/[^\d]/g, '')
+    let cleanPhone = phone.replace(/[^\d]/g, "")
 
-    // Handle country code variations
-    if (cleanPhone.startsWith('002')) {
+    if (cleanPhone.startsWith("002")) {
       cleanPhone = cleanPhone.slice(3)
-    } else if (cleanPhone.startsWith('20') && cleanPhone.length >= 12) {
+    } else if (cleanPhone.startsWith("20") && cleanPhone.length >= 12) {
       cleanPhone = cleanPhone.slice(2)
-    } else if (cleanPhone.startsWith('+20')) {
+    } else if (cleanPhone.startsWith("+20")) {
       cleanPhone = cleanPhone.slice(3)
     }
 
-    // Add leading zero if missing
     if (cleanPhone.length === 10 && /^1[0-2,5]/.test(cleanPhone)) {
-      cleanPhone = '0' + cleanPhone
+      cleanPhone = "0" + cleanPhone
     }
 
-    // Validate final format
-    if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+    if (cleanPhone.length === 11 && cleanPhone.startsWith("01")) {
       return cleanPhone
     }
 
-    return ''
+    return ""
   }, [])
 
-  const validateEgyptianPhone = useCallback((phone: string): boolean => {
-    const cleanPhone = formatEgyptianPhone(phone)
-    return /^01[0-2,5]\d{8}$/.test(cleanPhone)
-  }, [formatEgyptianPhone])
+  const validateEgyptianPhone = useCallback(
+    (phone: string): boolean => {
+      const cleanPhone = formatEgyptianPhone(phone)
+      return /^01[0-2,5]\d{8}$/.test(cleanPhone)
+    },
+    [formatEgyptianPhone]
+  )
 
   // ─── File Parsing ──────────────────────────────────────────────
 
-  const parseVCF = useCallback((vcfContent: string): ContactRecord[] => {
-    const contacts: ContactRecord[] = []
-    const lines = vcfContent.split('\n')
+  const parseVCF = useCallback(
+    (vcfContent: string): ContactRecord[] => {
+      const contacts: ContactRecord[] = []
+      const lines = vcfContent.split("\n")
 
-    let currentContact: Partial<ContactRecord> = {}
-    let inContact = false
+      let currentContact: Partial<ContactRecord> = {}
+      let inContact = false
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim()
 
-      if (line === 'BEGIN:VCARD') {
-        inContact = true
-        currentContact = {}
-        continue
-      }
+        if (line === "BEGIN:VCARD") {
+          inContact = true
+          currentContact = {}
+          continue
+        }
 
-      if (line === 'END:VCARD') {
-        if (inContact && (currentContact.name || currentContact.phone)) {
-          const id = `contact-${Date.now()}-${contacts.length}-${Math.random().toString(36).slice(2, 7)}`
-          const phone = currentContact.phone || ''
-          const formattedPhone = phone ? formatEgyptianPhone(phone) : ''
+        if (line === "END:VCARD") {
+          if (inContact && (currentContact.name || currentContact.phone)) {
+            const id = `contact-${Date.now()}-${contacts.length}-${Math.random().toString(36).slice(2, 7)}`
+            const phone = currentContact.phone || ""
+            const formattedPhone = phone ? formatEgyptianPhone(phone) : ""
 
-          let status: ContactRecord['status'] = 'pending'
-          let error = ""
+            let status: ContactRecord["status"] = "pending"
+            let error = ""
 
-          if (!phone) {
-            status = 'invalid'
-            error = 'لا يوجد رقم'
-          } else if (!formattedPhone) {
-            status = 'invalid'
-            error = 'رقم غير صحيح'
+            if (!phone) {
+              status = "invalid"
+              error = "لا يوجد رقم"
+            } else if (!formattedPhone) {
+              status = "invalid"
+              error = "رقم غير صحيح"
+            }
+
+            contacts.push({
+              id,
+              name: currentContact.name || `جهة اتصال ${contacts.length + 1}`,
+              phone,
+              formattedPhone,
+              da_wa_stage: commonSettings.da_wa_stage,
+              da_i_id: commonSettings.da_i_id,
+              notes: commonSettings.notes,
+              status,
+              error,
+              selected: status === "pending",
+              isEdited: false,
+            })
           }
-
-          contacts.push({
-            id,
-            name: currentContact.name || `جهة اتصال ${contacts.length + 1}`,
-            phone,
-            formattedPhone,
-            da_wa_stage: commonSettings.da_wa_stage,
-            da_i_id: commonSettings.da_i_id,
-            notes: commonSettings.notes,
-            status,
-            error,
-            selected: status === 'pending',
-            isEdited: false,
-          })
+          inContact = false
+          continue
         }
-        inContact = false
-        continue
-      }
 
-      if (inContact) {
-        if (line.startsWith('FN:') || line.startsWith('FN;')) {
-          const value = line.substring(line.indexOf(':') + 1).trim()
-          if (value) currentContact.name = value
-        } else if (line.startsWith('TEL;') || line.startsWith('TEL:')) {
-          const telLine = line.substring(line.indexOf(':') + 1).trim()
-          if (!currentContact.phone && telLine) currentContact.phone = telLine
-        } else if (line.startsWith('N:') || line.startsWith('N;')) {
-          if (!currentContact.name) {
-            const value = line.substring(line.indexOf(':') + 1)
-            const nameParts = value.split(';')
-            const firstName = nameParts[1]?.trim() || ''
-            const lastName = nameParts[0]?.trim() || ''
-            const fullName = [firstName, lastName].filter(Boolean).join(' ')
-            if (fullName) currentContact.name = fullName
+        if (inContact) {
+          if (line.startsWith("FN:") || line.startsWith("FN;")) {
+            const value = line.substring(line.indexOf(":") + 1).trim()
+            if (value) currentContact.name = value
+          } else if (line.startsWith("TEL;") || line.startsWith("TEL:")) {
+            const telLine = line.substring(line.indexOf(":") + 1).trim()
+            if (!currentContact.phone && telLine) currentContact.phone = telLine
+          } else if (line.startsWith("N:") || line.startsWith("N;")) {
+            if (!currentContact.name) {
+              const value = line.substring(line.indexOf(":") + 1)
+              const nameParts = value.split(";")
+              const firstName = nameParts[1]?.trim() || ""
+              const lastName = nameParts[0]?.trim() || ""
+              const fullName = [firstName, lastName].filter(Boolean).join(" ")
+              if (fullName) currentContact.name = fullName
+            }
           }
         }
       }
-    }
 
-    return contacts
-  }, [commonSettings, formatEgyptianPhone])
+      return contacts
+    },
+    [commonSettings, formatEgyptianPhone]
+  )
 
-  const parseCSV = useCallback((csvContent: string): ContactRecord[] => {
-    const contacts: ContactRecord[] = []
-    const lines = csvContent.split('\n').filter(line => line.trim())
+  const parseCSV = useCallback(
+    (csvContent: string): ContactRecord[] => {
+      const contacts: ContactRecord[] = []
+      const lines = csvContent.split("\n").filter((line) => line.trim())
 
-    if (lines.length === 0) return contacts
+      if (lines.length === 0) return contacts
 
-    const firstLine = lines[0]
-    const delimiter = firstLine.includes('\t') ? '\t' : firstLine.includes(';') ? ';' : ','
+      const firstLine = lines[0]
+      const delimiter = firstLine.includes("\t")
+        ? "\t"
+        : firstLine.includes(";")
+          ? ";"
+          : ","
 
-    // Try to detect if first line is a header
-    const firstLineLower = firstLine.toLowerCase()
-    const isHeader = firstLineLower.includes('name') ||
-      firstLineLower.includes('phone') ||
-      firstLineLower.includes('اسم') ||
-      firstLineLower.includes('هاتف') ||
-      firstLineLower.includes('رقم')
+      const firstLineLower = firstLine.toLowerCase()
+      const isHeader =
+        firstLineLower.includes("name") ||
+        firstLineLower.includes("phone") ||
+        firstLineLower.includes("اسم") ||
+        firstLineLower.includes("هاتف") ||
+        firstLineLower.includes("رقم")
 
-    const startIndex = isHeader ? 1 : 0
+      const startIndex = isHeader ? 1 : 0
 
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (!line) continue
+      for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (!line) continue
 
-      const parts = line.split(delimiter).map(part => part.replace(/^["']|["']$/g, '').trim())
+        const parts = line
+          .split(delimiter)
+          .map((part) => part.replace(/^["']|["']$/g, "").trim())
 
-      let name = "", phone = ""
+        let name = "",
+          phone = ""
 
-      if (parts.length >= 2) {
-        // Try to detect which column is name and which is phone
-        const firstIsPhone = /^[\+]?[\d\s\-()]{8,}$/.test(parts[0])
-        const secondIsPhone = /^[\+]?[\d\s\-()]{8,}$/.test(parts[1])
+        if (parts.length >= 2) {
+          const firstIsPhone = /^[\+]?[\d\s\-()]{8,}$/.test(parts[0])
+          const secondIsPhone = /^[\+]?[\d\s\-()]{8,}$/.test(parts[1])
 
-        if (firstIsPhone && !secondIsPhone) {
-          phone = parts[0]
-          name = parts[1]
-        } else {
-          name = parts[0]
-          phone = parts[1]
+          if (firstIsPhone && !secondIsPhone) {
+            phone = parts[0]
+            name = parts[1]
+          } else {
+            name = parts[0]
+            phone = parts[1]
+          }
+        } else if (parts.length === 1) {
+          if (/[\+]?[0-9]{10,13}/.test(parts[0])) {
+            phone = parts[0]
+          } else {
+            name = parts[0]
+          }
         }
-      } else if (parts.length === 1) {
-        if (/[\+]?[0-9]{10,13}/.test(parts[0])) {
-          phone = parts[0]
-        } else {
-          name = parts[0]
+
+        const id = `contact-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`
+        const formattedPhone = phone ? formatEgyptianPhone(phone) : ""
+
+        let status: ContactRecord["status"] = "pending"
+        let error = ""
+
+        if (!phone) {
+          status = "invalid"
+          error = "لا يوجد رقم"
+        } else if (!formattedPhone) {
+          status = "invalid"
+          error = "رقم غير صحيح"
         }
+
+        contacts.push({
+          id,
+          name: name || `مستفيد ${i + 1}`,
+          phone,
+          formattedPhone,
+          da_wa_stage: commonSettings.da_wa_stage,
+          da_i_id: commonSettings.da_i_id,
+          notes: commonSettings.notes,
+          status,
+          error,
+          selected: status === "pending",
+          isEdited: false,
+        })
       }
 
-      const id = `contact-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`
-      const formattedPhone = phone ? formatEgyptianPhone(phone) : ""
-
-      let status: ContactRecord['status'] = 'pending'
-      let error = ""
-
-      if (!phone) {
-        status = 'invalid'
-        error = 'لا يوجد رقم'
-      } else if (!formattedPhone) {
-        status = 'invalid'
-        error = 'رقم غير صحيح'
-      }
-
-      contacts.push({
-        id,
-        name: name || `مستفيد ${i + 1}`,
-        phone,
-        formattedPhone,
-        da_wa_stage: commonSettings.da_wa_stage,
-        da_i_id: commonSettings.da_i_id,
-        notes: commonSettings.notes,
-        status,
-        error,
-        selected: status === 'pending',
-        isEdited: false,
-      })
-    }
-
-    return contacts
-  }, [commonSettings, formatEgyptianPhone])
+      return contacts
+    },
+    [commonSettings, formatEgyptianPhone]
+  )
 
   // ─── File Handling ─────────────────────────────────────────────
 
-  const processFile = useCallback((file: globalThis.File) => {
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(`حجم الملف كبير جداً. الحد الأقصى ${MAX_FILE_SIZE / 1024 / 1024}MB`)
-      return
-    }
-
-    const extension = file.name.toLowerCase().split('.').pop()
-    const validExtensions = importMethod === 'vcf'
-      ? ['vcf', 'vcard']
-      : ['csv', 'txt']
-
-    if (!extension || !validExtensions.includes(extension)) {
-      toast.error(`صيغة غير مدعومة. الصيغ المدعومة: ${validExtensions.join(', ')}`)
-      return
-    }
-
-    setFileName(file.name)
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const fileContent = e.target?.result as string
-        let parsedContacts: ContactRecord[] = []
-
-        if (extension === 'vcf' || extension === 'vcard') {
-          parsedContacts = parseVCF(fileContent)
-        } else {
-          parsedContacts = parseCSV(fileContent)
-        }
-
-        if (parsedContacts.length === 0) {
-          toast.error('لم يتم العثور على جهات اتصال في الملف')
-          return
-        }
-
-        // Deduplicate within file
-        const seenPhones = new Set<string>()
-        const deduplicatedContacts: ContactRecord[] = []
-        let duplicateCount = 0
-
-        for (const contact of parsedContacts) {
-          if (contact.formattedPhone && seenPhones.has(contact.formattedPhone)) {
-            duplicateCount++
-            continue // Skip file-internal duplicates
-          }
-          if (contact.formattedPhone) {
-            seenPhones.add(contact.formattedPhone)
-          }
-          deduplicatedContacts.push(contact)
-        }
-
-        setContacts(deduplicatedContacts)
-        setCurrentStep(2)
-        setDuplicateCheckDone(false)
-
-        const fileType = extension === 'vcf' || extension === 'vcard' ? 'vCard' : 'نصي'
-        let message = `تم تحميل ${deduplicatedContacts.length} جهة اتصال من ملف ${fileType}`
-        if (duplicateCount > 0) {
-          message += ` (تم تجاهل ${duplicateCount} مكرر)`
-        }
-        toast.success(message)
-
-      } catch (err) {
-        console.error("Error parsing file:", err)
-        toast.error('تعذر قراءة الملف. تأكد من صحة التنسيق')
+  const processFile = useCallback(
+    (file: globalThis.File) => {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(
+          `حجم الملف كبير جداً. الحد الأقصى ${MAX_FILE_SIZE / 1024 / 1024}MB`
+        )
+        return
       }
-    }
 
-    reader.onerror = () => {
-      toast.error('حدث خطأ أثناء قراءة الملف')
-    }
+      const extension = file.name.toLowerCase().split(".").pop()
+      const validExtensions =
+        importMethod === "vcf" ? ["vcf", "vcard"] : ["csv", "txt"]
 
-    reader.readAsText(file, 'UTF-8')
-  }, [importMethod, parseVCF, parseCSV])
+      if (!extension || !validExtensions.includes(extension)) {
+        toast.error(
+          `صيغة غير مدعومة. الصيغ المدعومة: ${validExtensions.join(", ")}`
+        )
+        return
+      }
+
+      setFileName(file.name)
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const fileContent = e.target?.result as string
+          let parsedContacts: ContactRecord[] = []
+
+          if (extension === "vcf" || extension === "vcard") {
+            parsedContacts = parseVCF(fileContent)
+          } else {
+            parsedContacts = parseCSV(fileContent)
+          }
+
+          if (parsedContacts.length === 0) {
+            toast.error("لم يتم العثور على جهات اتصال في الملف")
+            return
+          }
+
+          const seenPhones = new Set<string>()
+          const deduplicatedContacts: ContactRecord[] = []
+          let duplicateCount = 0
+
+          for (const contact of parsedContacts) {
+            if (
+              contact.formattedPhone &&
+              seenPhones.has(contact.formattedPhone)
+            ) {
+              duplicateCount++
+              continue
+            }
+            if (contact.formattedPhone) {
+              seenPhones.add(contact.formattedPhone)
+            }
+            deduplicatedContacts.push(contact)
+          }
+
+          setContacts(deduplicatedContacts)
+          setCurrentStep(2)
+          setDuplicateCheckDone(false)
+
+          const fileType =
+            extension === "vcf" || extension === "vcard" ? "vCard" : "نصي"
+          let message = `تم تحميل ${deduplicatedContacts.length} جهة اتصال من ملف ${fileType}`
+          if (duplicateCount > 0) {
+            message += ` (تم تجاهل ${duplicateCount} مكرر)`
+          }
+          toast.success(message)
+        } catch (err) {
+          console.error("Error parsing file:", err)
+          toast.error("تعذر قراءة الملف. تأكد من صحة التنسيق")
+        }
+      }
+
+      reader.onerror = () => {
+        toast.error("حدث خطأ أثناء قراءة الملف")
+      }
+
+      reader.readAsText(file, "UTF-8")
+    },
+    [importMethod, parseVCF, parseCSV]
+  )
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) processFile(file)
-    // Reset input so the same file can be selected again
-    if (event.target) event.target.value = ''
+    if (event.target) event.target.value = ""
   }
 
   // ─── Drag and Drop ─────────────────────────────────────────────
@@ -450,8 +467,10 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    // Only set false if leaving the drop zone
-    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+    if (
+      dropZoneRef.current &&
+      !dropZoneRef.current.contains(e.relatedTarget as Node)
+    ) {
       setIsDragging(false)
     }
   }, [])
@@ -461,29 +480,34 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
     e.stopPropagation()
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragging(false)
 
-    const file = e.dataTransfer.files?.[0]
-    if (file) processFile(file)
-  }, [processFile])
+      const file = e.dataTransfer.files?.[0]
+      if (file) processFile(file)
+    },
+    [processFile]
+  )
 
   // ─── Contact Operations ────────────────────────────────────────
 
   const applyCommonSettings = () => {
-    setContacts(prev => prev.map(contact => {
-      if (contact.status === 'success') return contact // Don't modify already imported
-      return {
-        ...contact,
-        da_wa_stage: commonSettings.da_wa_stage,
-        da_i_id: commonSettings.da_i_id,
-        notes: commonSettings.notes,
-        isEdited: true,
-      }
-    }))
-    toast.success('تم تطبيق الإعدادات على جميع الجهات')
+    setContacts((prev) =>
+      prev.map((contact) => {
+        if (contact.status === "success") return contact
+        return {
+          ...contact,
+          da_wa_stage: commonSettings.da_wa_stage,
+          da_i_id: commonSettings.da_i_id,
+          notes: commonSettings.notes,
+          isEdited: true,
+        }
+      })
+    )
+    toast.success("تم تطبيق الإعدادات على جميع الجهات")
   }
 
   const checkExistingPhones = async () => {
@@ -491,23 +515,22 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
     setLoading(true)
 
     try {
-      const validContacts = contacts.filter(c =>
-        c.formattedPhone && c.status !== 'success'
+      const validContacts = contacts.filter(
+        (c) => c.formattedPhone && c.status !== "success"
       )
 
       if (validContacts.length === 0) {
-        toast.info('لا توجد جهات صالحة للفحص')
+        toast.info("لا توجد جهات صالحة للفحص")
         setLoading(false)
         return
       }
 
       const updatedContacts = [...contacts]
 
-      // Firestore "in" queries support max 10 items
       for (let i = 0; i < validContacts.length; i += FIRESTORE_IN_LIMIT) {
         const batchPhones = validContacts
           .slice(i, i + FIRESTORE_IN_LIMIT)
-          .map(c => c.formattedPhone)
+          .map((c) => c.formattedPhone)
           .filter(Boolean)
 
         if (batchPhones.length === 0) continue
@@ -518,119 +541,205 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
         )
         const querySnapshot = await getDocs(phoneQuery)
         const existingPhones = new Set(
-          querySnapshot.docs.map(doc => doc.data().phone)
+          querySnapshot.docs.map((doc) => doc.data().phone)
         )
 
-        validContacts.slice(i, i + FIRESTORE_IN_LIMIT).forEach(contact => {
-          if (existingPhones.has(contact.formattedPhone)) {
-            const contactIndex = updatedContacts.findIndex(c => c.id === contact.id)
-            if (contactIndex !== -1) {
-              updatedContacts[contactIndex] = {
-                ...updatedContacts[contactIndex],
-                status: 'duplicate',
-                error: 'رقم مسجل مسبقاً في النظام',
-                selected: false, // Auto-deselect duplicates
+        validContacts
+          .slice(i, i + FIRESTORE_IN_LIMIT)
+          .forEach((contact) => {
+            if (existingPhones.has(contact.formattedPhone)) {
+              const contactIndex = updatedContacts.findIndex(
+                (c) => c.id === contact.id
+              )
+              if (contactIndex !== -1) {
+                updatedContacts[contactIndex] = {
+                  ...updatedContacts[contactIndex],
+                  status: "duplicate",
+                  error: "رقم مسجل مسبقاً في النظام",
+                  selected: false,
+                }
               }
             }
-          }
-        })
+          })
       }
 
       setContacts(updatedContacts)
       setDuplicateCheckDone(true)
-      const duplicateCount = updatedContacts.filter(c => c.status === 'duplicate').length
+      const duplicateCount = updatedContacts.filter(
+        (c) => c.status === "duplicate"
+      ).length
       if (duplicateCount > 0) {
         toast.warning(`تم العثور على ${duplicateCount} رقم مكرر في النظام`)
       } else {
-        toast.success('لم يتم العثور على أرقام مكررة')
+        toast.success("لم يتم العثور على أرقام مكررة")
       }
     } catch (error) {
       console.error("Error checking phones:", error)
-      toast.error('حدث خطأ أثناء فحص الأرقام المكررة')
+      toast.error("حدث خطأ أثناء فحص الأرقام المكررة")
     } finally {
       setLoading(false)
     }
   }
 
   const updateContact = (id: string, updates: Partial<ContactRecord>) => {
-    setContacts(prev => prev.map(contact => {
-      if (contact.id !== id) return contact
+    setContacts((prev) =>
+      prev.map((contact) => {
+        if (contact.id !== id) return contact
 
-      const updated = { ...contact, ...updates, isEdited: true }
+        const updated = { ...contact, ...updates, isEdited: true }
 
-      // Re-validate phone if it was changed
-      if (updates.phone !== undefined || updates.formattedPhone !== undefined) {
-        const phoneToFormat = updates.phone || contact.phone
-        const newFormatted = formatEgyptianPhone(phoneToFormat)
-        updated.formattedPhone = newFormatted
+        if (
+          updates.phone !== undefined ||
+          updates.formattedPhone !== undefined
+        ) {
+          const phoneToFormat = updates.phone || contact.phone
+          const newFormatted = formatEgyptianPhone(phoneToFormat)
+          updated.formattedPhone = newFormatted
 
-        if (!phoneToFormat) {
-          updated.status = 'invalid'
-          updated.error = 'لا يوجد رقم'
-        } else if (!newFormatted) {
-          updated.status = 'invalid'
-          updated.error = 'رقم غير صحيح'
-        } else if (contact.status === 'invalid') {
-          updated.status = 'pending'
-          updated.error = undefined
+          if (!phoneToFormat) {
+            updated.status = "invalid"
+            updated.error = "لا يوجد رقم"
+          } else if (!newFormatted) {
+            updated.status = "invalid"
+            updated.error = "رقم غير صحيح"
+          } else if (contact.status === "invalid") {
+            updated.status = "pending"
+            updated.error = undefined
+          }
         }
-      }
 
-      return updated
-    }))
+        return updated
+      })
+    )
   }
 
   const deleteContact = (id: string) => {
-    const contactToDelete = contacts.find(c => c.id === id)
+    const contactToDelete = contacts.find((c) => c.id === id)
     if (contactToDelete) {
-      setDeletedContacts(prev => [...prev, contactToDelete])
+      setDeletedContacts((prev) => [...prev, contactToDelete])
     }
-    setContacts(prev => prev.filter(contact => contact.id !== id))
-    toast.info('تم حذف الجهة', {
+    setContacts((prev) => prev.filter((contact) => contact.id !== id))
+    toast.info("تم حذف الجهة", {
       action: {
-        label: 'تراجع',
-        onClick: () => undoLastDelete()
-      }
+        label: "تراجع",
+        onClick: () => undoLastDelete(),
+      },
     })
   }
 
   const undoLastDelete = () => {
     if (deletedContacts.length === 0) return
     const lastDeleted = deletedContacts[deletedContacts.length - 1]
-    setDeletedContacts(prev => prev.slice(0, -1))
-    setContacts(prev => [...prev, lastDeleted])
-    toast.success('تم استعادة الجهة')
+    setDeletedContacts((prev) => prev.slice(0, -1))
+    setContacts((prev) => [...prev, lastDeleted])
+    toast.success("تم استعادة الجهة")
   }
 
-  const toggleSelectAll = () => {
-    const selectableFiltered = filteredContacts.filter(c =>
-      c.status !== 'success' && c.status !== 'invalid'
-    )
-    const allSelected = selectableFiltered.length > 0 && selectableFiltered.every(c => c.selected)
+  // ─── Memoized Computed Values ──────────────────────────────────
 
-    setContacts(prev => prev.map(c => {
-      const isInFiltered = filteredContacts.find(fc => fc.id === c.id)
-      if (isInFiltered && c.status !== 'success' && c.status !== 'invalid') {
-        return { ...c, selected: !allSelected }
+  const statusCounts = useMemo(() => {
+    const counts = {
+      total: contacts.length,
+      selected: 0,
+      pending: 0,
+      success: 0,
+      error: 0,
+      invalid: 0,
+      duplicate: 0,
+    }
+
+    for (const c of contacts) {
+      if (c.selected) counts.selected++
+      switch (c.status) {
+        case "pending":
+          counts.pending++
+          break
+        case "success":
+          counts.success++
+          break
+        case "error":
+          counts.error++
+          break
+        case "invalid":
+          counts.invalid++
+          break
+        case "duplicate":
+          counts.duplicate++
+          break
       }
-      return c
-    }))
-  }
+    }
+
+    return counts
+  }, [contacts])
+
+  const filteredContacts = useMemo(() => {
+    return contacts.filter((contact) => {
+      if (filterStatus !== "all" && contact.status !== filterStatus) {
+        return false
+      }
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase().trim()
+        return (
+          contact.name.toLowerCase().includes(q) ||
+          contact.phone.includes(q) ||
+          contact.formattedPhone.includes(q)
+        )
+      }
+
+      return true
+    })
+  }, [contacts, filterStatus, searchQuery])
+
+  const selectedCount = useMemo(() => {
+    return contacts.filter(
+      (c) => c.selected && (c.status === "pending" || c.status === "duplicate")
+    ).length
+  }, [contacts])
+
+  const selectableFilteredContacts = useMemo(() => {
+    return filteredContacts.filter(
+      (c) => c.status !== "success" && c.status !== "invalid"
+    )
+  }, [filteredContacts])
+
+  const allFilteredSelected = useMemo(() => {
+    return (
+      selectableFilteredContacts.length > 0 &&
+      selectableFilteredContacts.every((c) => c.selected)
+    )
+  }, [selectableFilteredContacts])
+
+  const toggleSelectAll = useCallback(() => {
+    const selectableIds = new Set(selectableFilteredContacts.map((c) => c.id))
+    const shouldSelect = !allFilteredSelected
+
+    setContacts((prev) =>
+      prev.map((c) => {
+        if (selectableIds.has(c.id)) {
+          return { ...c, selected: shouldSelect }
+        }
+        return c
+      })
+    )
+  }, [selectableFilteredContacts, allFilteredSelected])
 
   // ─── Import ────────────────────────────────────────────────────
 
   const handleImport = async () => {
-    const selectedContacts = contacts.filter(c =>
-      c.selected && (c.status === 'pending' || c.status === 'duplicate')
+    const selectedContacts = contacts.filter(
+      (c) =>
+        c.selected && (c.status === "pending" || c.status === "duplicate")
     )
 
     if (selectedContacts.length === 0) {
-      toast.error('لا توجد جهات محددة للاستيراد')
+      toast.error("لا توجد جهات محددة للاستيراد")
       return
     }
 
-    // Warn about duplicates
-    const duplicateSelected = selectedContacts.filter(c => c.status === 'duplicate').length
+    const duplicateSelected = selectedContacts.filter(
+      (c) => c.status === "duplicate"
+    ).length
     if (duplicateSelected > 0) {
       const confirmed = window.confirm(
         `هناك ${duplicateSelected} جهة مكررة محددة. هل تريد المتابعة؟`
@@ -650,14 +759,24 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
     try {
       for (let i = 0; i < selectedContacts.length; i += IMPORT_BATCH_SIZE) {
         const batch = writeBatch(db)
-        const currentBatch = selectedContacts.slice(i, i + IMPORT_BATCH_SIZE)
-        const batchRefs: { contact: ContactRecord; ref: ReturnType<typeof doc> }[] = []
+        const currentBatch = selectedContacts.slice(
+          i,
+          i + IMPORT_BATCH_SIZE
+        )
+        const batchRefs: {
+          contact: ContactRecord
+          ref: ReturnType<typeof doc>
+        }[] = []
 
         for (const contact of currentBatch) {
-          if (!validateEgyptianPhone(contact.formattedPhone || contact.phone)) {
+          if (
+            !validateEgyptianPhone(
+              contact.formattedPhone || contact.phone
+            )
+          ) {
             updateContact(contact.id, {
-              status: 'error',
-              error: 'رقم غير صالح للاستيراد'
+              status: "error",
+              error: "رقم غير صالح للاستيراد",
             })
             failed++
             continue
@@ -680,28 +799,30 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
         try {
           await batch.commit()
           batchRefs.forEach(({ contact }) => {
-            updateContact(contact.id, { status: 'success' })
+            updateContact(contact.id, { status: "success" })
           })
           successful += batchRefs.length
         } catch (batchError) {
           console.error("Batch commit failed:", batchError)
           batchRefs.forEach(({ contact }) => {
             updateContact(contact.id, {
-              status: 'error',
-              error: 'فشل في حفظ الدفعة'
+              status: "error",
+              error: "فشل في حفظ الدفعة",
             })
           })
           failed += batchRefs.length
         }
 
-        const progress = Math.min(100, ((i + currentBatch.length) / selectedContacts.length) * 100)
+        const progress = Math.min(
+          100,
+          ((i + currentBatch.length) / selectedContacts.length) * 100
+        )
         setImportProgress(progress)
         setImportedCount(successful)
         setFailedCount(failed)
 
-        // Small delay to allow UI updates
         if (i + IMPORT_BATCH_SIZE < selectedContacts.length) {
-          await new Promise(resolve => setTimeout(resolve, 100))
+          await new Promise((resolve) => setTimeout(resolve, 100))
         }
       }
 
@@ -710,19 +831,18 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
       setFailedCount(failed)
 
       if (successful > 0) {
-        toast.success('تم الاستيراد بنجاح', {
-          description: `تم إضافة ${successful} مستفيد${failed > 0 ? ` (فشل ${failed})` : ''}`,
+        toast.success("تم الاستيراد بنجاح", {
+          description: `تم إضافة ${successful} مستفيد${failed > 0 ? ` (فشل ${failed})` : ""}`,
         })
         onImportComplete?.()
       } else if (failed > 0) {
-        toast.error('فشل الاستيراد', {
+        toast.error("فشل الاستيراد", {
           description: `فشل إضافة ${failed} مستفيد`,
         })
       }
-
     } catch (error) {
       console.error("Import failed:", error)
-      toast.error('حدث خطأ أثناء الاستيراد')
+      toast.error("حدث خطأ أثناء الاستيراد")
     } finally {
       setLoading(false)
     }
@@ -730,58 +850,67 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
 
   // ─── UI Helpers ────────────────────────────────────────────────
 
-  const getStatusBadge = (status: ContactRecord['status']) => {
+  const getStatusBadge = (status: ContactRecord["status"]) => {
     const config = {
-      pending: { label: 'قيد الانتظار', variant: 'secondary' as const, icon: null, className: "" },
-      success: { label: 'ناجح', variant: 'default' as const, icon: <CheckCircle className="h-3 w-3" />, className: "bg-success/20 text-success" },
-      error: { label: 'خطأ', variant: 'destructive' as const, icon: <AlertCircle className="h-3 w-3" />, className: "" },
-      duplicate: { label: 'مكرر', variant: 'outline' as const, icon: <AlertCircle className="h-3 w-3" />, className: "border-warning text-warning hover:bg-warning/10" },
-      invalid: { label: 'غير صالح', variant: 'destructive' as const, icon: <X className="h-3 w-3" />, className: "" },
+      pending: {
+        label: "قيد الانتظار",
+        variant: "secondary" as const,
+        icon: null,
+        className: "",
+      },
+      success: {
+        label: "ناجح",
+        variant: "default" as const,
+        icon: <CheckCircle className="h-3 w-3" />,
+        className: "bg-success/20 text-success",
+      },
+      error: {
+        label: "خطأ",
+        variant: "destructive" as const,
+        icon: <AlertCircle className="h-3 w-3" />,
+        className: "",
+      },
+      duplicate: {
+        label: "مكرر",
+        variant: "outline" as const,
+        icon: <AlertCircle className="h-3 w-3" />,
+        className: "border-warning text-warning hover:bg-warning/10",
+      },
+      invalid: {
+        label: "غير صالح",
+        variant: "destructive" as const,
+        icon: <X className="h-3 w-3" />,
+        className: "",
+      },
     }
 
     const cfg = config[status]
     return (
-      <Badge variant={cfg.variant} className={`text-xs gap-1 whitespace-nowrap ${cfg.className}`}>
+      <Badge
+        variant={cfg.variant}
+        className={`text-xs gap-1 whitespace-nowrap ${cfg.className}`}
+      >
         {cfg.icon}
         {cfg.label}
       </Badge>
     )
   }
 
-  const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = searchQuery === '' ||
-      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.phone.includes(searchQuery) ||
-      contact.formattedPhone.includes(searchQuery)
-
-    const matchesFilter = filterStatus === 'all' || contact.status === filterStatus
-
-    return matchesSearch && matchesFilter
-  })
-
-  const selectedCount = contacts.filter(c =>
-    c.selected && (c.status === 'pending' || c.status === 'duplicate')
-  ).length
-
-  const statusCounts = {
-    total: contacts.length,
-    selected: contacts.filter(c => c.selected).length,
-    pending: contacts.filter(c => c.status === 'pending').length,
-    success: contacts.filter(c => c.status === 'success').length,
-    error: contacts.filter(c => c.status === 'error' || c.status === 'invalid').length,
-    duplicate: contacts.filter(c => c.status === 'duplicate').length,
-  }
-
   const getStepStatus = (step: number) => {
-    if (currentStep > step) return 'complete'
-    if (currentStep === step) return 'current'
-    return 'upcoming'
+    if (currentStep > step) return "complete"
+    if (currentStep === step) return "current"
+    return "upcoming"
   }
+
+  // ─── Render ────────────────────────────────────────────────────
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 hover:bg-primary/5 transition-colors">
+        <Button
+          variant="outline"
+          className="gap-2 hover:bg-primary/5 transition-colors"
+        >
           <Users className="h-4 w-4" />
           <span className="hidden sm:inline">استيراد جهات اتصال</span>
           <span className="sm:hidden">استيراد</span>
@@ -798,7 +927,7 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
               <DialogDescription className="text-xs sm:text-sm mt-1">
                 {fileName
                   ? `الملف: ${fileName}`
-                  : 'استيراد جماعي لجهات الاتصال من الملفات'}
+                  : "استيراد جماعي لجهات الاتصال من الملفات"}
               </DialogDescription>
             </div>
           </DialogTitle>
@@ -807,25 +936,39 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
           <div className="flex items-center justify-between mt-4 px-2">
             {[1, 2, 3].map((step, index) => {
               const status = getStepStatus(step)
-              const labels = ['اختيار الملف', 'المراجعة والتعديل', 'الاستيراد']
+              const labels = [
+                "اختيار الملف",
+                "المراجعة والتعديل",
+                "الاستيراد",
+              ]
 
               return (
                 <div key={step} className="flex items-center flex-1">
                   <div className="flex flex-col items-center gap-2 flex-1">
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
-                      ${status === 'complete' ? 'bg-success text-white' : ''}
-                      ${status === 'current' ? 'bg-primary text-white ring-4 ring-primary/20' : ''}
-                      ${status === 'upcoming' ? 'bg-muted text-muted-foreground' : ''}
-                    `}>
-                      {status === 'complete' ? <CheckCircle className="h-4 w-4" /> : step}
+                    <div
+                      className={`
+                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
+                        ${status === "complete" ? "bg-success text-white" : ""}
+                        ${status === "current" ? "bg-primary text-white ring-4 ring-primary/20" : ""}
+                        ${status === "upcoming" ? "bg-muted text-muted-foreground" : ""}
+                      `}
+                    >
+                      {status === "complete" ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        step
+                      )}
                     </div>
-                    <span className={`text-xs hidden sm:block ${status === 'current' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
+                    <span
+                      className={`text-xs hidden sm:block ${status === "current" ? "font-medium text-primary" : "text-muted-foreground"}`}
+                    >
                       {labels[index]}
                     </span>
                   </div>
                   {index < 2 && (
-                    <div className={`h-[2px] flex-1 mx-2 transition-colors ${status === 'complete' ? 'bg-success' : 'bg-muted'}`} />
+                    <div
+                      className={`h-[2px] flex-1 mx-2 transition-colors ${status === "complete" ? "bg-success" : "bg-muted"}`}
+                    />
                   )}
                 </div>
               )
@@ -845,35 +988,53 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
           {currentStep === 1 && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <div className="text-center py-4">
-                <h3 className="font-semibold text-lg mb-2">اختر نوع الملف المراد استيراده</h3>
-                <p className="text-sm text-muted-foreground">حدد صيغة الملف الذي تريد استيراد الجهات منه</p>
+                <h3 className="font-semibold text-lg mb-2">
+                  اختر نوع الملف المراد استيراده
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  حدد صيغة الملف الذي تريد استيراد الجهات منه
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
                 <button
-                  onClick={() => setImportMethod('vcf')}
+                  onClick={() => setImportMethod("vcf")}
                   className={`
                     group relative p-6 rounded-xl border-2 transition-all duration-200
                     hover:shadow-lg hover:scale-[1.02]
-                    ${importMethod === 'vcf'
-                      ? 'border-primary bg-primary/5 shadow-md'
-                      : 'border-border hover:border-primary/50'}
+                    ${
+                      importMethod === "vcf"
+                        ? "border-primary bg-primary/5 shadow-md"
+                        : "border-border hover:border-primary/50"
+                    }
                   `}
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className={`
-                      p-4 rounded-full transition-colors
-                      ${importMethod === 'vcf' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}
-                    `}>
+                    <div
+                      className={`
+                        p-4 rounded-full transition-colors
+                        ${
+                          importMethod === "vcf"
+                            ? "bg-primary text-white"
+                            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        }
+                      `}
+                    >
                       <File className="h-8 w-8" />
                     </div>
                     <div className="text-center">
-                      <h4 className="font-semibold text-base mb-1">ملف vCard</h4>
-                      <p className="text-xs text-muted-foreground">استيراد من جهات اتصال الهاتف</p>
-                      <p className="text-xs text-muted-foreground mt-1 font-mono">.vcf</p>
+                      <h4 className="font-semibold text-base mb-1">
+                        ملف vCard
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        استيراد من جهات اتصال الهاتف
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">
+                        .vcf
+                      </p>
                     </div>
                   </div>
-                  {importMethod === 'vcf' && (
+                  {importMethod === "vcf" && (
                     <div className="absolute top-2 right-2">
                       <CheckCircle className="h-5 w-5 text-primary" />
                     </div>
@@ -881,29 +1042,43 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                 </button>
 
                 <button
-                  onClick={() => setImportMethod('csv')}
+                  onClick={() => setImportMethod("csv")}
                   className={`
                     group relative p-6 rounded-xl border-2 transition-all duration-200
                     hover:shadow-lg hover:scale-[1.02]
-                    ${importMethod === 'csv'
-                      ? 'border-primary bg-primary/5 shadow-md'
-                      : 'border-border hover:border-primary/50'}
+                    ${
+                      importMethod === "csv"
+                        ? "border-primary bg-primary/5 shadow-md"
+                        : "border-border hover:border-primary/50"
+                    }
                   `}
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className={`
-                      p-4 rounded-full transition-colors
-                      ${importMethod === 'csv' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}
-                    `}>
+                    <div
+                      className={`
+                        p-4 rounded-full transition-colors
+                        ${
+                          importMethod === "csv"
+                            ? "bg-primary text-white"
+                            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        }
+                      `}
+                    >
                       <FileText className="h-8 w-8" />
                     </div>
                     <div className="text-center">
-                      <h4 className="font-semibold text-base mb-1">ملف نصي</h4>
-                      <p className="text-xs text-muted-foreground">استيراد من ملف Excel أو نصي</p>
-                      <p className="text-xs text-muted-foreground mt-1 font-mono">.csv / .txt</p>
+                      <h4 className="font-semibold text-base mb-1">
+                        ملف نصي
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        استيراد من ملف Excel أو نصي
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">
+                        .csv / .txt
+                      </p>
                     </div>
                   </div>
-                  {importMethod === 'csv' && (
+                  {importMethod === "csv" && (
                     <div className="absolute top-2 right-2">
                       <CheckCircle className="h-5 w-5 text-primary" />
                     </div>
@@ -921,26 +1096,32 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                   onDrop={handleDrop}
                   className={`
                     border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200
-                    ${isDragging
-                      ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg'
-                      : 'border-border bg-muted/50 hover:bg-muted hover:border-primary/30'}
+                    ${
+                      isDragging
+                        ? "border-primary bg-primary/10 scale-[1.02] shadow-lg"
+                        : "border-border bg-muted/50 hover:bg-muted hover:border-primary/30"
+                    }
                   `}
                 >
                   <div className="flex flex-col items-center gap-4">
-                    <div className={`
-                      p-4 rounded-full transition-all
-                      ${isDragging ? 'bg-primary text-white scale-110' : 'bg-primary/10'}
-                    `}>
-                      <Upload className={`h-8 w-8 ${isDragging ? 'text-white' : 'text-primary'}`} />
+                    <div
+                      className={`
+                        p-4 rounded-full transition-all
+                        ${isDragging ? "bg-primary text-white scale-110" : "bg-primary/10"}
+                      `}
+                    >
+                      <Upload
+                        className={`h-8 w-8 ${isDragging ? "text-white" : "text-primary"}`}
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <h4 className="font-medium text-base">
                         {isDragging
-                          ? 'أفلت الملف هنا'
-                          : importMethod === 'vcf'
-                            ? 'ارفع ملف vCard'
-                            : 'ارفع ملف CSV أو TXT'}
+                          ? "أفلت الملف هنا"
+                          : importMethod === "vcf"
+                            ? "ارفع ملف vCard"
+                            : "ارفع ملف CSV أو TXT"}
                       </h4>
                       <p className="text-sm text-muted-foreground">
                         اسحب الملف وأفلته هنا أو انقر للاختيار
@@ -952,7 +1133,11 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
 
                     <Input
                       type="file"
-                      accept={importMethod === 'vcf' ? ".vcf,.vcard" : ".csv,.txt"}
+                      accept={
+                        importMethod === "vcf"
+                          ? ".vcf,.vcard"
+                          : ".csv,.txt"
+                      }
                       onChange={handleFileUpload}
                       ref={fileInputRef}
                       className="hidden"
@@ -976,13 +1161,20 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                     كيفية تصدير جهات الاتصال من هاتفك:
                   </h5>
                   <ol className="text-sm text-muted-foreground space-y-1 pr-5 list-decimal">
-                    <li>افتح تطبيق <strong>جهات الاتصال</strong> في هاتفك</li>
-                    <li>اضغط على <strong>القائمة</strong> (⋮) أو <strong>الإعدادات</strong></li>
-                    <li>اختر <strong>تصدير</strong> أو <strong>مشاركة</strong></li>
                     <li>
-                      {importMethod === 'vcf'
-                        ? 'حدد تصدير كملف vCard (.vcf)'
-                        : 'احفظ كملف CSV أو TXT'}
+                      افتح تطبيق <strong>جهات الاتصال</strong> في هاتفك
+                    </li>
+                    <li>
+                      اضغط على <strong>القائمة</strong> (⋮) أو{" "}
+                      <strong>الإعدادات</strong>
+                    </li>
+                    <li>
+                      اختر <strong>تصدير</strong> أو <strong>مشاركة</strong>
+                    </li>
+                    <li>
+                      {importMethod === "vcf"
+                        ? "حدد تصدير كملف vCard (.vcf)"
+                        : "احفظ كملف CSV أو TXT"}
                     </li>
                     <li>احفظ الملف وارفعه هنا</li>
                   </ol>
@@ -1004,26 +1196,44 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                     <div className="p-1.5 rounded bg-primary/10">
                       <Filter className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="font-medium text-sm">الإعدادات المشتركة</span>
+                    <span className="font-medium text-sm">
+                      الإعدادات المشتركة
+                    </span>
                   </div>
-                  {showSettings ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {showSettings ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </button>
 
                 {showSettings && (
                   <div className="p-4 space-y-4 border-t bg-background">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="common-stage" className="text-sm font-medium">مرحلة الدعوة</Label>
+                        <Label
+                          htmlFor="common-stage"
+                          className="text-sm font-medium"
+                        >
+                          مرحلة الدعوة
+                        </Label>
                         <Select
                           value={commonSettings.da_wa_stage}
-                          onValueChange={(value) => setCommonSettings(prev => ({ ...prev, da_wa_stage: value }))}
+                          onValueChange={(value) =>
+                            setCommonSettings((prev) => ({
+                              ...prev,
+                              da_wa_stage: value,
+                            }))
+                          }
                         >
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {DAWA_STAGES.map((stage) => (
-                              <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                              <SelectItem key={stage} value={stage}>
+                                {stage}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1031,26 +1241,44 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
 
                       {userRole === "admin" && !assignedPreacherId && (
                         <div className="space-y-2">
-                          <Label htmlFor="common-preacher" className="text-sm font-medium">تعيين لداعية</Label>
-                                                    {loadingPreachers ? (
+                          <Label
+                            htmlFor="common-preacher"
+                            className="text-sm font-medium"
+                          >
+                            تعيين لداعية
+                          </Label>
+                          {loadingPreachers ? (
                             <div className="flex items-center gap-2 p-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
-                              <span className="text-sm">جاري التحميل...</span>
+                              <span className="text-sm">
+                                جاري التحميل...
+                              </span>
                             </div>
                           ) : (
                             <Select
                               value={commonSettings.da_i_id}
-                              onValueChange={(value) => setCommonSettings(prev => ({ ...prev, da_i_id: value }))}
+                              onValueChange={(value) =>
+                                setCommonSettings((prev) => ({
+                                  ...prev,
+                                  da_i_id: value,
+                                }))
+                              }
                             >
                               <SelectTrigger className="h-9">
                                 <SelectValue placeholder="اختر داعية" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value={user?.uid || ""}>
-                                  (أنا) {user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || 'داعية'}
+                                  (أنا){" "}
+                                  {user?.displayName?.split(" ")[0] ||
+                                    user?.email?.split("@")[0] ||
+                                    "داعية"}
                                 </SelectItem>
                                 {preachers.map((preacher) => (
-                                  <SelectItem key={preacher.id} value={preacher.id}>
+                                  <SelectItem
+                                    key={preacher.id}
+                                    value={preacher.id}
+                                  >
                                     {preacher.name}
                                   </SelectItem>
                                 ))}
@@ -1061,11 +1289,21 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                       )}
 
                       <div className="space-y-2">
-                        <Label htmlFor="common-notes" className="text-sm font-medium">ملاحظات (اختياري)</Label>
+                        <Label
+                          htmlFor="common-notes"
+                          className="text-sm font-medium"
+                        >
+                          ملاحظات (اختياري)
+                        </Label>
                         <Input
                           id="common-notes"
                           value={commonSettings.notes}
-                          onChange={(e) => setCommonSettings(prev => ({ ...prev, notes: e.target.value }))}
+                          onChange={(e) =>
+                            setCommonSettings((prev) => ({
+                              ...prev,
+                              notes: e.target.value,
+                            }))
+                          }
                           placeholder="ملاحظات عامة"
                           className="h-9"
                         />
@@ -1073,7 +1311,11 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                     </div>
 
                     <div className="flex flex-wrap gap-2 pt-2">
-                      <Button onClick={applyCommonSettings} className="gap-2" size="sm">
+                      <Button
+                        onClick={applyCommonSettings}
+                        className="gap-2"
+                        size="sm"
+                      >
                         <CheckCheck className="h-4 w-4" />
                         تطبيق على الجميع
                       </Button>
@@ -1097,7 +1339,8 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                       <Alert className="text-xs border-warning/50 bg-warning/5">
                         <AlertCircle className="h-4 w-4 text-warning" />
                         <AlertDescription className="text-warning">
-                          يُنصح بفحص الأرقام المكررة قبل الاستيراد لتجنب التكرار في قاعدة البيانات
+                          يُنصح بفحص الأرقام المكررة قبل الاستيراد لتجنب
+                          التكرار في قاعدة البيانات
                         </AlertDescription>
                       </Alert>
                     )}
@@ -1110,7 +1353,8 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                 <div className="flex items-center gap-3 flex-wrap">
                   <h4 className="font-semibold text-base flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
-                    الجهات ({filteredContacts.length} من {contacts.length})
+                    الجهات ({filteredContacts.length} من{" "}
+                    {contacts.length})
                   </h4>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary" className="gap-1">
@@ -1127,8 +1371,16 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                         خطأ: {statusCounts.error}
                       </Badge>
                     )}
+                    {statusCounts.invalid > 0 && (
+                      <Badge variant="destructive" className="gap-1">
+                        غير صالح: {statusCounts.invalid}
+                      </Badge>
+                    )}
                     {statusCounts.duplicate > 0 && (
-                      <Badge variant="outline" className="gap-1 border-warning text-warning">
+                      <Badge
+                        variant="outline"
+                        className="gap-1 border-warning text-warning"
+                      >
                         مكرر: {statusCounts.duplicate}
                       </Badge>
                     )}
@@ -1137,7 +1389,7 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <div className="relative flex-1 sm:flex-none">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input
                       placeholder="بحث..."
                       value={searchQuery}
@@ -1149,29 +1401,44 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                         variant="ghost"
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setSearchQuery('')}
+                        onClick={() => setSearchQuery("")}
                       >
                         <X className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-32 h-9">
+                  <Select
+                    value={filterStatus}
+                    onValueChange={setFilterStatus}
+                  >
+                    <SelectTrigger className="w-36 h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">الكل ({statusCounts.total})</SelectItem>
-                      <SelectItem value="pending">قيد الانتظار ({statusCounts.pending})</SelectItem>
-                      <SelectItem value="success">ناجح ({statusCounts.success})</SelectItem>
-                      <SelectItem value="error">خطأ ({statusCounts.error})</SelectItem>
-                      <SelectItem value="duplicate">مكرر ({statusCounts.duplicate})</SelectItem>
-                      <SelectItem value="invalid">غير صالح</SelectItem>
+                      <SelectItem value="all">
+                        الكل ({statusCounts.total})
+                      </SelectItem>
+                      <SelectItem value="pending">
+                        قيد الانتظار ({statusCounts.pending})
+                      </SelectItem>
+                      <SelectItem value="success">
+                        ناجح ({statusCounts.success})
+                      </SelectItem>
+                      <SelectItem value="error">
+                        خطأ ({statusCounts.error})
+                      </SelectItem>
+                      <SelectItem value="invalid">
+                        غير صالح ({statusCounts.invalid})
+                      </SelectItem>
+                      <SelectItem value="duplicate">
+                        مكرر ({statusCounts.duplicate})
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* Contacts Table - Now using the Table components from File 1 */}
+              {/* Contacts Table */}
               <div className="border rounded-lg overflow-hidden bg-background">
                 {/* Table Actions */}
                 <div className="px-4 py-3 bg-muted border-b flex items-center justify-between">
@@ -1179,15 +1446,19 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="select-all"
-                        checked={
-                          filteredContacts.filter(c => c.status !== 'success' && c.status !== 'invalid').length > 0 &&
-                          filteredContacts.filter(c => c.status !== 'success' && c.status !== 'invalid').every(c => c.selected)
-                        }
+                        checked={allFilteredSelected}
                         onCheckedChange={toggleSelectAll}
                         className="h-4 w-4"
+                        disabled={
+                          selectableFilteredContacts.length === 0
+                        }
                       />
-                      <Label htmlFor="select-all" className="text-sm cursor-pointer font-medium">
-                        تحديد الكل
+                      <Label
+                        htmlFor="select-all"
+                        className="text-sm cursor-pointer font-medium"
+                      >
+                        تحديد الكل (
+                        {selectableFilteredContacts.length})
                       </Label>
                     </div>
 
@@ -1230,23 +1501,35 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                     <TableEmpty
                       title="لا توجد جهات تطابق البحث"
                       description="جرّب تغيير معايير البحث أو الفلتر"
-                      icon={<Users className="h-10 w-10 text-muted-foreground/50" />}
+                      icon={
+                        <Users className="h-10 w-10 text-muted-foreground/50" />
+                      }
                     />
                   ) : (
                     <table className="w-full">
                       <thead className="bg-muted sticky top-0 z-10">
                         <tr className="border-b text-xs text-muted-foreground">
-                          <th className="p-3 text-center w-12">#</th>
+                          <th className="p-3 text-center w-12">
+                            #
+                          </th>
                           <th className="p-3 text-right">الاسم</th>
-                          <th className="p-3 text-right">رقم الهاتف</th>
+                          <th className="p-3 text-right">
+                            رقم الهاتف
+                          </th>
                           {showDetails && (
                             <>
-                              <th className="p-3 text-right">المرحلة</th>
-                              <th className="p-3 text-right">ملاحظات</th>
+                              <th className="p-3 text-right">
+                                المرحلة
+                              </th>
+                              <th className="p-3 text-right">
+                                ملاحظات
+                              </th>
                             </>
                           )}
                           <th className="p-3 text-center">الحالة</th>
-                          <th className="p-3 text-center w-20">إجراءات</th>
+                          <th className="p-3 text-center w-20">
+                            إجراءات
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1255,10 +1538,10 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                             key={contact.id}
                             className={`
                               border-b transition-colors
-                              ${contact.status === 'success' ? 'bg-success/5 opacity-70' : ''}
-                              ${contact.status === 'error' || contact.status === 'invalid' ? 'bg-destructive/5' : ''}
-                              ${contact.status === 'duplicate' ? 'bg-warning/5' : ''}
-                              ${contact.selected && contact.status === 'pending' ? 'bg-primary/5' : ''}
+                              ${contact.status === "success" ? "bg-success/5 opacity-70" : ""}
+                              ${contact.status === "error" || contact.status === "invalid" ? "bg-destructive/5" : ""}
+                              ${contact.status === "duplicate" ? "bg-warning/5" : ""}
+                              ${contact.selected && contact.status === "pending" ? "bg-primary/5" : ""}
                               hover:bg-muted/50
                             `}
                           >
@@ -1266,9 +1549,14 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                               <Checkbox
                                 checked={contact.selected}
                                 onCheckedChange={(checked) =>
-                                  updateContact(contact.id, { selected: checked === true })
+                                  updateContact(contact.id, {
+                                    selected: checked === true,
+                                  })
                                 }
-                                disabled={contact.status === 'success' || contact.status === 'invalid'}
+                                disabled={
+                                  contact.status === "success" ||
+                                  contact.status === "invalid"
+                                }
                                 className="h-4 w-4"
                               />
                             </td>
@@ -1277,17 +1565,31 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                               {showDetails ? (
                                 <Input
                                   value={contact.name}
-                                  onChange={(e) => updateContact(contact.id, { name: e.target.value })}
+                                  onChange={(e) =>
+                                    updateContact(contact.id, {
+                                      name: e.target.value,
+                                    })
+                                  }
                                   className="h-8 text-sm"
-                                  disabled={contact.status === 'success'}
+                                  disabled={
+                                    contact.status === "success"
+                                  }
                                 />
                               ) : (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium truncate max-w-[200px]" title={contact.name}>
+                                  <span
+                                    className="text-sm font-medium truncate max-w-[200px]"
+                                    title={contact.name}
+                                  >
                                     {contact.name}
                                   </span>
                                   {contact.isEdited && (
-                                    <Badge variant="outline" className="text-[10px] px-1">معدل</Badge>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1"
+                                    >
+                                      معدل
+                                    </Badge>
                                   )}
                                 </div>
                               )}
@@ -1298,22 +1600,38 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                                 <div className="space-y-1">
                                   <Input
                                     value={contact.phone}
-                                    onChange={(e) => updateContact(contact.id, { phone: e.target.value })}
+                                    onChange={(e) =>
+                                      updateContact(contact.id, {
+                                        phone: e.target.value,
+                                      })
+                                    }
                                     className="h-8 text-sm font-mono"
                                     dir="ltr"
-                                    disabled={contact.status === 'success'}
+                                    disabled={
+                                      contact.status === "success"
+                                    }
                                   />
-                                  {contact.formattedPhone && contact.formattedPhone !== contact.phone && (
-                                    <span className="text-[10px] text-muted-foreground font-mono" dir="ltr">
-                                      ← {contact.formattedPhone}
-                                    </span>
-                                  )}
+                                  {contact.formattedPhone &&
+                                    contact.formattedPhone !==
+                                      contact.phone && (
+                                      <span
+                                        className="text-[10px] text-muted-foreground font-mono"
+                                        dir="ltr"
+                                      >
+                                        ← {contact.formattedPhone}
+                                      </span>
+                                    )}
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2">
                                   <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                  <span className="text-sm font-mono" dir="ltr">
-                                    {contact.formattedPhone || contact.phone || 'لا يوجد'}
+                                  <span
+                                    className="text-sm font-mono"
+                                    dir="ltr"
+                                  >
+                                    {contact.formattedPhone ||
+                                      contact.phone ||
+                                      "لا يوجد"}
                                   </span>
                                 </div>
                               )}
@@ -1324,28 +1642,44 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                                 <td className="p-3">
                                   <Select
                                     value={contact.da_wa_stage}
-                                    onValueChange={(value) => updateContact(contact.id, { da_wa_stage: value })}
-                                    disabled={contact.status === 'success'}
+                                    onValueChange={(value) =>
+                                      updateContact(contact.id, {
+                                        da_wa_stage: value,
+                                      })
+                                    }
+                                    disabled={
+                                      contact.status === "success"
+                                    }
                                   >
                                     <SelectTrigger className="h-8 text-xs">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {DAWA_STAGES.map((stage) => (
-                                        <SelectItem key={stage} value={stage} className="text-xs">
+                                        <SelectItem
+                                          key={stage}
+                                          value={stage}
+                                          className="text-xs"
+                                        >
                                           {stage}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
                                   </Select>
                                 </td>
-                                <td className="p-3">
+                                                                <td className="p-3">
                                   <Input
                                     value={contact.notes}
-                                    onChange={(e) => updateContact(contact.id, { notes: e.target.value })}
+                                    onChange={(e) =>
+                                      updateContact(contact.id, {
+                                        notes: e.target.value,
+                                      })
+                                    }
                                     className="h-8 text-xs"
                                     placeholder="ملاحظات"
-                                    disabled={contact.status === 'success'}
+                                    disabled={
+                                      contact.status === "success"
+                                    }
                                   />
                                 </td>
                               </>
@@ -1355,7 +1689,10 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                               <div className="flex flex-col gap-1 items-center">
                                 {getStatusBadge(contact.status)}
                                 {contact.error && (
-                                  <span className="text-[10px] text-destructive max-w-[100px] truncate" title={contact.error}>
+                                  <span
+                                    className="text-[10px] text-destructive max-w-[100px] truncate"
+                                    title={contact.error}
+                                  >
                                     {contact.error}
                                   </span>
                                 )}
@@ -1366,9 +1703,13 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => deleteContact(contact.id)}
+                                onClick={() =>
+                                  deleteContact(contact.id)
+                                }
                                 className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                                disabled={contact.status === 'success'}
+                                disabled={
+                                  contact.status === "success"
+                                }
                                 title="حذف"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1402,14 +1743,14 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                 <h3 className="font-semibold text-xl mb-2">
                   {!loading && importProgress >= 100
                     ? failedCount > 0 && importedCount === 0
-                      ? 'فشل الاستيراد'
-                      : 'تم الاستيراد بنجاح!'
-                    : 'جاري الاستيراد...'}
+                      ? "فشل الاستيراد"
+                      : "تم الاستيراد بنجاح!"
+                    : "جاري الاستيراد..."}
                 </h3>
                 <p className="text-muted-foreground">
                   {!loading && importProgress >= 100
-                    ? `تم إضافة ${importedCount} مستفيد بنجاح${failedCount > 0 ? ` (فشل ${failedCount})` : ''}`
-                    : 'الرجاء الانتظار حتى يتم استيراد جميع الجهات'}
+                    ? `تم إضافة ${importedCount} مستفيد بنجاح${failedCount > 0 ? ` (فشل ${failedCount})` : ""}`
+                    : "الرجاء الانتظار حتى يتم استيراد جميع الجهات"}
                 </p>
               </div>
 
@@ -1417,33 +1758,49 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                 <Progress value={importProgress} className="h-3" />
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">التقدم</span>
-                  <span className="font-medium">{Math.round(importProgress)}%</span>
+                  <span className="font-medium">
+                    {Math.round(importProgress)}%
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   <div className="text-center p-4 rounded-lg bg-success/10 border border-success/30">
-                    <div className="text-2xl font-bold text-success">{importedCount}</div>
-                    <div className="text-xs text-success mt-1">تم بنجاح</div>
+                    <div className="text-2xl font-bold text-success">
+                      {importedCount}
+                    </div>
+                    <div className="text-xs text-success mt-1">
+                      تم بنجاح
+                    </div>
                   </div>
                   {failedCount > 0 && (
                     <div className="text-center p-4 rounded-lg bg-destructive/10 border border-destructive/30">
-                      <div className="text-2xl font-bold text-destructive">{failedCount}</div>
-                      <div className="text-xs text-destructive mt-1">فشل</div>
+                      <div className="text-2xl font-bold text-destructive">
+                        {failedCount}
+                      </div>
+                      <div className="text-xs text-destructive mt-1">
+                        فشل
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Show failed contacts summary */}
                 {!loading && failedCount > 0 && (
                   <div className="mt-4 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
-                    <h4 className="text-sm font-medium text-destructive mb-2">الجهات التي فشل استيرادها:</h4>
+                    <h4 className="text-sm font-medium text-destructive mb-2">
+                      الجهات التي فشل استيرادها:
+                    </h4>
                     <div className="max-h-32 overflow-y-auto space-y-1">
                       {contacts
-                        .filter(c => c.status === 'error')
-                        .map(c => (
-                          <div key={c.id} className="text-xs flex justify-between items-center">
+                        .filter((c) => c.status === "error")
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="text-xs flex justify-between items-center"
+                          >
                             <span>{c.name}</span>
-                            <span className="text-destructive/70">{c.error}</span>
+                            <span className="text-destructive/70">
+                              {c.error}
+                            </span>
                           </div>
                         ))}
                     </div>
@@ -1464,7 +1821,9 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
                   {selectedCount} جهة
                 </Badge>
                 {!duplicateCheckDone && selectedCount > 0 && (
-                  <span className="text-xs text-warning">⚠ لم يتم فحص التكرار</span>
+                  <span className="text-xs text-warning">
+                    ⚠ لم يتم فحص التكرار
+                  </span>
                 )}
               </div>
             )}
@@ -1498,7 +1857,11 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
               size="sm"
               className="flex-1 sm:flex-none"
             >
-              {currentStep === 3 && !loading && importProgress >= 100 ? 'إغلاق' : 'إلغاء'}
+              {currentStep === 3 &&
+              !loading &&
+              importProgress >= 100
+                ? "إغلاق"
+                : "إلغاء"}
             </Button>
 
             {currentStep === 2 && (
@@ -1522,23 +1885,27 @@ export function ContactImportDialog({ onImportComplete, assignedPreacherId }: Co
               </Button>
             )}
 
-            {currentStep === 3 && !loading && importProgress >= 100 && failedCount > 0 && (
-              <Button
-                onClick={() => {
-                  setCurrentStep(2)
-                  setImportProgress(0)
-                }}
-                size="sm"
-                variant="outline"
-                className="gap-2 flex-1 sm:flex-none"
-              >
-                <RefreshCw className="h-4 w-4" />
-                مراجعة الفاشلة
-              </Button>
-            )}
+            {currentStep === 3 &&
+              !loading &&
+              importProgress >= 100 &&
+              failedCount > 0 && (
+                <Button
+                  onClick={() => {
+                    setCurrentStep(2)
+                    setImportProgress(0)
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 flex-1 sm:flex-none"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  مراجعة الفاشلة
+                </Button>
+              )}
           </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
+                                  
