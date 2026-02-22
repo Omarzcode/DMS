@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: "Engineering Management System",
   description: "Professional CRM for Engineering organizations",
   generator: "theta.app",
+  icons: {
+    icon: "/cropped_circle_image.png",          // Place my-icon.png in /public folder
+    shortcut: "/my-icon.png",
+    apple: "/apple-icon.png",      // Optional: for Apple devices
+  },
 }
 
 export default function RootLayout({
