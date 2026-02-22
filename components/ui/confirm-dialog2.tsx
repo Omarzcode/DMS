@@ -1,7 +1,7 @@
-// components/ui/confirm-dialog.tsx
+// components/ui/confirm-dialog2.tsx
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useCallback, useRef, useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,72 +12,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { AlertTriangle, Trash2, Wrench, HelpCircle } from "lucide-react"
-
-type ConfirmVariant = "danger" | "warning" | "info" | "default"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface ConfirmOptions {
   title: string
   description: string
   confirmText?: string
   cancelText?: string
-  variant?: ConfirmVariant
+  variant?: "danger" | "info" | "default"
 }
-
-const VARIANT_CONFIG: Record<
-  ConfirmVariant,
-  {
-    icon: React.ElementType
-    iconClassName: string
-    iconBgClassName: string
-    confirmClassName: string
-  }
-> = {
-  danger: {
-    icon: Trash2,
-    iconClassName: "text-destructive",
-    iconBgClassName: "bg-destructive/10",
-    confirmClassName:
-      "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-  },
-  warning: {
-    icon: AlertTriangle,
-    iconClassName: "text-warning",
-    iconBgClassName: "bg-warning/10",
-    confirmClassName:
-      "bg-warning text-warning-foreground hover:bg-warning/90",
-  },
-  info: {
-    icon: Wrench,
-    iconClassName: "text-info",
-    iconBgClassName: "bg-info/10",
-    confirmClassName:
-      "bg-info text-info-foreground hover:bg-info/90",
-  },
-  default: {
-    icon: HelpCircle,
-    iconClassName: "text-primary",
-    iconBgClassName: "bg-primary/10",
-    confirmClassName:
-      "bg-primary text-primary-foreground hover:bg-primary/90",
-  },
-}
-
-let confirmFn: ((options: ConfirmOptions) => Promise<boolean>) | null = null
 
 export function useConfirm() {
-  const resolveRef = useRef<((value: boolean) => void) | null>(null)
   const [open, setOpen] = useState(false)
   const [options, setOptions] = useState<ConfirmOptions>({
     title: "",
     description: "",
   })
+  const resolveRef = useRef<((value: boolean) => void) | null>(null)
 
   const confirm = useCallback((opts: ConfirmOptions): Promise<boolean> => {
-    return new Promise((resolve) => {
+    setOptions(opts)
+    setOpen(true)
+
+    return new Promise<boolean>((resolve) => {
       resolveRef.current = resolve
-      setOptions(opts)
-      setOpen(true)
     })
   }, [])
 
@@ -85,48 +44,76 @@ export function useConfirm() {
     resolveRef.current?.(true)
     resolveRef.current = null
     setOpen(false)
+
+    // KEY FIX: Clean up body styles after closing
+    requestAnimationFrame(() => {
+      // Don't remove pointer-events if another dialog is still open
+      const openDialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
+      if (openDialogs.length > 0) {
+        // Another dialog is still open, re-apply pointer-events: none
+        document.body.style.pointerEvents = "none"
+      }
+    })
   }, [])
 
   const handleCancel = useCallback(() => {
     resolveRef.current?.(false)
     resolveRef.current = null
     setOpen(false)
+
+    // KEY FIX: Same cleanup
+    requestAnimationFrame(() => {
+      const openDialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
+      if (openDialogs.length > 0) {
+        document.body.style.pointerEvents = "none"
+      }
+    })
   }, [])
 
-  const variant = options.variant || "default"
-  const config = VARIANT_CONFIG[variant]
-  const IconComponent = config.icon
+  // KEY FIX: Handle the case where dialog is dismissed via escape/overlay
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) {
+      resolveRef.current?.(false)
+      resolveRef.current = null
+      setOpen(false)
+
+      requestAnimationFrame(() => {
+        const openDialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
+        if (openDialogs.length > 0) {
+          document.body.style.pointerEvents = "none"
+        }
+      })
+    }
+  }, [])
 
   const ConfirmDialog = (
-    <AlertDialog open={open} onOpenChange={(o) => !o && handleCancel()}>
-      <AlertDialogContent className="max-w-md">
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogContent
+        // KEY FIX: Prevent this dialog from stealing focus cleanup from parent
+        onCloseAutoFocus={(e) => {
+          e.preventDefault()
+        }}
+        // KEY FIX: Prevent overlay click from propagating to parent dialog
+        onEscapeKeyDown={(e) => {
+          e.stopPropagation()
+        }}
+      >
         <AlertDialogHeader>
-          <div className="flex items-start gap-4">
-            <div
-              className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${config.iconBgClassName}`}
-            >
-              <IconComponent className={`h-6 w-6 ${config.iconClassName}`} />
-            </div>
-            <div className="space-y-2">
-              <AlertDialogTitle className="text-lg">
-                {options.title}
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-sm leading-relaxed">
-                {options.description}
-              </AlertDialogDescription>
-            </div>
-          </div>
+          <AlertDialogTitle>{options.title}</AlertDialogTitle>
+          <AlertDialogDescription>{options.description}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="gap-2 sm:gap-0">
-          <AlertDialogCancel
-            onClick={handleCancel}
-            className="mt-0"
-          >
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancel}>
             {options.cancelText || "إلغاء"}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
-            className={config.confirmClassName}
+            className={cn(
+              options.variant === "danger" &&
+                buttonVariants({ variant: "destructive" }),
+              options.variant === "info" &&
+                "bg-info text-info-foreground hover:bg-info/90"
+            )}
           >
             {options.confirmText || "تأكيد"}
           </AlertDialogAction>
