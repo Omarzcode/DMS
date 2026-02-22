@@ -12,16 +12,16 @@ export default function MyBeneficiariesPage() {
       <SidebarProvider>
         <PreacherSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-6">
+            <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
+            <Separator orientation="vertical" className="mr-2 h-4 bg-muted" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>My Beneficiaries</BreadcrumbPage>
+                  <BreadcrumbPage className="text-foreground font-semibold">My Beneficiaries</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>

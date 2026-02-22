@@ -1,149 +1,171 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { collection, getDocs } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useMemo } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Users, UserCheck, Calendar, TrendingUp, ArrowUpIcon, ArrowDownIcon, Sparkles } from "lucide-react"
-import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
+import {
+  Users,
+  UserPlus,
+  Calendar,
+  TrendingUp,
+  Activity,
+  UserX,
+  BookOpen,
+  BarChart3,
+} from "lucide-react"
+import type { DashboardData } from "@/hooks/use-dashboard-data"
+import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
+import { useAuth } from "@/hooks/use-auth"
 
-interface DashboardStats {
-  totalBeneficiaries: number
-  totalPreachers: number
-  totalActivities: number
-  activeThisMonth: number
-  beneficiaryGrowth: number
-  preacherGrowth: number
+interface DashboardStatsProps {
+  data: DashboardData
 }
 
-export function DashboardStats() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
+interface StatCard {
+  title: string
+  value: number | string
+  icon: React.ElementType
+  description?: string
+  trend?: string
+  color: string
+  adminOnly?: boolean
+}
 
-  useEffect(() => {
-    fetchStats()
-  }, [])
+export function DashboardStats({ data }: DashboardStatsProps) {
+  const { userRole } = useAuth()
+  const isAdmin = userRole === "admin"
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true)
+  const stats = useMemo<StatCard[]>(() => {
+    const { beneficiaries, preachers, attendance, activities } = data
+    const now = new Date()
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-      // Get current date and last month for growth calculations
-      const now = new Date()
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    // New beneficiaries this month
+    const newThisMonth = beneficiaries.filter(
+      (b) => getDateFromTimestamp(b.created_at) >= thisMonth
+    ).length
 
-      // Fetch all data
-      const [
-        beneficiariesSnapshot,
-        preachersSnapshot,
-        maqariSnapshot,
-        eventsSnapshot,
-        lessonsSnapshot,
-        sectionsSnapshot,
-      ] = await Promise.all([
-        getDocs(collection(db, "beneficiaries")),
-        getDocs(collection(db, "preachers")),
-        getDocs(collection(db, "maqari")),
-        getDocs(collection(db, "events")),
-        getDocs(collection(db, "lessons")),
-        getDocs(collection(db, "sections")),
-      ])
+    const newLastMonth = beneficiaries.filter((b) => {
+      const d = getDateFromTimestamp(b.created_at)
+      return d >= lastMonth && d < thisMonth
+    }).length
 
-      const beneficiaries = beneficiariesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Beneficiary[]
-      const preachers = preachersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Preacher[]
+    const growthTrend =
+      newLastMonth > 0
+        ? `${newThisMonth >= newLastMonth ? "+" : ""}${Math.round(((newThisMonth - newLastMonth) / newLastMonth) * 100)}% vs last month`
+        : newThisMonth > 0
+          ? "New this month"
+          : "No new additions"
 
-      // Calculate total activities
-      const totalActivities = maqariSnapshot.size + eventsSnapshot.size + lessonsSnapshot.size + sectionsSnapshot.size
+    // Inactive (no attendance in 30 days)
+    const activeIds = new Set(
+      attendance
+        .filter(
+          (a) =>
+            a.present && getDateFromTimestamp(a.logged_at) >= thirtyDaysAgo
+        )
+        .map((a) => a.beneficiary_id)
+    )
+    const inactiveCount = beneficiaries.filter(
+      (b) => !activeIds.has(b.id)
+    ).length
 
-      // Calculate growth metrics
-      function toDate(val: any): Date | null {
-        if (!val) return null
-        // Firestore Timestamp object
-        if (typeof val.seconds === "number" && typeof val.nanoseconds === "number") {
-          return new Date(val.seconds * 1000)
+    // Advanced stages
+    const advancedStages = ["متعلم ملتزم", "مشارك نشط", "قائد مجتمعي"]
+    const advancedCount = beneficiaries.filter((b) =>
+      advancedStages.includes(b.da_wa_stage)
+    ).length
+
+    // Attendance rate (last 30 days)
+    const recentAttendance = attendance.filter(
+      (a) => getDateFromTimestamp(a.logged_at) >= thirtyDaysAgo
+    )
+    const presentCount = recentAttendance.filter((a) => a.present).length
+    const attendanceRate =
+      recentAttendance.length > 0
+        ? Math.round((presentCount / recentAttendance.length) * 100)
+        : 0
+
+    const cards: StatCard[] = [
+      {
+        title: "Total Beneficiaries",
+        value: beneficiaries.length,
+        icon: Users,
+        description: `${newThisMonth} new this month`,
+        trend: growthTrend,
+        color: "text-blue-600",
+      },
+      {
+        title: "New This Month",
+        value: newThisMonth,
+        icon: UserPlus,
+        description: "Beneficiaries added",
+        trend: growthTrend,
+        color: "text-green-600",
+      },
+      {
+        title: "Total Activities",
+        value: activities.all.length,
+        icon: Calendar,
+        color: "text-purple-600",
+        description: `${activities.maqari.length} Maqari · ${activities.events.length} Events`,
+      },
+      {
+        title: "Advanced Stages",
+        value: advancedCount,
+        icon: TrendingUp,
+        description: `${beneficiaries.length > 0 ? Math.round((advancedCount / beneficiaries.length) * 100) : 0}% of total`,
+        color: "text-emerald-600",
+      },
+      {
+        title: "Attendance Rate",
+        value: `${attendanceRate}%`,
+        icon: Activity,
+        description: "Last 30 days",
+        color: "text-orange-600",
+      },
+      {
+        title: "Inactive (30d)",
+        value: inactiveCount,
+        icon: UserX,
+        description: "Need follow-up",
+        color: "text-red-600",
+      },
+    ]
+
+    if (isAdmin) {
+      cards.push(
+        {
+          title: "Active Preachers",
+          value: preachers.filter((p) => p.role === "da'i").length,
+          icon: BookOpen,
+          description: `${preachers.length} total accounts`,
+          color: "text-indigo-600",
+          adminOnly: true,
+        },
+        {
+          title: "Total Records",
+          value: attendance.length,
+          icon: BarChart3,
+          description: "Attendance records",
+          color: "text-cyan-600",
+          adminOnly: true,
         }
-        // JS Date object
-        if (val instanceof Date) {
-          return val
-        }
-        // ISO string
-        if (typeof val === "string") {
-          const d = new Date(val)
-          return isNaN(d.getTime()) ? null : d
-        }
-        return null
-      }
-
-      const beneficiariesThisMonth = beneficiaries.filter(
-        (b) => {
-          const date = toDate(b.created_at)
-          return date && date >= thisMonth
-        }
-      ).length
-
-      const beneficiariesLastMonth = beneficiaries.filter(
-        (b) => {
-          const date = toDate(b.created_at)
-          return date && date >= lastMonth && date < thisMonth
-        }
-      ).length
-
-      const preachersThisMonth = preachers.filter(
-        (p) => {
-          const date = toDate(p.created_at)
-          return date && date >= thisMonth
-        }
-      ).length
-
-      const preachersLastMonth = preachers.filter(
-        (p) => {
-          const date = toDate(p.created_at)
-          return date && date >= lastMonth && date < thisMonth
-        }
-      ).length
-
-      // Calculate growth percentages
-      const beneficiaryGrowth =
-        beneficiariesLastMonth > 0
-          ? ((beneficiariesThisMonth - beneficiariesLastMonth) / beneficiariesLastMonth) * 100
-          : beneficiariesThisMonth > 0
-            ? 100
-            : 0
-
-      const preacherGrowth =
-        preachersLastMonth > 0
-          ? ((preachersThisMonth - preachersLastMonth) / preachersLastMonth) * 100
-          : preachersThisMonth > 0
-            ? 100
-            : 0
-
-      setStats({
-        totalBeneficiaries: beneficiaries.length,
-        totalPreachers: preachers.length,
-        totalActivities,
-        activeThisMonth: beneficiariesThisMonth,
-        beneficiaryGrowth,
-        preacherGrowth,
-      })
-    } catch (error) {
-      console.error("Error fetching dashboard stats:", error)
-    } finally {
-      setLoading(false)
+      )
     }
-  }
 
-  if (loading) {
+    return cards
+  }, [data, isAdmin])
+
+  if (data.loading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-5">
+              <Skeleton className="h-4 w-24 mb-3" />
               <Skeleton className="h-8 w-16 mb-2" />
               <Skeleton className="h-3 w-32" />
             </CardContent>
@@ -153,72 +175,32 @@ export function DashboardStats() {
     )
   }
 
-  if (!stats) return null
-
-  const statCards = [
-    {
-      title: "إجمالي المستفيدين",
-      value: stats.totalBeneficiaries,
-      description: `${stats.beneficiaryGrowth >= 0 ? "+" : ""}${stats.beneficiaryGrowth.toFixed(1)}% من الشهر الماضي`,
-      icon: Users,
-      trend: stats.beneficiaryGrowth >= 0 ? "up" : "down",
-      gradient: "from-primary to-secondary",
-    },
-    {
-      title: "الموظفون النشطون",
-      value: stats.totalPreachers,
-      description: `${stats.preacherGrowth >= 0 ? "+" : ""}${stats.preacherGrowth.toFixed(1)}% من الشهر الماضي`,
-      icon: UserCheck,
-      trend: stats.preacherGrowth >= 0 ? "up" : "down",
-      gradient: "from-primary to-secondary",
-    },
-    {
-      title: "إجمالي الأنشطة",
-      value: stats.totalActivities,
-      description: "فعاليات ودروس ومقارئ",
-      icon: Calendar,
-      gradient: "from-primary to-secondary",
-    },
-    {
-      title: "جديد هذا الشهر",
-      value: stats.activeThisMonth,
-      description: "مستفيدون جدد انضموا",
-      icon: TrendingUp,
-      gradient: "from-primary to-secondary",
-    },
-  ]
-
   return (
-    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-      {statCards.map((stat, index) => (
-        <Card key={stat.title} className="group hover:scale-105 transition-all duration-300 animate-scale-in card-responsive" style={{ animationDelay: `${index * 0.1}s` }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-<CardTitle className="text-xs sm:text-sm font-semibold text-muted-foreground leading-tight">
-  {stat.title}
-</CardTitle>          <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-              <stat.icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="text-2xl sm:text-3xl font-bold gradient-text-primary mb-1 sm:mb-2">{stat.value.toLocaleString()}</div>
-            <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground">
-              {stat.trend && (
-                <>
-                  {stat.trend === "up" ? (
-                    <ArrowUpIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
-                  ) : (
-                    <ArrowDownIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-500" />
-                  )}
-                </>
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {stats.map((stat) => {
+        const Icon = stat.icon
+        return (
+          <Card
+            key={stat.title}
+            className="hover:shadow-md transition-shadow duration-200"
+          >
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </span>
+                <Icon className={`h-5 w-5 ${stat.color}`} />
+              </div>
+              <div className="text-3xl font-bold">{stat.value}</div>
+              {stat.description && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stat.description}
+                </p>
               )}
-              <span className="flex items-center gap-0.5 sm:gap-1">
-                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-secondary" />
-                {stat.description}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

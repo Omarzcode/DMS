@@ -13,12 +13,13 @@ export default function PreacherDashboard() {
       <SidebarProvider>
         <PreacherSidebar />
         <SidebarInset className="bg-gradient-to-br bg-background">
-<header className="flex h-16 shrink-0 items-center gap-2 border-b border-border glass-effect px-4">            <SidebarTrigger className="-ml-1 text-primary hover:bg-primary" />
-            <Separator orientation="vertical" className="mr-2 h-4 bg-primary" />
+          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-6">
+            <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
+            <Separator orientation="vertical" className="mr-2 h-4 bg-muted" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-primary font-semibold">لوحة تحكم الداعية</BreadcrumbPage>
+                  <BreadcrumbPage className="text-foreground font-semibold">لوحة تحكم الداعية</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -44,7 +45,7 @@ export default function PreacherDashboard() {
               <PreacherStats />
             </div>
 
-            
+
           </div>
         </SidebarInset>
       </SidebarProvider>

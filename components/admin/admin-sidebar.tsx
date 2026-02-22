@@ -28,7 +28,6 @@ const adminMenuItems = [
 ]
 
 const analyticsMenuItems = [
-  { title: "نظرة عامة", url: "/admin/analytics", icon: TrendingUp },
   { title: "الموظفون", url: "/admin/analytics/preachers", icon: UserCheck },
   { title: "المستفيدون", url: "/admin/analytics/beneficiaries", icon: Users },
   { title: "الأنشطة", url: "/admin/analytics/activities", icon: Activity },

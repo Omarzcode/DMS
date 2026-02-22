@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -16,10 +17,91 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog"
-import { Loader2, Users, Shield, Trash2, AlertCircle, Check, X, UserX, AlertTriangle, XCircle } from "lucide-react"
+import {
+  Loader2,
+  Users,
+  Shield,
+  Trash2,
+  AlertCircle,
+  Check,
+  X,
+  UserX,
+  AlertTriangle,
+  UserCog,
+  Clock,
+  ShieldCheck,
+  RefreshCw,
+  Mail,
+} from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+
+/* ── Reusable Section Header ── */
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+  count,
+  countVariant = "default",
+}: {
+  icon: React.ElementType
+  title: string
+  description: string
+  count?: number
+  countVariant?: "default" | "warning" | "success"
+}) {
+  const countColors = {
+    default: "bg-primary/10 text-primary border-primary/20",
+    warning: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    success: "bg-green-500/10 text-green-600 border-green-500/20",
+  }
+
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {count !== undefined && (
+        <Badge variant="outline" className={`text-sm px-3 py-1 font-medium ${countColors[countVariant]}`}>
+          {count} {count === 1 ? "user" : "users"}
+        </Badge>
+      )}
+    </div>
+  )
+}
+
+/* ── Stat Card ── */
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ElementType
+  label: string
+  value: number
+  color: string
+}) {
+  return (
+    <Card className="shadow-sm">
+      <CardContent className="flex items-center gap-4 p-5">
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export function AdminManagement() {
   const { userRole } = useAuth()
@@ -30,7 +112,6 @@ export function AdminManagement() {
   const [processingUser, setProcessingUser] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogConfig, setDialogConfig] = useState<{
     title: string
@@ -52,8 +133,8 @@ export function AdminManagement() {
         ...doc.data(),
       })) as Preacher[]
 
-      setPreachers(usersData.filter(u => u.role === 'admin' || u.role === 'da\'i'))
-      setPendingUsers(usersData.filter(u => u.role === 'pending'))
+      setPreachers(usersData.filter((u) => u.role === "admin" || u.role === "da'i"))
+      setPendingUsers(usersData.filter((u) => u.role === "pending"))
     } catch (err) {
       setError("Failed to load users. Please try again later.")
     } finally {
@@ -71,24 +152,28 @@ export function AdminManagement() {
       setError(null)
       await updateDoc(doc(db, "preachers", userId), { role: newRole })
 
-      // Optimistic update
-      if (newRole === 'pending') {
-        setPreachers(prev => prev.filter(user => user.id !== userId))
-        setPendingUsers(prev => {
-          const updatedUser = preachers.find(u => u.id === userId)
+      if (newRole === "pending") {
+        setPreachers((prev) => prev.filter((user) => user.id !== userId))
+        setPendingUsers((prev) => {
+          const updatedUser = preachers.find((u) => u.id === userId)
           return updatedUser ? [...prev, { ...updatedUser, role: newRole }] : prev
         })
       } else {
-        setPendingUsers(prev => prev.filter(user => user.id !== userId))
-        setPreachers(prev => prev.map(user =>
-          user.id === userId ? { ...user, role: newRole } : user
-        ))
+        setPendingUsers((prev) => prev.filter((user) => user.id !== userId))
+        setPreachers((prev) => {
+          const existingUser = prev.find((u) => u.id === userId)
+          if (existingUser) {
+            return prev.map((user) => (user.id === userId ? { ...user, role: newRole } : user))
+          }
+          const pendingUser = pendingUsers.find((u) => u.id === userId)
+          return pendingUser ? [...prev, { ...pendingUser, role: newRole }] : prev
+        })
       }
 
       setSuccessMessage("User role updated successfully")
     } catch (err) {
       setError("Failed to update user role. Please try again.")
-      fetchUsers() // Refresh on error
+      fetchUsers()
     } finally {
       setProcessingUser(null)
     }
@@ -100,27 +185,25 @@ export function AdminManagement() {
       setError(null)
       await deleteDoc(doc(db, "preachers", userId))
 
-      // Optimistic update
-      setPreachers(prev => prev.filter(user => user.id !== userId))
-      setPendingUsers(prev => prev.filter(user => user.id !== userId))
+      setPreachers((prev) => prev.filter((user) => user.id !== userId))
+      setPendingUsers((prev) => prev.filter((user) => user.id !== userId))
 
       setSuccessMessage("User deleted successfully")
     } catch (err) {
       setError("Failed to delete user. Please try again.")
-      fetchUsers() // Refresh on error
+      fetchUsers()
     } finally {
       setProcessingUser(null)
     }
   }
 
-  // Dialog handlers
   const showApproveDialog = (user: Preacher) => {
     setDialogConfig({
       title: "Approve User",
       description: `Are you sure you want to approve ${user.name} as a Preacher?`,
-      action: () => updateUserRole(user.id, 'da\'i'),
+      action: () => updateUserRole(user.id, "da'i"),
       variant: "approve",
-      userName: user.name
+      userName: user.name,
     })
     setDialogOpen(true)
   }
@@ -131,7 +214,7 @@ export function AdminManagement() {
       description: `Are you sure you want to reject ${user.name}'s registration? This action cannot be undone.`,
       action: () => deleteUser(user.id),
       variant: "reject",
-      userName: user.name
+      userName: user.name,
     })
     setDialogOpen(true)
   }
@@ -142,25 +225,24 @@ export function AdminManagement() {
       description: `Are you sure you want to permanently delete ${user.name}? All their data will be removed. This action cannot be undone.`,
       action: () => deleteUser(user.id),
       variant: "delete",
-      userName: user.name
+      userName: user.name,
     })
     setDialogOpen(true)
   }
 
   const showRoleChangeDialog = (user: Preacher, newRole: UserRole) => {
-    const roleName = newRole === 'admin' ? 'Administrator' : 'Preacher'
+    const roleName = newRole === "admin" ? "Administrator" : "Preacher"
     setDialogConfig({
       title: "Change User Role",
       description: `Change ${user.name}'s role to ${roleName}?`,
       action: () => updateUserRole(user.id, newRole),
       variant: "changeRole",
       userName: user.name,
-      newRole
+      newRole,
     })
     setDialogOpen(true)
   }
 
-  // Clear messages after 5 seconds
   useEffect(() => {
     if (error || successMessage) {
       const timer = setTimeout(() => {
@@ -171,61 +253,82 @@ export function AdminManagement() {
     }
   }, [error, successMessage])
 
+  // ── Access Denied ──
   if (userRole !== "admin") {
     return (
-      <Card className="border-destructive/50 mx-auto max-w-md mt-8">
-        <CardHeader className="text-center">
-          <CardTitle className="text-destructive flex items-center justify-center gap-2 text-lg">
-            <AlertCircle className="h-5 w-5" />
-            Access Denied
-          </CardTitle>
-          <CardDescription>
-            You need administrator privileges to access this page
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Your current role: <Badge variant="outline" className="ml-2">{userRole || "unknown"}</Badge>
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-[60vh] p-6">
+        <Card className="border-destructive/30 max-w-md w-full shadow-sm">
+          <CardHeader className="text-center pb-4">
+            <div className="flex justify-center mb-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+                <AlertCircle className="h-8 w-8 text-destructive" />
+              </div>
+            </div>
+            <CardTitle className="text-destructive text-xl">Access Denied</CardTitle>
+            <CardDescription className="text-base">
+              You need administrator privileges to access this page
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center pb-6">
+            <p className="text-sm text-muted-foreground">
+              Your current role:{" "}
+              <Badge variant="outline" className="ml-2">
+                {userRole || "unknown"}
+              </Badge>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
+  // ── Loading ──
   if (loading) {
     return (
-      <Card className="mx-auto max-w-md mt-8">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <CardTitle className="text-lg mb-2 text-center">Loading Users</CardTitle>
-          <CardDescription className="text-center">Please wait while we fetch user data...</CardDescription>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-[60vh] p-6">
+        <Card className="max-w-md w-full shadow-sm">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-6">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+            <CardTitle className="text-lg mb-2 text-center">Loading Users</CardTitle>
+            <CardDescription className="text-center">
+              Please wait while we fetch user data...
+            </CardDescription>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
+
+  const adminCount = preachers.filter((p) => p.role === "admin").length
+  const preacherCount = preachers.filter((p) => p.role === "da'i").length
 
   return (
     <>
-      {/* Confirmation Dialog - Enhanced UI */}
+      {/* ── Confirmation Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md [&>button]:hidden ">
+        <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader className="pr-2">
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg ${dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-primary/10 text-primary"
-                }`}>
+            <div className="flex items-start gap-4">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                  dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
                 {dialogConfig?.variant === "delete" || dialogConfig?.variant === "reject" ? (
-                  <AlertTriangle className="h-6 w-6" />
+                  <AlertTriangle className="h-5 w-5" />
                 ) : dialogConfig?.variant === "approve" ? (
-                  <Check className="h-6 w-6" />
+                  <Check className="h-5 w-5" />
                 ) : (
-                  <AlertCircle className="h-6 w-6" />
+                  <UserCog className="h-5 w-5" />
                 )}
               </div>
-              <div className="flex-1">
-                <DialogTitle className="text-xl font-bold">{dialogConfig?.title}</DialogTitle>
-                <DialogDescription className="mt-2 text-base text-gray-600 dark:text-gray-300">
+              <div className="flex-1 space-y-1.5">
+                <DialogTitle className="text-lg font-semibold">{dialogConfig?.title}</DialogTitle>
+                <DialogDescription className="text-sm leading-relaxed">
                   {dialogConfig?.description}
                 </DialogDescription>
               </div>
@@ -263,11 +366,26 @@ export function AdminManagement() {
                 </>
               ) : (
                 <>
-                  {dialogConfig?.variant === "approve" && <Check className="mr-2 h-4 w-4" />}
-                  {dialogConfig?.variant === "reject" && <X className="mr-2 h-4 w-4" />}
-                  {dialogConfig?.variant === "delete" && <Trash2 className="mr-2 h-4 w-4" />}
-                  {dialogConfig?.variant === "changeRole" && "Change Role"}
-                  {!["changeRole", "approve", "reject", "delete"].includes(dialogConfig?.variant || "") && "Confirm"}
+                  {dialogConfig?.variant === "approve" && (
+                    <>
+                      <Check className="mr-2 h-4 w-4" /> Approve
+                    </>
+                  )}
+                  {dialogConfig?.variant === "reject" && (
+                    <>
+                      <X className="mr-2 h-4 w-4" /> Reject
+                    </>
+                  )}
+                  {dialogConfig?.variant === "delete" && (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </>
+                  )}
+                  {dialogConfig?.variant === "changeRole" && (
+                    <>
+                      <UserCog className="mr-2 h-4 w-4" /> Change Role
+                    </>
+                  )}
                 </>
               )}
             </Button>
@@ -275,66 +393,140 @@ export function AdminManagement() {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-8 p-4 md:p-6">
-        {/* Messages */}
+      {/* ── Main Content ── */}
+      <div className="flex flex-col gap-8 p-6 max-w-[1400px] mx-auto w-full">
+        {/* ── Page Header ── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shadow-sm">
+              <UserCog className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+              <p className="text-sm text-muted-foreground">
+                Manage user accounts, roles, and approval requests
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading} className="gap-2">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+
+        {/* ── Notifications ── */}
         {error && (
-          <Card className="border-destructive/50 bg-destructive/5">
-            <CardContent className="pt-6">
-              <Alert variant="destructive" className="border-none bg-transparent p-0">
-                <AlertCircle className="h-4 w-4 mr-2" />
-                <div className="flex-1">
-                  <AlertTitle className="font-semibold">Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </div>
-              </Alert>
+          <Card className="border-destructive/30 bg-destructive/5 shadow-sm">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">Error</p>
+                <p className="text-sm text-destructive/80">{error}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchUsers}
+                className="border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                Retry
+              </Button>
             </CardContent>
           </Card>
         )}
 
         {successMessage && (
-          <Card className="border-green-500/50 bg-green-500/5">
-            <CardContent className="pt-6">
-              <Alert className="border-none bg-transparent p-0 text-green-600">
-                <Check className="h-4 w-4 mr-2" />
-                <div className="flex-1">
-                  <AlertTitle className="font-semibold">Success</AlertTitle>
-                  <AlertDescription>{successMessage}</AlertDescription>
-                </div>
-              </Alert>
+          <Card className="border-green-500/30 bg-green-500/5 shadow-sm">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-500/10">
+                <Check className="h-4 w-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-600">Success</p>
+                <p className="text-sm text-green-600/80">{successMessage}</p>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Pending Users Section */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Users className="h-6 w-6" /> Pending Approval
-          </h2>
+        {/* ── Overview Stats ── */}
+        <section>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard
+              icon={Clock}
+              label="Pending Approval"
+              value={pendingUsers.length}
+              color="bg-yellow-500/10 text-yellow-600"
+            />
+            <StatCard
+              icon={Users}
+              label="Active Preachers"
+              value={preacherCount}
+              color="bg-blue-500/10 text-blue-600"
+            />
+            <StatCard
+              icon={ShieldCheck}
+              label="Administrators"
+              value={adminCount}
+              color="bg-primary/10 text-primary"
+            />
+          </div>
+        </section>
+
+        <Separator className="bg-border/60" />
+
+        {/* ── Section: Pending Approval ── */}
+        <section>
+          <SectionHeader
+            icon={Clock}
+            title="Pending Approval"
+            description="Users waiting for account verification and role assignment"
+            count={pendingUsers.length}
+            countVariant="warning"
+          />
+
           {pendingUsers.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pendingUsers.map(user => (
-                <Card key={user.id} className="relative overflow-hidden hover:shadow-lg transition-shadow border-l-4 border-l-yellow-500">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{user.name}</CardTitle>
-                      <Badge variant="outline" className="animate-pulse bg-yellow-50 text-yellow-700 border-yellow-200">
-                        Pending
-                      </Badge>
+            <div className="flex flex-col gap-4">
+              {pendingUsers.map((user) => (
+                <Card
+                  key={user.id}
+                  className="shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-yellow-500"
+                >
+                  <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-yellow-500/10">
+                        <Users className="h-5 w-5 text-yellow-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-foreground">{user.name}</p>
+                          <Badge
+                            variant="outline"
+                            className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs"
+                          >
+                            Pending
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                          <Mail className="h-3.5 w-3.5" />
+                          {user.email}
+                        </p>
+                      </div>
                     </div>
-                    <CardDescription className="text-muted-foreground">{user.email}</CardDescription>
-                  </CardHeader>
-                  <CardFooter className="flex flex-col gap-3 pt-3 border-t">
-                    <div className="flex gap-2 w-full">
+
+                    <div className="flex gap-2 w-full sm:w-auto">
                       <Button
                         size="sm"
                         onClick={() => showApproveDialog(user)}
                         disabled={processingUser === user.id}
-                        className="flex-1"
+                        className="flex-1 sm:flex-none gap-2"
                       >
                         {processingUser === user.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Check className="h-4 w-4 mr-2" />
+                          <Check className="h-4 w-4" />
                         )}
                         Approve
                       </Button>
@@ -343,105 +535,138 @@ export function AdminManagement() {
                         size="sm"
                         onClick={() => showRejectDialog(user)}
                         disabled={processingUser === user.id}
-                        className="flex-1"
+                        className="flex-1 sm:flex-none gap-2"
                       >
                         {processingUser === user.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <X className="h-4 w-4 mr-2" />
+                          <X className="h-4 w-4" />
                         )}
                         Reject
                       </Button>
                     </div>
-                  </CardFooter>
+                  </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <Card className="border-dashed opacity-75">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Users className="h-12 w-12 mb-4 text-muted-foreground" />
-                <CardTitle className="text-lg mb-2 text-muted-foreground text-center">No Pending Approvals</CardTitle>
-                <CardDescription className="text-center">All registration requests have been processed</CardDescription>
+            <Card className="border-dashed shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-14">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50 mb-4">
+                  <Check className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="text-base font-medium text-muted-foreground mb-1">No Pending Approvals</p>
+                <p className="text-sm text-muted-foreground/70">
+                  All registration requests have been processed
+                </p>
               </CardContent>
             </Card>
           )}
-        </div>
+        </section>
 
-        {/* Approved Users Section */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Shield className="h-6 w-6" /> Approved Users
-          </h2>
+        <Separator className="bg-border/60" />
+
+        {/* ── Section: Approved Users ── */}
+        <section className="pb-6">
+          <SectionHeader
+            icon={ShieldCheck}
+            title="Approved Users"
+            description="Active users with assigned roles and permissions"
+            count={preachers.length}
+            countVariant="success"
+          />
+
           {preachers.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-4">
               {preachers.map((preacher) => (
-                <Card key={preacher.id} className="relative hover:shadow-lg transition-shadow border-l-4 border-l-primary">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{preacher.name}</CardTitle>
-                        <CardDescription className="text-muted-foreground mt-1">{preacher.email}</CardDescription>
+                <Card
+                  key={preacher.id}
+                  className="shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-primary"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                      {/* User Info */}
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                          {preacher.role === "admin" ? (
+                            <Shield className="h-5 w-5 text-primary" />
+                          ) : (
+                            <Users className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-foreground">{preacher.name}</p>
+                            <Badge
+                              variant={preacher.role === "admin" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {preacher.role === "admin" ? "Administrator" : "Preacher"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                            <Mail className="h-3.5 w-3.5" />
+                            {preacher.email}
+                          </p>
+                        </div>
                       </div>
-                      <Badge
-                        variant={preacher.role === "admin" ? "default" : "secondary"}
-                        className="whitespace-nowrap"
-                      >
-                        {preacher.role === "admin" ? "Administrator" : "Preacher"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium block">Role Assignment</label>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={preacher.role}
-                          onValueChange={(value: UserRole) => {
-                            showRoleChangeDialog(preacher, value)
-                          }}
-                          disabled={processingUser === preacher.id}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="da'i">Preacher</SelectItem>
-                            <SelectItem value="admin">Administrator</SelectItem>
-                          </SelectContent>
-                        </Select>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-3 w-full lg:w-auto">
+                        <div className="flex-1 lg:w-48">
+                          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                            Role Assignment
+                          </label>
+                          <Select
+                            value={preacher.role}
+                            onValueChange={(value: UserRole) => {
+                              showRoleChangeDialog(preacher, value)
+                            }}
+                            disabled={processingUser === preacher.id}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="da'i">Preacher</SelectItem>
+                              <SelectItem value="admin">Administrator</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="pt-5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => showDeleteDialog(preacher)}
+                            disabled={processingUser === preacher.id}
+                            className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                          >
+                            {processingUser === preacher.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="pt-4 border-t">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => showDeleteDialog(preacher)}
-                      disabled={processingUser === preacher.id}
-                      className="w-full"
-                    >
-                      {processingUser === preacher.id ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 mr-2" />
-                      )}
-                      Remove User
-                    </Button>
-                  </CardFooter>
                 </Card>
               ))}
             </div>
           ) : (
-            <Card className="border-dashed opacity-75">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <UserX className="h-12 w-12 mb-4 text-muted-foreground" />
-                <CardTitle className="text-lg mb-2 text-muted-foreground text-center">No Approved Users</CardTitle>
-                <CardDescription className="text-center">No users have been approved yet</CardDescription>
+            <Card className="border-dashed shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-14">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50 mb-4">
+                  <UserX className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="text-base font-medium text-muted-foreground mb-1">No Approved Users</p>
+                <p className="text-sm text-muted-foreground/70">No users have been approved yet</p>
               </CardContent>
             </Card>
           )}
-        </div>
+        </section>
       </div>
     </>
   )
