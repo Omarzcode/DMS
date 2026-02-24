@@ -96,9 +96,7 @@ export default function HomePage() {
                 <span className="text-3xl font-bold gradient-text-primary">
                   Engineering Management System
                 </span>
-                <span className="text-sm text-muted-foreground">
-                  Advanced platform for managing engineering activities
-                </span>
+                
               </div>
             </div>
 
