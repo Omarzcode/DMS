@@ -284,7 +284,7 @@ export function AllBeneficiaries() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
           <Button variant="outline" size="sm" onClick={exportToCSV} disabled={loading || filteredAndSortedBeneficiaries.length === 0}>
-            <Download className="h-4 w-4 sm:mr-2" />
+            <Download className="h-4 w-4 sm:ml-2" />
             <span className="hidden sm:inline">Export ({filteredAndSortedBeneficiaries.length})</span>
           </Button>
           <DataHealthCheck
@@ -331,7 +331,7 @@ export function AllBeneficiaries() {
             placeholder="Search by name or phone number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-10 h-10 sm:h-11"
+            className="pr-10 pl-10 h-10 sm:h-11"
           />
           {searchTerm && (
             <Button

@@ -135,7 +135,7 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ml-2" />
           Add Beneficiary
         </Button>
       </DialogTrigger>
@@ -209,7 +209,7 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</> : "Add Beneficiary"}
+              {loading ? <><Loader2 className="h-4 w-4 ml-2 animate-spin" /> Adding...</> : "Add Beneficiary"}
             </Button>
           </DialogFooter>
         </form>

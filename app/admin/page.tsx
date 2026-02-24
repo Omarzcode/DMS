@@ -67,10 +67,10 @@ export default function AdminDashboard() {
         <SidebarInset className="bg-gradient-to-br from-primary/5 via-secondary/5 to-background">
           {/* Header */}
           <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-6">
-            <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
+            <SidebarTrigger className="-mr-1 text-primary hover:bg-muted" />
             <Separator
               orientation="vertical"
-              className="mr-2 h-4 bg-muted"
+              className="ml-2 h-4 bg-muted"
             />
             <Breadcrumb>
               <BreadcrumbList>
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
               </BreadcrumbList>
             </Breadcrumb>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="mr-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground hidden sm:inline">
                 {data.loading ? "Updating..." : "Last updated just now"}
               </span>

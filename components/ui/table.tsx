@@ -91,7 +91,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-right align-middle font-semibold",
+      "h-12 px-4 text-left align-middle font-semibold",
       "text-foreground/80 bg-gradient-to-b from-muted/80 to-muted/40",
       "border-l border-border/30 first:border-l-0",
       "transition-colors duration-200",

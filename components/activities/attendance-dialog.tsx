@@ -357,7 +357,7 @@ export function AttendanceDialog({
               placeholder="Search by name or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10"
+              className="pr-10 pl-10"
             />
             {searchTerm && (
               <Button

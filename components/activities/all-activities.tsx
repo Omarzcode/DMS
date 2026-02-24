@@ -452,7 +452,7 @@ export function AllActivities() {
               placeholder="Search activities by name, creator, or description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10"
+              className="pr-10 pl-10"
             />
             {searchTerm && (
               <Button

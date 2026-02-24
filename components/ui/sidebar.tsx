@@ -916,7 +916,7 @@ const SidebarMenuButton = React.forwardRef<
             {!isCollapsed && badge !== undefined && (
               <Badge
                 variant="secondary"
-                className="ml-auto h-5 min-w-5 px-1.5 text-xs font-medium"
+                className="mr-auto h-5 min-w-5 px-1.5 text-xs font-medium"
               >
                 {badge}
               </Badge>

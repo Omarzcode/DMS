@@ -167,10 +167,10 @@ export default function HomePage() {
                 size="lg"
               >
                 {isSigningIn ? (
-                  <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                  <Loader2 className="ml-3 h-6 w-6 animate-spin" />
                 ) : (
                   <svg
-                    className="mr-3 h-6 w-6"
+                    className="ml-3 h-6 w-6"
                     viewBox="0 0 24 24"
                     aria-hidden="true"
                   >
@@ -210,7 +210,7 @@ export default function HomePage() {
               {/* Email Login Placeholder */}
               <div className="text-center">
                 <Button variant="outline" className="w-full" disabled>
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Mail className="ml-2 h-4 w-4" />
                   Sign in with Email
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
@@ -252,7 +252,7 @@ export default function HomePage() {
               size="lg"
               className="w-full h-12"
             >
-              <LogOut className="mr-2 h-5 w-5" />
+              <LogOut className="ml-2 h-5 w-5" />
               Sign Out
             </Button>
           </CardContent>

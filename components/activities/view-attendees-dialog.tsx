@@ -275,7 +275,7 @@ export function ViewAttendeesDialog({
                 placeholder="Search attendees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10 h-9"
+                className="pr-10 pl-10 h-9"
               />
               {searchTerm && (
                 <Button
@@ -344,7 +344,7 @@ export function ViewAttendeesDialog({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    <div className="flex items-center gap-2 flex-shrink-0 mr-2">
                       <Badge
                         variant="secondary"
                         className="text-[10px] gap-1"
