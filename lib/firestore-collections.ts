@@ -6,12 +6,10 @@ export type UserRole = "admin" | "da'i" | "pending"
 
 // Da'wa stages for beneficiaries (English)
 export const DAWA_STAGES = [
-  "New Contact",
-  "Initial Interest", 
-  "Regular Attendance",
-  "Committed Learner",
-  "Active Participant",
-  "Community Leader",
+  "تواصل جديد",
+  "اهتمام أولي", 
+  "حضور منتظم",
+  "متعلم ملتزم",
 ] as const
 
 export type DawaStage = (typeof DAWA_STAGES)[number]

@@ -127,7 +127,7 @@ export function StageDistributionChart({
                 dataKey="stage"
                 className="text-xs"
                 width={70}
-                dx={-10} 
+                dx={-60} 
                 tick={{ fontSize: 10 }}
                 
               />
