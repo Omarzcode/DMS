@@ -19,7 +19,7 @@ export default function PreacherDashboard() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-foreground font-semibold">لوحة تحكم الداعية</BreadcrumbPage>
+                  <BreadcrumbPage className="text-foreground font-semibold">Preacher Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -32,10 +32,10 @@ export default function PreacherDashboard() {
                   <Heart className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold gradient-text-primary leading-normal">أهلاً وسهلاً بعودتك!</h1>
+                  <h1 className="text-4xl font-bold gradient-text-primary leading-normal">Welcome back!</h1>
                   <p className="text-lg text-muted-foreground flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" />
-                    نظرة عامة على أنشطتك الهندسية والمستفيدين المكلفين بك
+                    Overview of your engineering activities and assigned beneficiaries
                   </p>
                 </div>
               </div>

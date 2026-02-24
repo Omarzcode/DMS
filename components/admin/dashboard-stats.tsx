@@ -73,7 +73,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
     ).length
 
     // Advanced stages
-    const advancedStages = ["متعلم ملتزم", "مشارك نشط", "قائد مجتمعي"]
+    const advancedStages = ["Committed Learner", "Active Participant", "Community Leader"]
     const advancedCount = beneficiaries.filter((b) =>
       advancedStages.includes(b.da_wa_stage)
     ).length
@@ -110,7 +110,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
         value: activities.all.length,
         icon: Calendar,
         color: "text-purple-600",
-        description: `${activities.maqari.length} Maqari · ${activities.events.length} Events`,
+        description: `${activities.maqari.length} Quranic Readings · ${activities.events.length} Events`,
       },
       {
         title: "Advanced Stages",

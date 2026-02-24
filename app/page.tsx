@@ -59,7 +59,7 @@ export default function HomePage() {
         <div className="flex items-center gap-3 animate-fade-in">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="text-lg font-medium text-muted-foreground">
-            جاري التحميل...
+            Loading...
           </span>
         </div>
       </div>
@@ -94,47 +94,46 @@ export default function HomePage() {
               </div>
               <div className="flex flex-col">
                 <span className="text-3xl font-bold gradient-text-primary">
-                  نظام إدارة الأعمال
+                  Engineering Management System
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  منصة متطورة لإدارة الأنشطة الهندسية
+                  Advanced platform for managing engineering activities
                 </span>
               </div>
             </div>
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-tight animate-slide-up">
-              <span className="gradient-text-primary">نظام إدارة</span>
+              <span className="gradient-text-primary">Intelligent</span>
               <br />
-              <span className="text-foreground">الأعمال الذكي</span>
+              <span className="text-foreground">Business Management</span>
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground mb-12 leading-relaxed animate-slide-up">
-              حل شامل ومتطور للمنظمات الهندسية لإدارة الموظفون، وتتبع تقدم
-              المستفيدين، وتحليل فعالية الأعمال بدقة واحترافية
+              A comprehensive and advanced solution for engineering organizations to manage employees, track beneficiary progress, and analyze business effectiveness with precision and professionalism
             </p>
 
             {/* Features Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up">
               <FeatureCard
                 icon={<Users className="h-5 w-5" />}
-                title="إدارة الموظفين"
-                description="تتبع شامل لجميع الموظفين"
+                title="Employee Management"
+                description="Comprehensive tracking of all employees"
               />
               <FeatureCard
                 icon={<BarChart3 className="h-5 w-5" />}
-                title="تحليلات متقدمة"
-                description="رؤى عميقة لأداء الأعمال"
+                title="Advanced Analytics"
+                description="Deep insights into business performance"
               />
               <FeatureCard
                 icon={<Calendar className="h-5 w-5" />}
-                title="جدولة ذكية"
-                description="تنظيم فعال للمهام"
+                title="Smart Scheduling"
+                description="Efficient task organization"
               />
               <FeatureCard
                 icon={<Shield className="h-5 w-5" />}
-                title="أمان متقدم"
-                description="حماية قوية للبيانات"
+                title="Advanced Security"
+                description="Strong data protection"
               />
             </div>
           </div>
@@ -148,10 +147,10 @@ export default function HomePage() {
                 <LogIn className="h-10 w-10 text-white" />
               </div>
               <CardTitle className="text-3xl font-bold gradient-text-primary">
-                مرحباً بك
+                Welcome Back
               </CardTitle>
               <CardDescription className="text-base text-muted-foreground">
-                سجل الدخول للوصول إلى لوحة التحكم الخاصة بك
+                Sign in to access your control panel
               </CardDescription>
             </CardHeader>
 
@@ -161,17 +160,17 @@ export default function HomePage() {
                 disabled={isSigningIn}
                 aria-label={
                   isSigningIn
-                    ? "جاري تسجيل الدخول"
-                    : "تسجيل الدخول بواسطة Google"
+                    ? "Signing in"
+                    : "Sign in with Google"
                 }
                 className="w-full h-14 gradient-bg-primary hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-lg font-semibold text-primary-foreground"
                 size="lg"
               >
                 {isSigningIn ? (
-                  <Loader2 className="ml-3 h-6 w-6 animate-spin" />
+                  <Loader2 className="mr-3 h-6 w-6 animate-spin" />
                 ) : (
                   <svg
-                    className="ml-3 h-6 w-6"
+                    className="mr-3 h-6 w-6"
                     viewBox="0 0 24 24"
                     aria-hidden="true"
                   >
@@ -194,8 +193,8 @@ export default function HomePage() {
                   </svg>
                 )}
                 {isSigningIn
-                  ? "جاري تسجيل الدخول..."
-                  : "تسجيل الدخول بواسطة Google"}
+                  ? "Signing in..."
+                  : "Sign in with Google"}
               </Button>
 
               {/* Divider */}
@@ -204,18 +203,18 @@ export default function HomePage() {
                   <span className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">أو</span>
+                  <span className="bg-card px-2 text-muted-foreground">Or</span>
                 </div>
               </div>
 
               {/* Email Login Placeholder */}
               <div className="text-center">
                 <Button variant="outline" className="w-full" disabled>
-                  <Mail className="ml-2 h-4 w-4" />
-                  تسجيل الدخول باستخدام البريد الإلكتروني
+                  <Mail className="mr-2 h-4 w-4" />
+                  Sign in with Email
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
-                  متوفر قريباً
+                  Coming Soon
                 </p>
               </div>
             </CardContent>
@@ -240,11 +239,10 @@ export default function HomePage() {
               <Clock className="h-10 w-10 text-warning" />
             </div>
             <CardTitle className="text-3xl font-bold gradient-text-primary">
-              قيد المراجعة
+              Pending Review
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
-              مرحباً {user.displayName}! تم إنشاء حسابك وهو الآن قيد المراجعة
-              من قبل المسؤول
+              Hello {user.displayName}! Your account has been created and is now pending review by the administrator
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,8 +252,8 @@ export default function HomePage() {
               size="lg"
               className="w-full h-12"
             >
-              <LogOut className="ml-2 h-5 w-5" />
-              تسجيل الخروج
+              <LogOut className="mr-2 h-5 w-5" />
+              Sign Out
             </Button>
           </CardContent>
         </Card>
@@ -269,7 +267,7 @@ export default function HomePage() {
       <div className="flex items-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="text-lg font-medium text-muted-foreground">
-          جاري التحويل إلى لوحة التحكم...
+          Redirecting to dashboard...
         </span>
       </div>
     </div>

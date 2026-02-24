@@ -95,8 +95,8 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       }
 
       await updateDoc(doc(db, "beneficiaries", beneficiary.id), updateData)
-      toast.success('تم تحديث البيانات', {
-        description: `تم تحديث بيانات ${formData.name} بنجاح`,
+      toast.success('Data Updated', {
+        description: `${formData.name}'s information has been updated successfully`,
       })
 
       // Log changes if any
@@ -119,8 +119,8 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       setOpen(false)
     } catch (error) {
       console.error("Error updating beneficiary:", error)
-      toast.error('فشل التحديث', {
-        description: 'حدث خطأ أثناء تحديث البيانات',
+      toast.error('Update Failed', {
+        description: 'An error occurred while updating the data',
       })
       setError("Failed to update beneficiary. Please try again.")
     } finally {

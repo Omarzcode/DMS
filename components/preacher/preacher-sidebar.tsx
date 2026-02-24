@@ -23,13 +23,13 @@ import { Logo } from "../ui/logo"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle" // ✅ Add this import
 
 const preacherMenuItems = [
-  { title: "لوحة التحكم", url: "/dashboard", icon: BarChart3 },
-  { title: "المستفيدون المكلفون", url: "/dashboard/beneficiaries", icon: Users },
-  { title: "مقارئي الشخصية", url: "/dashboard/maqari", icon: BookOpen },
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
+  { title: "Assigned Beneficiaries", url: "/dashboard/beneficiaries", icon: Users },
+  { title: "Personal Quranic Readings", url: "/dashboard/maqari", icon: BookOpen },
 ]
 
 const activitiesMenuItems = [
-  { title: "جميع الأنشطة", url: "/dashboard/activities", icon: Calendar },
+  { title: "All Activities", url: "/dashboard/activities", icon: Calendar },
 ]
 
 export function PreacherSidebar() {
@@ -58,14 +58,14 @@ export function PreacherSidebar() {
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">المظهر</span>
+          <span className="text-sm font-medium">Theme</span>
         </div>
         <ThemeToggleButton />
       </div>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">الرئيسية</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {preacherMenuItems.map((item) => (
@@ -90,7 +90,7 @@ export function PreacherSidebar() {
         <SidebarSeparator className="bg-border/50" />
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">الأنشطة والفعاليات</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Activities & Events</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {activitiesMenuItems.map((item) => (
@@ -128,7 +128,7 @@ export function PreacherSidebar() {
           </div>
           <div className="flex flex-1 flex-col min-w-0">
             <span className="text-sm font-semibold text-foreground truncate">
-              {user?.displayName || "الداعية"}
+              {user?.displayName || "Preacher"}
             </span>
             <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
           </div>
@@ -137,7 +137,7 @@ export function PreacherSidebar() {
             size="icon"
             onClick={handleLogout}
             className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
-            aria-label="تسجيل الخروج"
+            aria-label="Sign out"
           >
             <LogOut className="h-4 w-4" />
           </Button>

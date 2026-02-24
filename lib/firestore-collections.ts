@@ -4,14 +4,14 @@ export const attendanceCollection = collection(db, "attendance") as CollectionRe
 // User roles
 export type UserRole = "admin" | "da'i" | "pending"
 
-// Da'wa stages for beneficiaries (Arabic)
+// Da'wa stages for beneficiaries (English)
 export const DAWA_STAGES = [
-  "تواصل جديد",
-  "اهتمام أولي", 
-  "حضور منتظم",
-  "متعلم ملتزم",
-  "مشارك نشط",
-  "قائد مجتمعي",
+  "New Contact",
+  "Initial Interest", 
+  "Regular Attendance",
+  "Committed Learner",
+  "Active Participant",
+  "Community Leader",
 ] as const
 
 export type DawaStage = (typeof DAWA_STAGES)[number]

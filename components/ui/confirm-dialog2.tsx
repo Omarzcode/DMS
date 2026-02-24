@@ -104,7 +104,7 @@ export function useConfirm() {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>
-            {options.cancelText || "إلغاء"}
+            {options.cancelText || "Cancel"}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
@@ -115,7 +115,7 @@ export function useConfirm() {
                 "bg-info text-info-foreground hover:bg-info/90"
             )}
           >
-            {options.confirmText || "تأكيد"}
+            {options.confirmText || "Confirm"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
