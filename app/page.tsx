@@ -109,9 +109,7 @@ export default function HomePage() {
               <span className="text-foreground">Business Management</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground mb-12 leading-relaxed animate-slide-up">
-              A comprehensive and advanced solution for engineering organizations to manage employees, track beneficiary progress, and analyze business effectiveness with precision and professionalism
-            </p>
+            
 
             {/* Features Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up">
