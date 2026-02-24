@@ -103,12 +103,12 @@ export function StageDistributionChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full">
+        <div className="h-64 sm:h-80 md:h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ left: 10, right: 30, top: 5, bottom: 5 }}
+              margin={{ left: 0, right: 20, top: 5, bottom: 5 }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -126,8 +126,8 @@ export function StageDistributionChart({
                 type="category"
                 dataKey="stage"
                 className="text-xs"
-                width={100}
-                dx={-70} 
+                width={70}
+                dx={-10} 
                 tick={{ fontSize: 10 }}
                 
               />
@@ -168,11 +168,11 @@ export function StageDistributionChart({
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-4 pt-4 border-t">
           {chartData.map((item) => (
             <div
               key={item.stageAr}
-              className="flex items-center gap-1.5 text-xs"
+              className="flex items-center gap-1.5 text-xs sm:text-sm"
             >
               <div
                 className="h-2.5 w-2.5 rounded-sm flex-shrink-0"

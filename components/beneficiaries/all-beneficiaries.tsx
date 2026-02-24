@@ -266,34 +266,37 @@ export function AllBeneficiaries() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <Users className="h-6 w-6" />
-          <h2 className="text-xl sm:text-2xl font-bold truncate">All Beneficiaries</h2>
-          <Badge variant="secondary">{beneficiaries.length}</Badge>
-        </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+            <h2 className="text-lg sm:text-2xl font-bold truncate">All Beneficiaries</h2>
+            <Badge variant="secondary" className="text-xs">{beneficiaries.length}</Badge>
+          </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            title="Refresh data"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportToCSV} disabled={loading || filteredAndSortedBeneficiaries.length === 0}>
-            <Download className="h-4 w-4 sm:ml-2" />
-            <span className="hidden sm:inline">Export ({filteredAndSortedBeneficiaries.length})</span>
-          </Button>
-          <DataHealthCheck
-            beneficiaries={beneficiaries}
-            preachers={preachers}
-            onDataChanged={() => fetchData(true)}
-          />
-          <ContactImportDialog onImportComplete={() => fetchData(true)} />
-          <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
+          <div className="flex items-center gap-1 w-full sm:w-auto flex-wrap">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              title="Refresh data"
+              className="h-9 w-9 sm:h-10 sm:w-10"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={loading || filteredAndSortedBeneficiaries.length === 0}>
+              <Download className="h-4 w-4 sm:ml-2" />
+              <span className="hidden sm:inline">Export ({filteredAndSortedBeneficiaries.length})</span>
+            </Button>
+            <DataHealthCheck
+              beneficiaries={beneficiaries}
+              preachers={preachers}
+              onDataChanged={() => fetchData(true)}
+            />
+            <ContactImportDialog onImportComplete={() => fetchData(true)} />
+            <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
+          </div>
         </div>
       </div>
 
