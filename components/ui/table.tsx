@@ -91,7 +91,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-right align-middle font-semibold",
+      "h-12 px-4 text-left align-middle font-semibold",
       "text-foreground/80 bg-gradient-to-b from-muted/80 to-muted/40",
       "border-l border-border/30 first:border-l-0",
       "transition-colors duration-200",
@@ -256,7 +256,7 @@ const TableEmpty = React.forwardRef<
     icon?: React.ReactNode
     action?: React.ReactNode
   }
->(({ className, title = "لا توجد بيانات", description, icon, action, ...props }, ref) => (
+>(({ className, title = "No Data Available", description, icon, action, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -329,14 +329,14 @@ const TablePagination = React.forwardRef<
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         {totalItems !== undefined && pageSize !== undefined && (
           <span>
-            عرض {Math.min((page - 1) * pageSize + 1, totalItems)} إلى{" "}
-            {Math.min(page * pageSize, totalItems)} من {totalItems} عنصر
+            Showing {Math.min((page - 1) * pageSize + 1, totalItems)} to{" "}
+            {Math.min(page * pageSize, totalItems)} of {totalItems} items
           </span>
         )}
 
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
-            <span>عرض</span>
+            <span>Show</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -348,7 +348,7 @@ const TablePagination = React.forwardRef<
                 </option>
               ))}
             </select>
-            <span>لكل صفحة</span>
+            <span>per page</span>
           </div>
         )}
       </div>
@@ -359,7 +359,7 @@ const TablePagination = React.forwardRef<
           onClick={() => onPageChange(1)}
           disabled={page <= 1}
           className="p-2 rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="الصفحة الأولى"
+          title="First Page"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -417,7 +417,7 @@ const TablePagination = React.forwardRef<
           onClick={() => onPageChange(totalPages)}
           disabled={page >= totalPages}
           className="p-2 rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="الصفحة الأخيرة"
+          title="Last Page"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />

@@ -23,19 +23,19 @@ import { Logo } from "../ui/logo"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle" // ✅ Already imported
 
 const adminMenuItems = [
-  { title: "لوحة التحكم", url: "/admin", icon: BarChart3 },
-  { title: "إدارة المستخدمين", url: "/admin/users", icon: Shield },
+  { title: "Dashboard", url: "/admin", icon: BarChart3 },
+  { title: "User Management", url: "/admin/users", icon: Shield },
 ]
 
 const analyticsMenuItems = [
-  { title: "الموظفون", url: "/admin/analytics/preachers", icon: UserCheck },
-  { title: "المستفيدون", url: "/admin/analytics/beneficiaries", icon: Users },
-  { title: "الأنشطة", url: "/admin/analytics/activities", icon: Activity },
+  { title: "Employees", url: "/admin/analytics/preachers", icon: UserCheck },
+  { title: "Beneficiaries", url: "/admin/analytics/beneficiaries", icon: Users },
+  { title: "Activities", url: "/admin/analytics/activities", icon: Activity },
 ]
 
 const managementMenuItems = [
-  { title: "المستفيدون", url: "/admin/beneficiaries", icon: Users },
-  { title: "الأنشطة", url: "/admin/activities", icon: Calendar },
+  { title: "Beneficiaries", url: "/admin/beneficiaries", icon: Users },
+  { title: "Activities", url: "/admin/activities", icon: Calendar },
 ]
 
 export function AdminSidebar() {
@@ -64,7 +64,7 @@ export function AdminSidebar() {
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">المظهر</span>
+          <span className="text-sm font-medium">Theme</span>
         </div>
         <ThemeToggleButton />
       </div>
@@ -72,7 +72,7 @@ export function AdminSidebar() {
       <SidebarContent>
         {/* Main Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">الرئيسية</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminMenuItems.map((item) => (
@@ -98,7 +98,7 @@ export function AdminSidebar() {
 
         {/* Analytics Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">التحليلات المتقدمة</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Advanced Analytics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {analyticsMenuItems.map((item) => (
@@ -124,7 +124,7 @@ export function AdminSidebar() {
 
         {/* Management Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">الإدارة الشاملة</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Comprehensive Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {managementMenuItems.map((item) => (
@@ -162,7 +162,7 @@ export function AdminSidebar() {
           </div>
           <div className="flex flex-1 flex-col min-w-0">
             <span className="text-sm font-semibold text-foreground truncate">
-              {user?.displayName || "المدير"}
+              {user?.displayName || "Administrator"}
             </span>
             <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
           </div>
@@ -171,7 +171,7 @@ export function AdminSidebar() {
             size="icon"
             onClick={handleLogout}
             className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-sidebar-accent transition-all duration-200"
-            aria-label="تسجيل الخروج"
+            aria-label="Sign out"
           >
             <LogOut className="h-4 w-4" />
           </Button>

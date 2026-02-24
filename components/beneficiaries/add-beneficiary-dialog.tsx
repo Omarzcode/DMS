@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-// **** تمت إضافة query و where هنا ****
+// **** query and where have been added here ****
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
@@ -88,20 +88,20 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
     setError(null)
 
     try {
-      // ******** بداية التعديل الأساسي ********
-      // 1. التحقق من وجود رقم الهاتف مسبقًا
+      // ******** Start of basic modification ********
+      // 1. Check if phone number already exists
       const phoneQuery = query(collection(db, "beneficiaries"), where("phone", "==", formData.phone.trim()));
       const querySnapshot = await getDocs(phoneQuery);
 
       if (!querySnapshot.empty) {
-        // 2. إذا كان الرقم موجودًا، اعرض رسالة خطأ وأوقف العملية
-        setError("هذا الرقم مسجل بالفعل لمدعو آخر.");
+        // 2. If the number exists, show error message and stop the process
+        setError("This phone number is already registered for another beneficiary.");
         setLoading(false);
         return;
       }
-      // ******** نهاية التعديل الأساسي ********
+      // ******** End of basic modification ********
 
-      // 3. إذا كان الرقم غير موجود، أكمل عملية الإضافة
+      // 3. If the number doesn't exist, proceed with adding
       const newBeneficiary: Omit<Beneficiary, "id"> = {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
@@ -114,16 +114,16 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
 
       const docRef = await addDoc(collection(db, "beneficiaries"), newBeneficiary)
       const createdBeneficiary = { id: docRef.id, ...newBeneficiary }
-      toast.success('تم إضافة المستفيد بنجاح!', {
-  description: `${formData.name} تمت إضافته إلى النظام`,
+      toast.success('Beneficiary Added Successfully!', {
+  description: `${formData.name} has been added to the system`,
 })
       onBeneficiaryAdded?.(createdBeneficiary)
       setOpen(false)
 
     } catch (error) {
       console.error("Error adding beneficiary:", error)
-      toast.error('فشلت العملية', {
-    description: 'حدث خطأ أثناء إضافة المستفيد',
+      toast.error('Operation Failed', {
+    description: 'An error occurred while adding the beneficiary',
   })
       setError("Failed to add beneficiary. Please try again.")
     } finally {
@@ -135,7 +135,7 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ml-2" />
           Add Beneficiary
         </Button>
       </DialogTrigger>
@@ -209,7 +209,7 @@ export function AddBeneficiaryDialog({ onBeneficiaryAdded, assignedPreacherId }:
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</> : "Add Beneficiary"}
+              {loading ? <><Loader2 className="h-4 w-4 ml-2 animate-spin" /> Adding...</> : "Add Beneficiary"}
             </Button>
           </DialogFooter>
         </form>

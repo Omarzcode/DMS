@@ -545,17 +545,17 @@ const AttendanceCategory = ({
     <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
       <Icon className="h-4 w-4 text-primary" />
       {title}
-      <Badge variant="secondary" className="text-[10px] ml-1">
+      <Badge variant="secondary" className="text-[10px] mr-1">
         {records.length}
       </Badge>
     </h4>
-    <div className="space-y-1.5 ml-6 border-l-2 border-border pl-3">
+    <div className="space-y-1.5 mr-6 border-r-2 border-border pr-3">
       {records.map((att, index) => (
         <div
           key={`${att.id}-${index}`}
           className="text-muted-foreground flex justify-between items-center text-xs hover:text-foreground transition-colors"
         >
-          <span className="truncate mr-2">{att.activity_name}</span>
+          <span className="truncate ml-2">{att.activity_name}</span>
           <span className="flex-shrink-0 text-muted-foreground/70">
             {(att.logged_at as any)?.toDate
               ? format((att.logged_at as any).toDate(), "PP")

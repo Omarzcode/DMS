@@ -121,7 +121,7 @@ export function InactiveBeneficiaries({ data }: InactiveBeneficiariesProps) {
             <CardTitle className="flex items-center gap-2">
               <UserX className="h-5 w-5 text-red-600" />
               Inactive Beneficiaries
-              <Badge variant="destructive" className="ml-1">
+              <Badge variant="destructive" className="mr-1">
                 {inactiveList.length}
               </Badge>
             </CardTitle>
@@ -139,7 +139,7 @@ export function InactiveBeneficiaries({ data }: InactiveBeneficiariesProps) {
               placeholder="Search by name, phone, or preacher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10 h-9"
+              className="pr-10 pl-10 h-9"
             />
             {searchTerm && (
               <Button
@@ -180,7 +180,7 @@ export function InactiveBeneficiaries({ data }: InactiveBeneficiariesProps) {
                       <span>{b.preacherName}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                  <div className="flex items-center gap-2 flex-shrink-0 mr-3">
                     <Badge variant="outline" className="text-[10px]">
                       {b.stageLabel}
                     </Badge>

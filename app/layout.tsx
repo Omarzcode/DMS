@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     title: "Engineering Management System",
     description: "Professional CRM for Engineering organizations",
     type: "website",
-    locale: "ar_SA",
+    locale: "en_US",
     siteName: "Engineering Management System",
     images: [
       {
@@ -56,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <body
         className={`${GeistSans.variable} ${GeistMono.variable}`}
       >
@@ -76,9 +76,9 @@ export default function RootLayout({
             padding: "2rem",
             textAlign: "center",
             fontFamily: "system-ui, sans-serif",
-            direction: "rtl",
+            direction: "ltr",
           }}>
-            يرجى تفعيل JavaScript لاستخدام هذا التطبيق.
+            Please enable JavaScript to use this application.
           </div>
         </noscript>
       </body>

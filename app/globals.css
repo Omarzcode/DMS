@@ -569,7 +569,43 @@
 }
 
 /* === Print Styles === */
-@media print {
+/* === Mobile-First Optimization === */
+@media (max-width: 640px) {
+  /* Improve touch targets on mobile */
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better spacing on mobile */
+  .container-responsive {
+    @apply px-3 sm:px-6;
+  }
+
+  /* Prevent zoom on focus for iOS */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Better tap experience */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Ensure proper viewport spacing on notch phones */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@print {
   .print-hide {
     @apply hidden;
   }

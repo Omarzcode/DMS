@@ -130,7 +130,7 @@ export function TransferBeneficiaryDialog({
       <DialogTrigger asChild>
         {children || (
           <Button variant="outline" size="sm">
-            <ArrowRightLeft className="h-4 w-4 mr-2" />
+            <ArrowRightLeft className="h-4 w-4 ml-2" />
             Transfer
           </Button>
         )}
@@ -193,7 +193,7 @@ export function TransferBeneficiaryDialog({
           <Button onClick={handleTransfer} disabled={loading || !selectedPreacherId}>
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
                 Transferring...
               </>
             ) : (

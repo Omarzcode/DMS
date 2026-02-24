@@ -73,7 +73,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
     ).length
 
     // Advanced stages
-    const advancedStages = ["متعلم ملتزم", "مشارك نشط", "قائد مجتمعي"]
+    const advancedStages = ["Committed Learner", "Active Participant", "Community Leader"]
     const advancedCount = beneficiaries.filter((b) =>
       advancedStages.includes(b.da_wa_stage)
     ).length
@@ -110,7 +110,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
         value: activities.all.length,
         icon: Calendar,
         color: "text-purple-600",
-        description: `${activities.maqari.length} Maqari · ${activities.events.length} Events`,
+        description: `${activities.maqari.length} Quranic Readings · ${activities.events.length} Events`,
       },
       {
         title: "Advanced Stages",
@@ -176,7 +176,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       {stats.map((stat) => {
         const Icon = stat.icon
         return (
@@ -184,14 +184,14 @@ export function DashboardStats({ data }: DashboardStatsProps) {
             key={stat.title}
             className="hover:shadow-md transition-shadow duration-200"
           >
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-muted-foreground">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </span>
-                <Icon className={`h-5 w-5 ${stat.color}`} />
+                <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
               </div>
-              <div className="text-3xl font-bold">{stat.value}</div>
+              <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
               {stat.description && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {stat.description}

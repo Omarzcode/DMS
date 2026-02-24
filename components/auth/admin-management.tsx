@@ -361,29 +361,29 @@ export function AdminManagement() {
             >
               {processingUser === dialogConfig?.userName ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
               ) : (
                 <>
                   {dialogConfig?.variant === "approve" && (
                     <>
-                      <Check className="mr-2 h-4 w-4" /> Approve
+                      <Check className="ml-2 h-4 w-4" /> Approve
                     </>
                   )}
                   {dialogConfig?.variant === "reject" && (
                     <>
-                      <X className="mr-2 h-4 w-4" /> Reject
+                      <X className="ml-2 h-4 w-4" /> Reject
                     </>
                   )}
                   {dialogConfig?.variant === "delete" && (
                     <>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      <Trash2 className="ml-2 h-4 w-4" /> Delete
                     </>
                   )}
                   {dialogConfig?.variant === "changeRole" && (
                     <>
-                      <UserCog className="mr-2 h-4 w-4" /> Change Role
+                      <UserCog className="ml-2 h-4 w-4" /> Change Role
                     </>
                   )}
                 </>
