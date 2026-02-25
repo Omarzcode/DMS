@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
@@ -8,101 +8,125 @@ import { Loader2, LogOut, Clock } from "lucide-react"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle"
 import Image from "next/image"
 
-// Replace the entire useParticles function with this:
-
-function useParticles(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
+// ── Particles — now with `enabled` flag ──
+function useParticles(
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  enabled: boolean
+) {
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    if (!enabled) return
 
-    let animationId: number
-    let particles: {
-      x: number; y: number; vx: number; vy: number; r: number; o: number
-    }[] = []
+    // Small delay to ensure canvas is in the DOM after render
+    const timeout = setTimeout(() => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
 
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
+      let animationId: number
+      let particles: {
+        x: number; y: number; vx: number; vy: number; r: number; o: number
+      }[] = []
 
-    const getColor = () => {
-      const raw = getComputedStyle(document.documentElement)
-        .getPropertyValue("--primary")
-        .trim()
-      // Convert "67 32% 19%" → proper hsl
-      return raw.includes(",") ? raw : raw.replace(/(\S+)\s+(\S+)\s+(\S+)/, "\$1, \$2, \$3")
-    }
-
-    const init = () => {
-      resize()
-      const count = Math.min(
-        Math.floor((canvas.width * canvas.height) / 20000),
-        80
-      )
-      particles = Array.from({ length: count }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        r: Math.random() * 1.5 + 0.5,
-        o: Math.random() * 0.5 + 0.15,
-      }))
-    }
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const color = getColor()
-
-      for (const p of particles) {
-        p.x += p.vx
-        p.y += p.vy
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
-
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${color}, ${p.o})`
-        ctx.fill()
+      const resize = () => {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
       }
 
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x
-          const dy = particles[i].y - particles[j].y
-          const dist = dx * dx + dy * dy
-          if (dist < 14400) {
-            ctx.beginPath()
-            ctx.moveTo(particles[i].x, particles[i].y)
-            ctx.lineTo(particles[j].x, particles[j].y)
-            ctx.strokeStyle = `hsla(${color}, ${0.08 * (1 - Math.sqrt(dist) / 120)})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
+      const getColor = () => {
+        const raw = getComputedStyle(document.documentElement)
+          .getPropertyValue("--primary")
+          .trim()
+        return raw.includes(",")
+          ? raw
+          : raw.replace(/(\S+)\s+(\S+)\s+(\S+)/, "\$1, \$2, \$3")
+      }
+
+      const init = () => {
+        resize()
+        const count = Math.min(
+          Math.floor((canvas.width * canvas.height) / 20000),
+          80
+        )
+        particles = Array.from({ length: count }, () => ({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          r: Math.random() * 1.5 + 0.5,
+          o: Math.random() * 0.5 + 0.15,
+        }))
+      }
+
+      const draw = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        const color = getColor()
+
+        for (const p of particles) {
+          p.x += p.vx
+          p.y += p.vy
+          if (p.x < 0 || p.x > canvas.width) p.vx *= -1
+          if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+          ctx.fillStyle = `hsla(${color}, ${p.o})`
+          ctx.fill()
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x
+            const dy = particles[i].y - particles[j].y
+            const dist = dx * dx + dy * dy
+            if (dist < 14400) {
+              ctx.beginPath()
+              ctx.moveTo(particles[i].x, particles[i].y)
+              ctx.lineTo(particles[j].x, particles[j].y)
+              ctx.strokeStyle = `hsla(${color}, ${0.08 * (1 - Math.sqrt(dist) / 120)})`
+              ctx.lineWidth = 0.5
+              ctx.stroke()
+            }
           }
         }
+
+        animationId = requestAnimationFrame(draw)
       }
 
-      animationId = requestAnimationFrame(draw)
-    }
+      init()
+      draw()
+      window.addEventListener("resize", init)
 
-    init()
-    draw()
-    window.addEventListener("resize", init)
+      // Store cleanup
+      canvas.dataset.cleanup = "true"
+      const cleanup = () => {
+        cancelAnimationFrame(animationId)
+        window.removeEventListener("resize", init)
+      }
+
+      // Attach cleanup to ref for the return
+      ;(canvas as any)._cleanup = cleanup
+    }, 50)
 
     return () => {
-      cancelAnimationFrame(animationId)
-      window.removeEventListener("resize", init)
+      clearTimeout(timeout)
+      const canvas = canvasRef.current
+      if (canvas && (canvas as any)._cleanup) {
+        ;(canvas as any)._cleanup()
+      }
     }
-  }, [canvasRef])
+  }, [canvasRef, enabled])  // ← re-runs when `enabled` changes
 }
 
-// ── Staggered reveal hook ──
+// ── Staggered reveal ──
 function useStagger(count: number, delay = 120) {
   const [visible, setVisible] = useState<boolean[]>(Array(count).fill(false))
   useEffect(() => {
     const timers = Array.from({ length: count }, (_, i) =>
-      setTimeout(() => setVisible((v) => { const n = [...v]; n[i] = true; return n }), delay * (i + 1))
+      setTimeout(
+        () => setVisible((v) => { const n = [...v]; n[i] = true; return n }),
+        delay * (i + 1)
+      )
     )
     return () => timers.forEach(clearTimeout)
   }, [count, delay])
@@ -116,7 +140,8 @@ export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const show = useStagger(5, 150)
 
-  useParticles(canvasRef)
+  // ✅ Only enable particles when loading is done
+  useParticles(canvasRef, !loading)
 
   useEffect(() => {
     if (!loading && user) {
@@ -132,7 +157,6 @@ export default function HomePage() {
     finally { setIsSigningIn(false) }
   }
 
-  // ── Loading ──
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -141,7 +165,6 @@ export default function HomePage() {
     )
   }
 
-  // ── Unauthenticated ──
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4">
@@ -152,7 +175,6 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 w-full max-w-sm text-center">
-          {/* Logo */}
           <div
             className="transition-all duration-700 ease-out"
             style={{
@@ -170,7 +192,6 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Title */}
           <div
             className="transition-all duration-700 ease-out"
             style={{
@@ -186,7 +207,6 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Divider */}
           <div
             className="transition-all duration-700 ease-out"
             style={{
@@ -197,7 +217,6 @@ export default function HomePage() {
             <div className="my-8 h-px w-full bg-border" />
           </div>
 
-          {/* Sign in */}
           <div
             className="transition-all duration-700 ease-out"
             style={{
@@ -223,7 +242,6 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Footer */}
           <div
             className="transition-all duration-700 ease-out"
             style={{
@@ -240,7 +258,6 @@ export default function HomePage() {
     )
   }
 
-  // ── Pending ──
   if (userRole === "pending") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4">
@@ -275,7 +292,6 @@ export default function HomePage() {
     )
   }
 
-  // ── Redirecting ──
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Loader2 className="h-6 w-6 animate-spin text-primary" />
