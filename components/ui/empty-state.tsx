@@ -8,19 +8,19 @@ interface EmptyStateProps {
   action?: React.ReactNode
 }
 
-export function EmptyState({ 
-  icon: Icon, 
-  title, 
-  description, 
-  action 
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center animate-fade-in">
-      <div className="rounded-full bg-gradient-to-br from-primary/10 to-secondary/20 p-4 sm:p-6 mb-4">
-        <Icon className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
+        <Icon className="h-6 w-6 text-muted-foreground" />
       </div>
-      <h3 className="text-lg sm:text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-sm sm:text-base text-muted-foreground mb-6 max-w-sm leading-relaxed">
+      <h3 className="text-base font-semibold mb-1">{title}</h3>
+      <p className="text-sm text-muted-foreground mb-6 max-w-xs">
         {description}
       </p>
       {action}

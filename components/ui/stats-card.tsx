@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { LucideIcon } from "lucide-react"
-import { TrendingUp } from "lucide-react"
+import { LucideIcon, TrendingUp } from "lucide-react"
 
 interface StatsCardProps {
   title: string
@@ -10,29 +9,35 @@ interface StatsCardProps {
   trendUp?: boolean
 }
 
-export function StatsCard({ 
-  title, 
-  value, 
-  icon: Icon, 
+export function StatsCard({
+  title,
+  value,
+  icon: Icon,
   trend,
-  trendUp = true
+  trendUp = true,
 }: StatsCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-      <CardContent className="p-4 sm:p-6">
+    <Card>
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-xs sm:text-sm text-muted-foreground font-medium">{title}</p>
-            <p className="text-2xl sm:text-3xl font-bold mt-1 gradient-text-primary">{value}</p>
+            <p className="text-sm text-muted-foreground font-medium">{title}</p>
+            <p className="text-2xl font-bold mt-1">{value}</p>
             {trend && (
-              <p className={`text-xs mt-1 flex items-center gap-1 ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-                <TrendingUp className={`h-3 w-3 ${!trendUp && 'rotate-180'}`} />
+              <p
+                className={`text-xs mt-1 flex items-center gap-1 ${
+                  trendUp ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                <TrendingUp
+                  className={`h-3 w-3 ${!trendUp && "rotate-180"}`}
+                />
                 {trend}
               </p>
             )}
           </div>
-          <div className="p-2 sm:p-3 rounded-full bg-gradient-to-br from-primary/10 to-secondary/20">
-            <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <Icon className="h-5 w-5 text-primary" />
           </div>
         </div>
       </CardContent>

@@ -35,7 +35,7 @@ import {
   Mail,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-
+import Image from "next/image"
 /* ── Reusable Section Header ── */
 function SectionHeader({
   icon: Icon,
@@ -285,18 +285,20 @@ export function AdminManagement() {
   // ── Loading ──
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] p-6">
-        <Card className="max-w-md w-full shadow-sm">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-6">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-            <CardTitle className="text-lg mb-2 text-center">Loading Users</CardTitle>
-            <CardDescription className="text-center">
-              Please wait while we fetch user data...
-            </CardDescription>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
+        <div className="animate-breathe">
+          <Image
+            src="/zeta.png"
+            alt="Logo"
+            width={64}
+            height={64}
+            className="object-contain"
+            priority
+          />
+        </div>
+        <div className="h-1 w-24 rounded-full bg-muted overflow-hidden">
+          <div className="h-full w-1/2 rounded-full bg-primary animate-slide" />
+        </div>
       </div>
     )
   }

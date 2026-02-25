@@ -1,4 +1,3 @@
-// components/ui/confirm-dialog2.tsx
 "use client"
 
 import { useCallback, useRef, useState } from "react"
@@ -34,9 +33,19 @@ export function useConfirm() {
   const confirm = useCallback((opts: ConfirmOptions): Promise<boolean> => {
     setOptions(opts)
     setOpen(true)
-
     return new Promise<boolean>((resolve) => {
       resolveRef.current = resolve
+    })
+  }, [])
+
+  const cleanup = useCallback(() => {
+    requestAnimationFrame(() => {
+      const openDialogs = document.querySelectorAll(
+        '[role="dialog"][data-state="open"]'
+      )
+      if (openDialogs.length > 0) {
+        document.body.style.pointerEvents = "none"
+      }
     })
   }, [])
 
@@ -44,59 +53,34 @@ export function useConfirm() {
     resolveRef.current?.(true)
     resolveRef.current = null
     setOpen(false)
-
-    // KEY FIX: Clean up body styles after closing
-    requestAnimationFrame(() => {
-      // Don't remove pointer-events if another dialog is still open
-      const openDialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
-      if (openDialogs.length > 0) {
-        // Another dialog is still open, re-apply pointer-events: none
-        document.body.style.pointerEvents = "none"
-      }
-    })
-  }, [])
+    cleanup()
+  }, [cleanup])
 
   const handleCancel = useCallback(() => {
     resolveRef.current?.(false)
     resolveRef.current = null
     setOpen(false)
+    cleanup()
+  }, [cleanup])
 
-    // KEY FIX: Same cleanup
-    requestAnimationFrame(() => {
-      const openDialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
-      if (openDialogs.length > 0) {
-        document.body.style.pointerEvents = "none"
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen) {
+        resolveRef.current?.(false)
+        resolveRef.current = null
+        setOpen(false)
+        cleanup()
       }
-    })
-  }, [])
-
-  // KEY FIX: Handle the case where dialog is dismissed via escape/overlay
-  const handleOpenChange = useCallback((newOpen: boolean) => {
-    if (!newOpen) {
-      resolveRef.current?.(false)
-      resolveRef.current = null
-      setOpen(false)
-
-      requestAnimationFrame(() => {
-        const openDialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
-        if (openDialogs.length > 0) {
-          document.body.style.pointerEvents = "none"
-        }
-      })
-    }
-  }, [])
+    },
+    [cleanup]
+  )
 
   const ConfirmDialog = (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent
-        // KEY FIX: Prevent this dialog from stealing focus cleanup from parent
-        onCloseAutoFocus={(e) => {
-          e.preventDefault()
-        }}
-        // KEY FIX: Prevent overlay click from propagating to parent dialog
-        onEscapeKeyDown={(e) => {
-          e.stopPropagation()
-        }}
+        dir="ltr"
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.stopPropagation()}
       >
         <AlertDialogHeader>
           <AlertDialogTitle>{options.title}</AlertDialogTitle>

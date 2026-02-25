@@ -1,0 +1,26 @@
+{
+  "name": "Engineering Management System",
+  "short_name": "EMS",
+  "description": "Professional CRM for Engineering organizations",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FDFCF8",
+  "theme_color": "#3C4021",
+  "dir": "ltr",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/zeta.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/zeta.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

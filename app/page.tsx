@@ -104,15 +104,15 @@ function useParticles(
         window.removeEventListener("resize", init)
       }
 
-      // Attach cleanup to ref for the return
-      ;(canvas as any)._cleanup = cleanup
+        // Attach cleanup to ref for the return
+        ; (canvas as any)._cleanup = cleanup
     }, 50)
 
     return () => {
       clearTimeout(timeout)
       const canvas = canvasRef.current
       if (canvas && (canvas as any)._cleanup) {
-        ;(canvas as any)._cleanup()
+        ; (canvas as any)._cleanup()
       }
     }
   }, [canvasRef, enabled])  // ← re-runs when `enabled` changes
@@ -157,10 +157,22 @@ export default function HomePage() {
     finally { setIsSigningIn(false) }
   }
 
-  if (loading) {
+    if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
+        <div className="animate-breathe">
+          <Image
+            src="/zeta.png"
+            alt="Logo"
+            width={64}
+            height={64}
+            className="object-contain"
+            priority
+          />
+        </div>
+        <div className="h-1 w-24 rounded-full bg-muted overflow-hidden">
+          <div className="h-full w-1/2 rounded-full bg-primary animate-slide" />
+        </div>
       </div>
     )
   }
@@ -293,10 +305,22 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-    </div>
-  )
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
+        <div className="animate-breathe">
+          <Image
+            src="/zeta.png"
+            alt="Logo"
+            width={64}
+            height={64}
+            className="object-contain"
+            priority
+          />
+        </div>
+        <div className="h-1 w-24 rounded-full bg-muted overflow-hidden">
+          <div className="h-full w-1/2 rounded-full bg-primary animate-slide" />
+        </div>
+      </div>
+    )
 }
 
 function GoogleIcon() {
