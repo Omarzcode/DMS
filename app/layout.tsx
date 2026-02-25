@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   description: "Professional CRM for Engineering organizations",
   generator: "theta.app",
   icons: {
-    icon: "/cropped_circle_image.png",
-    shortcut: "/cropped_circle_image.png",
+    icon: "/zeta.png",
+    shortcut: "/zeta.png",
     apple: "/apple-icon.png",
   },
   openGraph: {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "Engineering Management System",
     images: [
       {
-        url: "/cropped_circle_image.png",
+        url: "/zeta.png",
         width: 512,
         height: 512,
         alt: "Engineering Management System Logo",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Engineering Management System",
     description: "Professional CRM for Engineering organizations",
-    images: ["/cropped_circle_image.png"],
+    images: ["/zeta.png"],
   },
   manifest: "/manifest.json",
 }

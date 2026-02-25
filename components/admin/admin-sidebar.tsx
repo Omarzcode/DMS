@@ -16,11 +16,20 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BarChart3, Users, UserCheck, Calendar, LogOut, Shield, TrendingUp, Activity, Palette } from "lucide-react"
+import {
+  BarChart3,
+  Users,
+  UserCheck,
+  Calendar,
+  LogOut,
+  Shield,
+  Activity,
+  Palette,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "../ui/logo"
-import { ThemeToggleButton } from "@/components/ui/theme-toggle" // ✅ Already imported
+import { ThemeToggleButton } from "@/components/ui/theme-toggle"
 
 const adminMenuItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
@@ -46,46 +55,51 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     try {
       await logout()
-      router.push('/')
+      router.push("/")
     } catch (error) {
       console.error("Error logging out:", error)
     }
   }
 
   return (
-    <Sidebar className="bg-sidebar border-r border-border">
-      <SidebarHeader className="border-b border-border bg-gradient-to-r from-secondary/10 to-background">
-        <div className="px-2 py-3">
-          <Logo />
+    <Sidebar side="left" dir="ltr" className="bg-sidebar border-r border-border">
+      {/* Header */}
+      <SidebarHeader>
+        <div className="flex items-center gap-2.5 px-1 py-2">
+          <Logo size={32} />
+          <span className="text-sm font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            EMS
+          </span>
         </div>
       </SidebarHeader>
 
-      {/* ✅ ADD THEME TOGGLE RIGHT HERE - After Header, Before Content */}
+      {/* Theme Toggle */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Theme</span>
+          <span className="text-sm font-medium group-data-[collapsible=icon]:hidden">
+            Theme
+          </span>
         </div>
         <ThemeToggleButton />
       </div>
 
+      {/* Content */}
       <SidebarContent>
-        {/* Main Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary font-semibold">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={pathname === item.url} 
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
                     tooltip={item.title}
-                    className="hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
-                      <span className="font-medium">{item.title}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -94,24 +108,22 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="bg-border/50" />
+        <SidebarSeparator />
 
-        {/* Analytics Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">Advanced Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Analytics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {analyticsMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={pathname === item.url} 
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
                     tooltip={item.title}
-                    className="hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
-                      <span className="font-medium">{item.title}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -120,24 +132,22 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="bg-border/50" />
+        <SidebarSeparator />
 
-        {/* Management Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">Comprehensive Management</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {managementMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={pathname === item.url} 
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
                     tooltip={item.title}
-                    className="hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
-                      <span className="font-medium">{item.title}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -147,30 +157,28 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border bg-gradient-to-r from-secondary/10 to-background">
-        <div className="flex items-center gap-3 px-2 py-3">
-          <div className="relative">
-            <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-              <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || ""} />
-              <AvatarFallback className="bg-primary text-white font-semibold">
-                {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "م"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute -top-1 -right-1 h-4 w-4 bg-secondary rounded-full flex items-center justify-center border-2 border-background">
-              <Shield className="h-2 w-2 text-white" />
-            </div>
-          </div>
-          <div className="flex flex-1 flex-col min-w-0">
-            <span className="text-sm font-semibold text-foreground truncate">
+      {/* Footer */}
+      <SidebarFooter>
+        <div className="flex items-center gap-3 px-2 py-3 group-data-[collapsible=icon]:justify-center">
+          <Avatar className="h-9 w-9 shrink-0">
+            <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || ""} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+              {user?.displayName?.charAt(0) || "A"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-1 flex-col min-w-0 group-data-[collapsible=icon]:hidden">
+            <span className="text-sm font-medium text-foreground truncate">
               {user?.displayName || "Administrator"}
             </span>
-            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {user?.email}
+            </span>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-sidebar-accent transition-all duration-200"
+            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive group-data-[collapsible=icon]:hidden"
             aria-label="Sign out"
           >
             <LogOut className="h-4 w-4" />

@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { BookOpen, RefreshCw, AlertCircle } from "lucide-react"
+import {  RefreshCw, AlertCircle } from "lucide-react"
 import { useDashboardData } from "@/hooks/use-dashboard-data"
 import { PreacherPerformanceChart } from "@/components/admin/charts/preacher-performance-chart"
+import { Logo } from "@/components/ui/logo"
 
 export default function PreacherAnalyticsPage() {
   const data = useDashboardData()
@@ -66,7 +67,7 @@ export default function PreacherAnalyticsPage() {
 
           <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <BookOpen className="h-7 w-7 text-primary" />
+              <Logo size={56} />
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
                   Preacher Analytics
