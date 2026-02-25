@@ -12,11 +12,20 @@ export default function Error({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
       <Image
-        src="/zeta.png"
+        src="/zeta_light.png"
         alt="Logo"
-        width={48}
-        height={48}
-        className="mb-6 object-contain opacity-50"
+        width={64}
+        height={64}
+        className="object-contain block dark:hidden"
+        priority
+      />
+      <Image
+        src="/zeta_dark.png"
+        alt="Logo"
+        width={64}
+        height={64}
+        className="object-contain hidden dark:block"
+        priority
       />
       <h1 className="text-2xl font-bold text-foreground">
         Something went wrong

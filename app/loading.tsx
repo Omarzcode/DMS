@@ -5,11 +5,19 @@ export default function Loading() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
       <div className="animate-breathe">
         <Image
-          src="/zeta.png"
+          src="/zeta_light.png"
           alt="Logo"
           width={64}
           height={64}
-          className="object-contain"
+          className="object-contain block dark:hidden"
+          priority
+        />
+        <Image
+          src="/zeta_dark.png"
+          alt="Logo"
+          width={64}
+          height={64}
+          className="object-contain hidden dark:block"
           priority
         />
       </div>

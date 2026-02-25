@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2, LogOut, Clock } from "lucide-react"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle"
 import Image from "next/image"
+import { Logo } from "@/components/ui/logo"
 
 // ── Particles — now with `enabled` flag ──
 function useParticles(
@@ -161,14 +162,7 @@ export default function HomePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
         <div className="animate-breathe">
-          <Image
-            src="/zeta.png"
-            alt="Logo"
-            width={64}
-            height={64}
-            className="object-contain"
-            priority
-          />
+          <Logo size={64} />
         </div>
         <div className="h-1 w-24 rounded-full bg-muted overflow-hidden">
           <div className="h-full w-1/2 rounded-full bg-primary animate-slide" />
@@ -194,14 +188,8 @@ export default function HomePage() {
               transform: show[0] ? "translateY(0)" : "translateY(20px)",
             }}
           >
-            <Image
-              src="/zeta.png"
-              alt="Logo"
-              width={56}
-              height={56}
-              className="mx-auto mb-6 rounded-2xl object-contain"
-              priority
-            />
+            <Logo size={56} className="mx-auto mb-6" />
+              
           </div>
 
           <div
@@ -307,14 +295,8 @@ export default function HomePage() {
   return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
         <div className="animate-breathe">
-          <Image
-            src="/zeta.png"
-            alt="Logo"
-            width={64}
-            height={64}
-            className="object-contain"
-            priority
-          />
+          <Logo size={64} />
+           
         </div>
         <div className="h-1 w-24 rounded-full bg-muted overflow-hidden">
           <div className="h-full w-1/2 rounded-full bg-primary animate-slide" />
