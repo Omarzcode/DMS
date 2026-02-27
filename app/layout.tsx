@@ -1,11 +1,13 @@
+// app/layout.tsx
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
-import { AuthProvider } from "@/hooks/use-auth"
+import { AuthProvider } from "@/hooks/use-auth"  // ← Real Firebase auth
 import { Toaster } from "sonner"
 import { ThemeProvider } from "next-themes"
+import ServiceWorkerRegister from "@/components/service-worker-register" // ← Add
 
 export const metadata: Metadata = {
   title: "Engineering Management System",
@@ -14,30 +16,14 @@ export const metadata: Metadata = {
   icons: {
     icon: "/zeta.png",
     shortcut: "/zeta.png",
-    apple: "/apple-icon.png",
-  },
-  openGraph: {
-    title: "Engineering Management System",
-    description: "Professional CRM for Engineering organizations",
-    type: "website",
-    locale: "en_US",
-    siteName: "Engineering Management System",
-    images: [
-      {
-        url: "/zeta.png",
-        width: 512,
-        height: 512,
-        alt: "Engineering Management System Logo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary",
-    title: "Engineering Management System",
-    description: "Professional CRM for Engineering organizations",
-    images: ["/zeta.png"],
+    apple: "/apple-icon-180.png",   // ← Fix this path
   },
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "EMS",
+  },
 }
 
 export const viewport: Viewport = {
@@ -50,6 +36,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
 }
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -57,9 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
-      <body
-        className={`${GeistSans.variable} ${GeistMono.variable}`}
-      >
+      <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -67,21 +52,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <ServiceWorkerRegister />
             {children}
             <Toaster position="top-center" richColors />
           </AuthProvider>
         </ThemeProvider>
-        <noscript>
-          <div style={{
-            padding: "2rem",
-            textAlign: "center",
-            fontFamily: "system-ui, sans-serif",
-            direction: "ltr",
-          }}>
-            Please enable JavaScript to use this application.
-          </div>
-        </noscript>
       </body>
     </html>
   )
+  
 }

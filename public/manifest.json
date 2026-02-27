@@ -1,26 +1,55 @@
 {
   "name": "Engineering Management System",
   "short_name": "EMS",
-  "description": "Professional CRM for Engineering organizations",
-  "start_url": "/",
+  "description": "Engineering Management System - Manage your engineering projects and documents",
+  "start_url": "https://dms-nine-psi.vercel.app/",
+  "scope": "https://dms-nine-psi.vercel.app/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#FDFCF8",
-  "theme_color": "#3C4021",
-  "dir": "ltr",
   "lang": "en",
+  "dir": "ltr",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "orientation": "any",
+  "categories": ["productivity", "business"],
   "icons": [
     {
-      "src": "/zeta.png",
+      "src": "/manifest-icon-192.maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/manifest-icon-192.maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/zeta.png",
+      "src": "/manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard",
+      "description": "Go to EMS Dashboard",
+      "icons": [
+        {
+          "src": "/manifest-icon-192.maskable.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
 }
