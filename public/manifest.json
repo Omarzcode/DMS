@@ -8,8 +8,8 @@
   "display": "standalone",
   "lang": "en",
   "dir": "ltr",
-  "theme_color": "#0a0a0a",
-  "background_color": "#0a0a0a",
+  "theme_color": "#181810",
+  "background_color": "#181810",
   "orientation": "any",
   "categories": [
     "productivity",
