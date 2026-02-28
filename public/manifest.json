@@ -10,28 +10,31 @@
   "theme_color": "#0a0a0a",
   "background_color": "#0a0a0a",
   "orientation": "any",
-  "categories": ["productivity", "business"],
+  "categories": [
+    "productivity",
+    "business"
+  ],
   "icons": [
     {
-      "src": "/manifest-icon-192.maskable.png",
+      "src": "public/manifest-icon-192.maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/manifest-icon-192.maskable.png",
+      "src": "public/manifest-icon-192.maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/manifest-icon-512.maskable.png",
+      "src": "public/manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/manifest-icon-512.maskable.png",
+      "src": "public/manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
