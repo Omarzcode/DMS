@@ -1,14 +1,8 @@
-// hooks/use-auth.tsx - FINAL VERSION
 "use client"
 
+import type React from "react"
 import { useState, useEffect, createContext, useContext } from "react"
-import { 
-  type User, 
-  onAuthStateChanged, 
-  signInWithRedirect,  // ← CHANGE popup to redirect!
-  signOut,
-  GoogleAuthProvider
-} from "firebase/auth"
+import { type User, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth"
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import type { Preacher, UserRole } from "@/lib/firestore-collections"
@@ -41,8 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDocRef = doc(db, "preachers", user.uid)
-        const userDoc = await getDoc(userDocRef)
+        const userDocRef = doc(db, "preachers", user.uid);
+        const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const userData = userDoc.data() as Preacher
@@ -50,23 +44,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUserProfile(userData)
           setUserRole(userData.role)
         } else {
+          // New user signing in, create a pending account
           const newPreacher: Preacher = {
             id: user.uid,
             name: user.displayName || user.email || "Unknown",
             email: user.email || "",
-            role: "pending",
+            role: "pending", // New role for users awaiting approval
             created_at: serverTimestamp() as any,
           }
-          await setDoc(userDocRef, newPreacher)
-          setUser(user)
-          setUserProfile(newPreacher)
-          setUserRole("pending")
+          await setDoc(userDocRef, newPreacher);
+          setUser(user);
+          setUserProfile(newPreacher);
+          setUserRole("pending");
         }
       } else {
         setUser(null)
         setUserProfile(null)
         setUserRole(null)
       }
+
       setLoading(false)
     })
 
@@ -75,10 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // ✅ Use REDIRECT instead of POPUP for Android TWA
-      await signInWithRedirect(auth, googleProvider)
+      await signInWithPopup(auth, googleProvider)
     } catch (error: any) {
-      console.error("Error signing in:", error)
+      console.error("Error signing in with Google:", error)
       throw error
     }
   }
@@ -92,12 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, userRole, userProfile,
-      loading, signInWithGoogle, logout 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  const value = {
+    user, userRole, userProfile,
+    loading,
+    signInWithGoogle, logout,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
