@@ -65,7 +65,6 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
     e.preventDefault()
     if (!user) return
 
-    // Validation
     if (!formData.name.trim() || !formData.phone.trim() || !formData.batch.trim()) {
       setError("Please fill in all required fields")
       return
@@ -75,26 +74,34 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       setLoading(true)
       setError(null)
 
-      // Check what changed
       const changes: string[] = []
+      // Use optional chaining and nullish coalescing to avoid errors
+      const oldNotes = beneficiary.notes ?? ""
+      const newNotes = formData.notes.trim()
+
       if (formData.name !== beneficiary.name) changes.push(`Name: ${beneficiary.name} → ${formData.name}`)
       if (formData.phone !== beneficiary.phone) changes.push(`Phone: ${beneficiary.phone} → ${formData.phone}`)
       if (formData.batch !== beneficiary.batch) changes.push(`Batch: ${beneficiary.batch} → ${formData.batch}`)
       if (formData.da_wa_stage !== beneficiary.da_wa_stage)
         changes.push(`Stage: ${beneficiary.da_wa_stage} → ${formData.da_wa_stage}`)
-      if (formData.notes !== (beneficiary.notes || ""))
-        changes.push(`Notes: ${beneficiary.notes || "None"} → ${formData.notes || "None"}`)
 
-      // Update beneficiary
+      // Fix comparison logic here
+      if (newNotes !== oldNotes) {
+        changes.push(`Notes: ${oldNotes || "None"} → ${newNotes || "None"}`)
+      }
+
       const updateData = {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
         batch: formData.batch.trim(),
         da_wa_stage: formData.da_wa_stage,
-        notes: formData.notes.trim() || undefined,
+        // Ensure we don't send undefined to Firestore if you want to clear the field
+        notes: newNotes || ""
       }
 
       await updateDoc(doc(db, "beneficiaries", beneficiary.id), updateData)
+
+      // ... rest of your code
       toast.success('Data Updated', {
         description: `${formData.name}'s information has been updated successfully`,
       })
