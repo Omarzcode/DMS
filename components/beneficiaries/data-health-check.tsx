@@ -1,7 +1,7 @@
 // components/beneficiaries/data-health-check.tsx
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react"
 import { createPortal } from "react-dom"
 import {
   Dialog,
@@ -54,9 +54,6 @@ import { db } from "@/lib/firebase"
 import { toast } from "sonner"
 import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
 import { DAWA_STAGES } from "@/lib/firestore-collections"
-
-// ─── INLINE CONFIRM (no external hook, fully controlled) ─────────
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +67,8 @@ import {
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+// ─── Types ────────────────────────────────────────────────────────
+
 interface ConfirmConfig {
   title: string
   description: string
@@ -77,8 +76,6 @@ interface ConfirmConfig {
   cancelText: string
   variant: "danger" | "info" | "default"
 }
-
-// ─── Types (same as before) ──────────────────────────────────────
 
 interface DataHealthCheckProps {
   beneficiaries: Beneficiary[]
@@ -124,39 +121,43 @@ const ISSUE_CONFIG: Record<
   IssueType,
   { label: string; severity: "error" | "warning" | "info"; icon: React.ElementType }
 > = {
-  fixable_phone: { label: "رقم قابل للإصلاح", severity: "info", icon: Wrench },
-  duplicate_phone: { label: "رقم مكرر", severity: "error", icon: Copy },
-  invalid_phone: { label: "رقم غير صحيح", severity: "error", icon: Phone },
-  missing_name: { label: "اسم مفقود", severity: "error", icon: UserX },
-  missing_phone: { label: "رقم مفقود", severity: "error", icon: Phone },
-  missing_preacher: { label: "بدون داعية", severity: "warning", icon: Users },
-  orphan_preacher: { label: "داعية غير موجود", severity: "warning", icon: FileWarning },
-  missing_stage: { label: "بدون مرحلة", severity: "warning", icon: AlertCircle },
-  duplicate_name_phone: { label: "سجل مكرر بالكامل", severity: "error", icon: Copy },
+  fixable_phone:       { label: "رقم قابل للإصلاح",    severity: "info",    icon: Wrench      },
+  duplicate_phone:     { label: "رقم مكرر",             severity: "error",   icon: Copy        },
+  invalid_phone:       { label: "رقم غير صحيح",         severity: "error",   icon: Phone       },
+  missing_name:        { label: "اسم مفقود",            severity: "error",   icon: UserX       },
+  missing_phone:       { label: "رقم مفقود",            severity: "error",   icon: Phone       },
+  missing_preacher:    { label: "بدون داعية",           severity: "warning", icon: Users       },
+  orphan_preacher:     { label: "داعية غير موجود",      severity: "warning", icon: FileWarning },
+  missing_stage:       { label: "بدون مرحلة",           severity: "warning", icon: AlertCircle },
+  duplicate_name_phone:{ label: "سجل مكرر بالكامل",    severity: "error",   icon: Copy        },
 }
 
 const BATCH_SIZE = 25
+
+// ─── Component ────────────────────────────────────────────────────
 
 export function DataHealthCheck({
   beneficiaries,
   preachers,
   onDataChanged,
 }: DataHealthCheckProps) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [filterType, setFilterType] = useState<string>("all")
+  const [open, setOpen]               = useState(false)
+  const [loading, setLoading]         = useState(false)
+  const [filterType, setFilterType]   = useState<string>("all")
   const [filterSeverity, setFilterSeverity] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedIssue, setExpandedIssue] = useState<string | null>(null)
-  const [issues, setIssues] = useState<DataIssue[]>([])
-  const [analyzed, setAnalyzed] = useState(false)
-  const [editState, setEditState] = useState<EditState | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [fixing, setFixing] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [issues, setIssues]           = useState<DataIssue[]>([])
+  const [analyzed, setAnalyzed]       = useState(false)
+  const [editState, setEditState]     = useState<EditState | null>(null)
+  // Fix 6: Separate saving states to avoid conflicts
+  const [savingEdit, setSavingEdit]   = useState(false)
+  const [savingPhone, setSavingPhone] = useState(false)
+  const [fixing, setFixing]           = useState(false)
+  const [mounted, setMounted]         = useState(false)
+  const [isPending, startTransition]  = useTransition()
 
-  // ─── INLINE CONFIRM STATE (replaces useConfirm hook) ───────────
-
+  // ─── Inline Confirm State ──────────────────────────────────────
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmConfig, setConfirmConfig] = useState<ConfirmConfig>({
     title: "",
@@ -165,60 +166,54 @@ export function DataHealthCheck({
     cancelText: "إلغاء",
     variant: "default",
   })
-  const confirmResolveRef = useCallback(() => {}, [])
-  const resolveRef = useState<{ current: ((v: boolean) => void) | null }>(() => ({
-    current: null,
-  }))[0]
+  // Fix 2: Use useRef instead of useState for the resolve callback
+  const resolveRef = useRef<((v: boolean) => void) | null>(null)
 
   useEffect(() => {
     setMounted(true)
-    return () => setMounted(false)
+    return () => {
+      setMounted(false)
+      // Fix 3: Clean up body styles on unmount only — not in handleConfirmResult
+      document.body.style.pointerEvents = ""
+      document.body.style.overflow = ""
+    }
   }, [])
 
+  // Fix 2 + Fix 4: confirm no longer needs resolveRef in its dependency array
   const confirm = useCallback(
     (opts: Partial<ConfirmConfig> & { title: string; description: string }): Promise<boolean> => {
       return new Promise<boolean>((resolve) => {
         setConfirmConfig({
-          title: opts.title,
+          title:       opts.title,
           description: opts.description,
-          confirmText: opts.confirmText || "تأكيد",
-          cancelText: opts.cancelText || "إلغاء",
-          variant: opts.variant || "default",
+          confirmText: opts.confirmText ?? "تأكيد",
+          cancelText:  opts.cancelText  ?? "إلغاء",
+          variant:     opts.variant     ?? "default",
         })
         resolveRef.current = resolve
         setConfirmOpen(true)
       })
     },
-    [resolveRef]
+    [] // resolveRef is a ref — stable, no need to list as dependency
   )
 
-  const handleConfirmResult = useCallback(
-    (result: boolean) => {
-      setConfirmOpen(false)
-      // Use setTimeout to let the AlertDialog fully unmount before resolving
-      setTimeout(() => {
-        resolveRef.current?.(result)
-        resolveRef.current = null
-
-        // CRITICAL: Re-apply pointer-events since parent dialog is still open
-        if (open) {
-          document.body.style.pointerEvents = "none"
-        }
-      }, 100)
-    },
-    [resolveRef, open]
-  )
+  // Fix 3: Removed the fragile pointer-events manual hack entirely
+  const handleConfirmResult = useCallback((result: boolean) => {
+    setConfirmOpen(false)
+    resolveRef.current?.(result)
+    resolveRef.current = null
+  }, [])
 
   // ─── Phone Utilities ───────────────────────────────────────────
 
   const normalizePhone = useCallback((phone: string): string => {
     let clean = phone.replace(/[^\d+]/g, "")
-    if (clean.startsWith("+20")) clean = clean.slice(3)
-    else if (clean.startsWith("0020")) clean = clean.slice(4)
-    else if (clean.startsWith("002")) clean = clean.slice(3)
-    else if (clean.startsWith("20") && clean.length >= 12) clean = clean.slice(2)
+    if (clean.startsWith("+20"))                              clean = clean.slice(3)
+    else if (clean.startsWith("0020"))                        clean = clean.slice(4)
+    else if (clean.startsWith("002"))                         clean = clean.slice(3)
+    else if (clean.startsWith("20") && clean.length >= 12)   clean = clean.slice(2)
     clean = clean.replace(/\+/g, "")
-    if (clean.length === 10 && /^1[0-2,5]/.test(clean)) clean = "0" + clean
+    if (clean.length === 10 && /^1[0-2,5]/.test(clean))      clean = "0" + clean
     return clean
   }, [])
 
@@ -231,14 +226,14 @@ export function DataHealthCheck({
     (phone: string): boolean => {
       if (!phone?.trim()) return false
       const hasIssue =
-        /\s/.test(phone) ||
-        phone.includes("+20") ||
-        phone.startsWith("002") ||
-        phone.startsWith("0020") ||
-        /^20\d{10}$/.test(phone.replace(/\s/g, "")) ||
-        phone.includes("-") ||
-        phone.includes(".") ||
-        phone.includes("(") ||
+        /\s/.test(phone)                                   ||
+        phone.includes("+20")                              ||
+        phone.startsWith("002")                            ||
+        phone.startsWith("0020")                           ||
+        /^20\d{10}$/.test(phone.replace(/\s/g, ""))       ||
+        phone.includes("-")                                ||
+        phone.includes(".")                                ||
+        phone.includes("(")                                ||
         phone.includes(")")
       if (!hasIssue) return false
       return /^01[0-2,5]\d{8}$/.test(normalizePhone(phone))
@@ -247,54 +242,30 @@ export function DataHealthCheck({
   )
 
   const getPhoneIssueDescription = useCallback((phone: string): string => {
-    const issues: string[] = []
-    if (/\s/.test(phone)) issues.push("مسافات")
-    if (phone.includes("+20")) issues.push("+20")
-    if (phone.startsWith("002") || phone.startsWith("0020")) issues.push("002")
-    if (/^20\d{10}$/.test(phone.replace(/\s/g, ""))) issues.push("20")
-    if (phone.includes("-")) issues.push("شرطات")
-    if (phone.includes(".")) issues.push("نقاط")
-    if (phone.includes("(") || phone.includes(")")) issues.push("أقواس")
-    return issues.join("، ")
+    const parts: string[] = []
+    if (/\s/.test(phone))                                    parts.push("مسافات")
+    if (phone.includes("+20"))                               parts.push("+20")
+    if (phone.startsWith("002") || phone.startsWith("0020")) parts.push("002")
+    if (/^20\d{10}$/.test(phone.replace(/\s/g, "")))        parts.push("20")
+    if (phone.includes("-"))                                 parts.push("شرطات")
+    if (phone.includes("."))                                 parts.push("نقاط")
+    if (phone.includes("(") || phone.includes(")"))         parts.push("أقواس")
+    return parts.join("، ")
   }, [])
 
   // ─── Analysis ──────────────────────────────────────────────────
 
+  // Fix 10: Wrapped in startTransition so heavy sync work doesn't block UI
   const runAnalysis = useCallback(() => {
     setLoading(true)
-    const foundIssues: DataIssue[] = []
-    let issueId = 0
-    const preacherIds = new Set(preachers.map((p) => p.id))
+    startTransition(() => {
+      const foundIssues: DataIssue[] = []
+      let issueId = 0
+      const preacherIds = new Set(preachers.map((p) => p.id))
 
-    for (const b of beneficiaries) {
-      if (b.phone && phoneNeedsFixing(b.phone)) {
-        foundIssues.push({
-          id: `issue-${issueId++}`,
-          beneficiaryId: b.id,
-          beneficiaryName: b.name,
-          beneficiaryPhone: b.phone,
-          preacherId: b.da_i_id || "",
-          stage: b.da_wa_stage || "",
-          type: "fixable_phone",
-          severity: "info",
-          message: `الرقم يحتوي على ${getPhoneIssueDescription(b.phone)} — يمكن إصلاحه تلقائياً`,
-          selected: true,
-          fixedPhone: normalizePhone(b.phone),
-        })
-      }
-    }
-
-    const phoneMap = new Map<string, Beneficiary[]>()
-    for (const b of beneficiaries) {
-      if (b.phone) {
-        const key = normalizePhone(b.phone.trim()) || b.phone.trim()
-        if (!phoneMap.has(key)) phoneMap.set(key, [])
-        phoneMap.get(key)!.push(b)
-      }
-    }
-    for (const [phone, group] of phoneMap) {
-      if (group.length > 1) {
-        for (const b of group) {
+      // Fixable phones
+      for (const b of beneficiaries) {
+        if (b.phone && phoneNeedsFixing(b.phone)) {
           foundIssues.push({
             id: `issue-${issueId++}`,
             beneficiaryId: b.id,
@@ -302,129 +273,175 @@ export function DataHealthCheck({
             beneficiaryPhone: b.phone,
             preacherId: b.da_i_id || "",
             stage: b.da_wa_stage || "",
-            type: "duplicate_phone",
-            severity: "error",
-            message: `الرقم ${phone} مكرر في ${group.length} سجل`,
-            relatedIds: group.filter((g) => g.id !== b.id).map((g) => g.id),
-            selected: false,
-          })
-        }
-      }
-    }
-
-    const namePhoneMap = new Map<string, Beneficiary[]>()
-    for (const b of beneficiaries) {
-      const np = normalizePhone(b.phone?.trim() || "")
-      const key = `${b.name.trim().toLowerCase()}|${np || b.phone?.trim()}`
-      if (!namePhoneMap.has(key)) namePhoneMap.set(key, [])
-      namePhoneMap.get(key)!.push(b)
-    }
-    for (const [, group] of namePhoneMap) {
-      if (group.length > 1) {
-        for (let i = 1; i < group.length; i++) {
-          foundIssues.push({
-            id: `issue-${issueId++}`,
-            beneficiaryId: group[i].id,
-            beneficiaryName: group[i].name,
-            beneficiaryPhone: group[i].phone,
-            preacherId: group[i].da_i_id || "",
-            stage: group[i].da_wa_stage || "",
-            type: "duplicate_name_phone",
-            severity: "error",
-            message: `سجل مكرر بالكامل (الاسم والرقم) — يمكن حذفه بأمان`,
-            relatedIds: [group[0].id],
+            type: "fixable_phone",
+            severity: "info",
+            message: `الرقم يحتوي على ${getPhoneIssueDescription(b.phone)} — يمكن إصلاحه تلقائياً`,
             selected: true,
+            fixedPhone: normalizePhone(b.phone),
           })
         }
       }
-    }
 
-    for (const b of beneficiaries) {
-      if (!b.name?.trim()) {
-        foundIssues.push({
-          id: `issue-${issueId++}`, beneficiaryId: b.id,
-          beneficiaryName: b.name || "(بدون اسم)", beneficiaryPhone: b.phone,
-          preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
-          type: "missing_name", severity: "error",
-          message: "المستفيد بدون اسم", selected: false,
-        })
+      // Duplicate phones
+      const phoneMap = new Map<string, Beneficiary[]>()
+      for (const b of beneficiaries) {
+        if (b.phone) {
+          const key = normalizePhone(b.phone.trim()) || b.phone.trim()
+          if (!phoneMap.has(key)) phoneMap.set(key, [])
+          phoneMap.get(key)!.push(b)
+        }
       }
-      if (!b.phone?.trim()) {
-        foundIssues.push({
-          id: `issue-${issueId++}`, beneficiaryId: b.id,
-          beneficiaryName: b.name, beneficiaryPhone: b.phone || "(بدون رقم)",
-          preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
-          type: "missing_phone", severity: "error",
-          message: "المستفيد بدون رقم هاتف", selected: false,
-        })
+      for (const [phone, group] of phoneMap) {
+        if (group.length > 1) {
+          for (const b of group) {
+            foundIssues.push({
+              id: `issue-${issueId++}`,
+              beneficiaryId: b.id,
+              beneficiaryName: b.name,
+              beneficiaryPhone: b.phone,
+              preacherId: b.da_i_id || "",
+              stage: b.da_wa_stage || "",
+              type: "duplicate_phone",
+              severity: "error",
+              message: `الرقم ${phone} مكرر في ${group.length} سجل`,
+              relatedIds: group.filter((g) => g.id !== b.id).map((g) => g.id),
+              selected: false,
+            })
+          }
+        }
       }
-      if (b.phone?.trim()) {
-        const alreadyFixable = foundIssues.some((i) => i.beneficiaryId === b.id && i.type === "fixable_phone")
-        if (!alreadyFixable && !isValidEgyptianPhone(b.phone)) {
+
+      // Duplicate name+phone
+      const namePhoneMap = new Map<string, Beneficiary[]>()
+      for (const b of beneficiaries) {
+        const np  = normalizePhone(b.phone?.trim() || "")
+        const key = `${b.name.trim().toLowerCase()}|${np || b.phone?.trim()}`
+        if (!namePhoneMap.has(key)) namePhoneMap.set(key, [])
+        namePhoneMap.get(key)!.push(b)
+      }
+      for (const [, group] of namePhoneMap) {
+        if (group.length > 1) {
+          for (let i = 1; i < group.length; i++) {
+            foundIssues.push({
+              id: `issue-${issueId++}`,
+              beneficiaryId: group[i].id,
+              beneficiaryName: group[i].name,
+              beneficiaryPhone: group[i].phone,
+              preacherId: group[i].da_i_id || "",
+              stage: group[i].da_wa_stage || "",
+              type: "duplicate_name_phone",
+              severity: "error",
+              message: `سجل مكرر بالكامل (الاسم والرقم) — يمكن حذفه بأمان`,
+              relatedIds: [group[0].id],
+              selected: true,
+            })
+          }
+        }
+      }
+
+      // Per-beneficiary checks
+      for (const b of beneficiaries) {
+        if (!b.name?.trim()) {
+          foundIssues.push({
+            id: `issue-${issueId++}`, beneficiaryId: b.id,
+            beneficiaryName: b.name || "(بدون اسم)", beneficiaryPhone: b.phone,
+            preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
+            type: "missing_name", severity: "error",
+            message: "المستفيد بدون اسم", selected: false,
+          })
+        }
+        if (!b.phone?.trim()) {
+          foundIssues.push({
+            id: `issue-${issueId++}`, beneficiaryId: b.id,
+            beneficiaryName: b.name, beneficiaryPhone: b.phone || "(بدون رقم)",
+            preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
+            type: "missing_phone", severity: "error",
+            message: "المستفيد بدون رقم هاتف", selected: false,
+          })
+        }
+        if (b.phone?.trim()) {
+          const alreadyFixable = foundIssues.some(
+            (i) => i.beneficiaryId === b.id && i.type === "fixable_phone"
+          )
+          if (!alreadyFixable && !isValidEgyptianPhone(b.phone)) {
+            foundIssues.push({
+              id: `issue-${issueId++}`, beneficiaryId: b.id,
+              beneficiaryName: b.name, beneficiaryPhone: b.phone,
+              preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
+              type: "invalid_phone", severity: "error",
+              message: `الرقم "${b.phone}" ليس رقم مصري صحيح`, selected: false,
+            })
+          }
+        }
+        if (!b.da_i_id?.trim()) {
           foundIssues.push({
             id: `issue-${issueId++}`, beneficiaryId: b.id,
             beneficiaryName: b.name, beneficiaryPhone: b.phone,
             preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
-            type: "invalid_phone", severity: "error",
-            message: `الرقم "${b.phone}" ليس رقم مصري صحيح`, selected: false,
+            type: "missing_preacher", severity: "warning",
+            message: "المستفيد غير معيّن لأي داعية", selected: false,
+          })
+        }
+        if (b.da_i_id?.trim() && !preacherIds.has(b.da_i_id)) {
+          foundIssues.push({
+            id: `issue-${issueId++}`, beneficiaryId: b.id,
+            beneficiaryName: b.name, beneficiaryPhone: b.phone,
+            preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
+            type: "orphan_preacher", severity: "warning",
+            message: `معيّن لداعية غير موجود (${b.da_i_id})`, selected: false,
+          })
+        }
+        if (!b.da_wa_stage?.trim()) {
+          foundIssues.push({
+            id: `issue-${issueId++}`, beneficiaryId: b.id,
+            beneficiaryName: b.name, beneficiaryPhone: b.phone,
+            preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
+            type: "missing_stage", severity: "warning",
+            message: "المستفيد بدون مرحلة دعوية", selected: false,
           })
         }
       }
-      if (!b.da_i_id?.trim()) {
-        foundIssues.push({
-          id: `issue-${issueId++}`, beneficiaryId: b.id,
-          beneficiaryName: b.name, beneficiaryPhone: b.phone,
-          preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
-          type: "missing_preacher", severity: "warning",
-          message: "المستفيد غير معيّن لأي داعية", selected: false,
-        })
-      }
-      if (b.da_i_id?.trim() && !preacherIds.has(b.da_i_id)) {
-        foundIssues.push({
-          id: `issue-${issueId++}`, beneficiaryId: b.id,
-          beneficiaryName: b.name, beneficiaryPhone: b.phone,
-          preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
-          type: "orphan_preacher", severity: "warning",
-          message: `معيّن لداعية غير موجود (${b.da_i_id})`, selected: false,
-        })
-      }
-      if (!b.da_wa_stage?.trim()) {
-        foundIssues.push({
-          id: `issue-${issueId++}`, beneficiaryId: b.id,
-          beneficiaryName: b.name, beneficiaryPhone: b.phone,
-          preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
-          type: "missing_stage", severity: "warning",
-          message: "المستفيد بدون مرحلة دعوية", selected: false,
-        })
-      }
-    }
 
-    setIssues(foundIssues)
-    setAnalyzed(true)
-    setLoading(false)
+      setIssues(foundIssues)
+      setAnalyzed(true)
+      setLoading(false)
 
-    const fixableCount = foundIssues.filter((i) => i.type === "fixable_phone").length
-    if (foundIssues.length === 0) toast.success("البيانات سليمة! لا توجد مشاكل")
-    else if (fixableCount > 0)
-      toast.warning(`تم العثور على ${foundIssues.length} مشكلة — منها ${fixableCount} قابلة للإصلاح التلقائي`)
-    else toast.warning(`تم العثور على ${foundIssues.length} مشكلة`)
-  }, [beneficiaries, preachers, phoneNeedsFixing, normalizePhone, getPhoneIssueDescription, isValidEgyptianPhone])
+      const fixableCount = foundIssues.filter((i) => i.type === "fixable_phone").length
+      if (foundIssues.length === 0)
+        toast.success("البيانات سليمة! لا توجد مشاكل")
+      else if (fixableCount > 0)
+        toast.warning(`تم العثور على ${foundIssues.length} مشكلة — منها ${fixableCount} قابلة للإصلاح التلقائي`)
+      else
+        toast.warning(`تم العثور على ${foundIssues.length} مشكلة`)
+    })
+  }, [
+    beneficiaries,
+    preachers,
+    phoneNeedsFixing,
+    normalizePhone,
+    getPhoneIssueDescription,
+    isValidEgyptianPhone,
+  ])
 
   // ─── Fix Phones ────────────────────────────────────────────────
 
-  const fixableIssues = useMemo(() => issues.filter((i) => i.type === "fixable_phone" && i.fixedPhone), [issues])
+  const fixableIssues         = useMemo(() => issues.filter((i) => i.type === "fixable_phone" && i.fixedPhone), [issues])
   const selectedFixableIssues = useMemo(() => fixableIssues.filter((i) => i.selected), [fixableIssues])
 
+  // Fix 6: Uses savingPhone instead of shared saving state
   const fixSinglePhone = async (issue: DataIssue) => {
     if (!issue.fixedPhone) return
-    setSaving(true)
+    setSavingPhone(true)
     try {
       await updateDoc(doc(db, "beneficiaries", issue.beneficiaryId), { phone: issue.fixedPhone })
       setIssues((prev) => prev.filter((i) => i.id !== issue.id))
       toast.success(`تم إصلاح رقم ${issue.beneficiaryName}`)
       onDataChanged()
-    } catch { toast.error("فشل إصلاح الرقم") }
-    finally { setSaving(false) }
+    } catch {
+      toast.error("فشل إصلاح الرقم")
+    } finally {
+      setSavingPhone(false)
+    }
   }
 
   const fixAllPhones = async (onlySelected = false) => {
@@ -432,30 +449,35 @@ export function DataHealthCheck({
     if (toFix.length === 0) { toast.error("لا توجد أرقام قابلة للإصلاح"); return }
 
     const confirmed = await confirm({
-      title: "إصلاح الأرقام تلقائياً",
+      title:       "إصلاح الأرقام تلقائياً",
       description: `سيتم إصلاح ${toFix.length} رقم هاتف تلقائياً.`,
       confirmText: `إصلاح ${toFix.length} رقم`,
-      cancelText: "إلغاء",
-      variant: "info",
+      cancelText:  "إلغاء",
+      variant:     "info",
     })
     if (!confirmed) return
 
     setFixing(true)
     let fixed = 0, failed = 0
+
     const uniqueFixMap = new Map<string, string>()
     for (const issue of toFix) {
       if (issue.fixedPhone) uniqueFixMap.set(issue.beneficiaryId, issue.fixedPhone)
     }
+
     const entries = Array.from(uniqueFixMap.entries())
     for (let i = 0; i < entries.length; i += BATCH_SIZE) {
-      const batch = writeBatch(db)
+      const batch       = writeBatch(db)
       const currentBatch = entries.slice(i, i + BATCH_SIZE)
       for (const [id, phone] of currentBatch) batch.update(doc(db, "beneficiaries", id), { phone })
-      try { await batch.commit(); fixed += currentBatch.length }
+      try   { await batch.commit(); fixed  += currentBatch.length }
       catch { failed += currentBatch.length }
     }
+
     if (fixed > 0) {
-      const fixedIds = new Set(toFix.filter((i) => uniqueFixMap.has(i.beneficiaryId)).map((i) => i.id))
+      const fixedIds = new Set(
+        toFix.filter((i) => uniqueFixMap.has(i.beneficiaryId)).map((i) => i.id)
+      )
       setIssues((prev) => prev.filter((i) => !fixedIds.has(i.id)))
       toast.success(`تم إصلاح ${fixed} رقم بنجاح`)
       onDataChanged()
@@ -468,11 +490,15 @@ export function DataHealthCheck({
 
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
-      if (filterType !== "all" && issue.type !== filterType) return false
+      if (filterType !== "all" && issue.type !== filterType)           return false
       if (filterSeverity !== "all" && issue.severity !== filterSeverity) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim()
-        return issue.beneficiaryName.toLowerCase().includes(q) || issue.beneficiaryPhone.includes(q) || issue.message.toLowerCase().includes(q)
+        return (
+          issue.beneficiaryName.toLowerCase().includes(q) ||
+          issue.beneficiaryPhone.includes(q)              ||
+          issue.message.toLowerCase().includes(q)
+        )
       }
       return true
     })
@@ -480,7 +506,11 @@ export function DataHealthCheck({
 
   const issueCounts = useMemo(() => {
     const c: Record<string, number> = { total: 0 }
-    for (const i of issues) { c.total++; c[i.type] = (c[i.type] || 0) + 1; c[`severity_${i.severity}`] = (c[`severity_${i.severity}`] || 0) + 1 }
+    for (const i of issues) {
+      c.total++
+      c[i.type]                    = (c[i.type]                    || 0) + 1
+      c[`severity_${i.severity}`]  = (c[`severity_${i.severity}`]  || 0) + 1
+    }
     return c
   }, [issues])
 
@@ -489,72 +519,121 @@ export function DataHealthCheck({
   // ─── Edit ──────────────────────────────────────────────────────
 
   const startEdit = (issue: DataIssue) => {
-    setEditState({ issueId: issue.id, name: issue.beneficiaryName, phone: issue.beneficiaryPhone, preacherId: issue.preacherId, stage: issue.stage })
+    setEditState({
+      issueId:    issue.id,
+      name:       issue.beneficiaryName,
+      phone:      issue.beneficiaryPhone,
+      preacherId: issue.preacherId,
+      stage:      issue.stage,
+    })
   }
+
   const cancelEdit = () => setEditState(null)
 
+  // Fix 6: Uses savingEdit instead of shared saving state
   const saveEdit = async () => {
     if (!editState) return
     const issue = issues.find((i) => i.id === editState.issueId)
     if (!issue) return
     if (!editState.name.trim()) { toast.error("الاسم مطلوب"); return }
+
     let formattedPhone = editState.phone.trim()
     if (formattedPhone) {
       const n = normalizePhone(formattedPhone)
       if (/^01[0-2,5]\d{8}$/.test(n)) formattedPhone = n
     }
-    setSaving(true)
+
+    setSavingEdit(true)
     try {
       const u: Record<string, string> = {}
-      if (editState.name.trim() !== issue.beneficiaryName) u.name = editState.name.trim()
-      if (formattedPhone !== issue.beneficiaryPhone) u.phone = formattedPhone
-      if (editState.preacherId !== issue.preacherId) u.da_i_id = editState.preacherId
-      if (editState.stage !== issue.stage) u.da_wa_stage = editState.stage
-      if (Object.keys(u).length === 0) { toast.info("لم يتم تغيير أي بيانات"); setEditState(null); setSaving(false); return }
+      if (editState.name.trim()  !== issue.beneficiaryName) u.name       = editState.name.trim()
+      if (formattedPhone         !== issue.beneficiaryPhone) u.phone      = formattedPhone
+      if (editState.preacherId   !== issue.preacherId)       u.da_i_id    = editState.preacherId
+      if (editState.stage        !== issue.stage)            u.da_wa_stage = editState.stage
+
+      if (Object.keys(u).length === 0) {
+        toast.info("لم يتم تغيير أي بيانات")
+        setEditState(null)
+        return
+      }
+
       await updateDoc(doc(db, "beneficiaries", issue.beneficiaryId), u)
-      setIssues((prev) => prev.map((i) => i.beneficiaryId === issue.beneficiaryId ? { ...i, beneficiaryName: editState.name.trim() || i.beneficiaryName, beneficiaryPhone: formattedPhone || i.beneficiaryPhone, preacherId: editState.preacherId || i.preacherId, stage: editState.stage || i.stage } : i))
+
+      setIssues((prev) =>
+        prev.map((i) =>
+          i.beneficiaryId === issue.beneficiaryId
+            ? {
+                ...i,
+                beneficiaryName:  editState.name.trim()    || i.beneficiaryName,
+                beneficiaryPhone: formattedPhone            || i.beneficiaryPhone,
+                preacherId:       editState.preacherId      || i.preacherId,
+                stage:            editState.stage           || i.stage,
+              }
+            : i
+        )
+      )
       setEditState(null)
       toast.success("تم تحديث البيانات بنجاح")
       onDataChanged()
-    } catch { toast.error("فشل تحديث البيانات") }
-    finally { setSaving(false) }
+    } catch {
+      toast.error("فشل تحديث البيانات")
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   // ─── Select / Delete ───────────────────────────────────────────
 
-  const toggleSelect = (id: string) => setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i)))
+  const toggleSelect = (id: string) =>
+    setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i)))
+
   const toggleSelectAll = () => {
     const allSelected = filteredIssues.length > 0 && filteredIssues.every((i) => i.selected)
     const ids = new Set(filteredIssues.map((i) => i.id))
     setIssues((prev) => prev.map((i) => (ids.has(i.id) ? { ...i, selected: !allSelected } : i)))
   }
 
+  // Fix 7: Use writeBatch instead of deleteDoc in a loop
   const deleteSelected = async () => {
     const sel = issues.filter((i) => i.selected)
     if (sel.length === 0) { toast.error("لا توجد عناصر محددة"); return }
+
     const deletable = sel.filter((i) => i.type !== "fixable_phone")
     if (deletable.length === 0) { toast.info("العناصر المحددة قابلة للإصلاح وليست للحذف."); return }
+
     const uniqueIds = [...new Set(deletable.map((i) => i.beneficiaryId))]
 
     const confirmed = await confirm({
-      title: "حذف المستفيدين",
+      title:       "حذف المستفيدين",
       description: `هل أنت متأكد من حذف ${uniqueIds.length} مستفيد؟ لا يمكن التراجع.`,
       confirmText: `حذف ${uniqueIds.length} مستفيد`,
-      cancelText: "إلغاء",
-      variant: "danger",
+      cancelText:  "إلغاء",
+      variant:     "danger",
     })
     if (!confirmed) return
 
     setLoading(true)
     let deleted = 0, failed = 0
-    for (const id of uniqueIds) {
-      try { await deleteDoc(doc(db, "beneficiaries", id)); deleted++ }
-      catch { failed++ }
+
+    for (let i = 0; i < uniqueIds.length; i += BATCH_SIZE) {
+      const batch        = writeBatch(db)
+      const currentBatch = uniqueIds.slice(i, i + BATCH_SIZE)
+      for (const id of currentBatch) batch.delete(doc(db, "beneficiaries", id))
+      try {
+        await batch.commit()
+        deleted += currentBatch.length
+      } catch {
+        failed += currentBatch.length
+      }
     }
+
     setLoading(false)
+
     if (deleted > 0) {
+      // Only remove successfully deleted IDs from local state
+      const deletedSet = new Set(uniqueIds)
       toast.success(`تم حذف ${deleted} مستفيد بنجاح`)
-      setIssues((prev) => prev.filter((i) => !uniqueIds.includes(i.beneficiaryId)))
+      setIssues((prev) => prev.filter((i) => !deletedSet.has(i.beneficiaryId)))
       onDataChanged()
     }
     if (failed > 0) toast.error(`فشل حذف ${failed} مستفيد`)
@@ -563,19 +642,22 @@ export function DataHealthCheck({
   // ─── Export ────────────────────────────────────────────────────
 
   const exportIssuesCSV = () => {
-    const BOM = "\uFEFF"
+    const BOM     = "\uFEFF"
     const headers = ["الاسم", "الرقم", "الرقم المصحح", "الداعية", "المرحلة", "نوع المشكلة", "الخطورة", "التفاصيل"]
-    const rows = filteredIssues.map((i) => [
-      i.beneficiaryName, i.beneficiaryPhone, i.fixedPhone || "",
+    const rows    = filteredIssues.map((i) => [
+      i.beneficiaryName,
+      i.beneficiaryPhone,
+      i.fixedPhone || "",
       preachers.find((p) => p.id === i.preacherId)?.name || "غير معيّن",
-      i.stage || "بدون مرحلة", ISSUE_CONFIG[i.type].label,
+      i.stage || "بدون مرحلة",
+      ISSUE_CONFIG[i.type].label,
       i.severity === "error" ? "خطأ" : i.severity === "warning" ? "تحذير" : "معلومة",
       i.message,
     ])
-    const csv = BOM + [headers.join(","), ...rows.map((r) => r.map((c) => `"${(c || "").replace(/"/g, '""')}"`).join(","))].join("\n")
+    const csv  = BOM + [headers.join(","), ...rows.map((r) => r.map((c) => `"${(c || "").replace(/"/g, '""')}"`).join(","))].join("\n")
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
+    link.href  = URL.createObjectURL(blob)
     link.download = `data_health_report_${new Date().toISOString().split("T")[0]}.csv`
     link.click()
     URL.revokeObjectURL(link.href)
@@ -583,11 +665,11 @@ export function DataHealthCheck({
 
   // ─── Dialog Lifecycle ──────────────────────────────────────────
 
+  // Fix 5: Don't call setOpen when blocked — avoids state drift
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      // If confirm dialog is open, don't close the main dialog
-      if (confirmOpen) return
+    if (!newOpen && confirmOpen) return // Block close while confirm is open
 
+    if (!newOpen) {
       setAnalyzed(false)
       setIssues([])
       setFilterType("all")
@@ -599,23 +681,19 @@ export function DataHealthCheck({
     setOpen(newOpen)
   }
 
-  // Safety: clean up body on unmount
-  useEffect(() => {
-    return () => {
-      document.body.style.pointerEvents = ""
-      document.body.style.overflow = ""
-    }
-  }, [])
-
   // ─── Helpers ───────────────────────────────────────────────────
 
   const getSeverityBadge = (severity: "error" | "warning" | "info") => {
     const cfg = {
-      error: { label: "خطأ", className: "bg-destructive/15 text-destructive border-destructive/30" },
-      warning: { label: "تحذير", className: "bg-warning/15 text-warning border-warning/30" },
-      info: { label: "إصلاح", className: "bg-info/15 text-info border-info/30" },
+      error:   { label: "خطأ",    className: "bg-destructive/15 text-destructive border-destructive/30" },
+      warning: { label: "تحذير",  className: "bg-warning/15 text-warning border-warning/30"            },
+      info:    { label: "إصلاح",  className: "bg-info/15 text-info border-info/30"                     },
     }[severity]
-    return <Badge variant="outline" className={`text-[10px] ${cfg.className}`}>{cfg.label}</Badge>
+    return (
+      <Badge variant="outline" className={`text-[10px] ${cfg.className}`}>
+        {cfg.label}
+      </Badge>
+    )
   }
 
   const getPreacherName = (id: string) => {
@@ -625,7 +703,10 @@ export function DataHealthCheck({
 
   const healthScore = useMemo(() => {
     if (beneficiaries.length === 0) return 100
-    const penalty = issues.filter((i) => i.severity === "error").length * 3 + issues.filter((i) => i.severity === "warning").length + issues.filter((i) => i.severity === "info").length * 0.5
+    const penalty =
+      issues.filter((i) => i.severity === "error").length   * 3 +
+      issues.filter((i) => i.severity === "warning").length * 1 +
+      issues.filter((i) => i.severity === "info").length    * 0.5
     return Math.max(0, Math.round(100 - (penalty / (beneficiaries.length * 5)) * 100))
   }, [beneficiaries, issues])
 
@@ -660,6 +741,7 @@ export function DataHealthCheck({
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 space-y-4 pb-4 pt-4">
+            {/* ── Not yet analyzed ── */}
             {!analyzed && (
               <div className="text-center py-12 space-y-6">
                 <div className="inline-flex p-6 rounded-full bg-primary/10">
@@ -671,13 +753,21 @@ export function DataHealthCheck({
                     سيتم تحليل {beneficiaries.length} سجل للبحث عن المشاكل
                   </p>
                 </div>
-                <Button onClick={runAnalysis} disabled={loading || beneficiaries.length === 0} size="lg" className="gap-2">
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <HeartPulse className="h-5 w-5" />}
+                <Button
+                  onClick={runAnalysis}
+                  disabled={loading || isPending || beneficiaries.length === 0}
+                  size="lg"
+                  className="gap-2"
+                >
+                  {loading || isPending
+                    ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <HeartPulse className="h-5 w-5" />}
                   بدء الفحص
                 </Button>
               </div>
             )}
 
+            {/* ── Analyzed ── */}
             {analyzed && (
               <div className="space-y-4">
                 {/* Health Score */}
@@ -706,9 +796,10 @@ export function DataHealthCheck({
                         <AlertCircle className="h-3 w-3" />{issueCounts.severity_warning} تحذير
                       </Badge>
                     )}
-                    {(issueCounts.fixable_phone || 0) > 0 && (
+                    {/* Fix 8: Use consistent severity_info key for the fixable badge */}
+                    {(issueCounts.severity_info || 0) > 0 && (
                       <Badge variant="outline" className="bg-info/10 text-info border-info/30 gap-1">
-                        <Wrench className="h-3 w-3" />{issueCounts.fixable_phone} قابل للإصلاح
+                        <Wrench className="h-3 w-3" />{issueCounts.severity_info} قابل للإصلاح
                       </Badge>
                     )}
                     {issues.length === 0 && (
@@ -723,7 +814,9 @@ export function DataHealthCheck({
                 {fixableIssues.length > 0 && (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-lg border border-info/30 bg-info/5">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-info/15"><Zap className="h-5 w-5 text-info" /></div>
+                      <div className="p-2 rounded-full bg-info/15">
+                        <Zap className="h-5 w-5 text-info" />
+                      </div>
                       <div>
                         <h4 className="text-sm font-semibold">إصلاح سريع — {fixableIssues.length} رقم</h4>
                         <p className="text-xs text-muted-foreground">أرقام يمكن إصلاحها تلقائياً</p>
@@ -731,12 +824,23 @@ export function DataHealthCheck({
                     </div>
                     <div className="flex items-center gap-2">
                       {selectedFixableIssues.length > 0 && selectedFixableIssues.length < fixableIssues.length && (
-                        <Button variant="outline" size="sm" onClick={() => fixAllPhones(true)} disabled={fixing} className="gap-1.5 border-info/30 text-info hover:bg-info/10">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fixAllPhones(true)}
+                          disabled={fixing}
+                          className="gap-1.5 border-info/30 text-info hover:bg-info/10"
+                        >
                           {fixing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5" />}
                           إصلاح المحدد ({selectedFixableIssues.length})
                         </Button>
                       )}
-                      <Button size="sm" onClick={() => fixAllPhones(false)} disabled={fixing} className="gap-1.5 bg-info hover:bg-info/90 text-info-foreground">
+                      <Button
+                        size="sm"
+                        onClick={() => fixAllPhones(false)}
+                        disabled={fixing}
+                        className="gap-1.5 bg-info hover:bg-info/90 text-info-foreground"
+                      >
                         {fixing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
                         إصلاح الكل ({fixableIssues.length})
                       </Button>
@@ -750,30 +854,47 @@ export function DataHealthCheck({
                     <div className="flex flex-col sm:flex-row gap-3">
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                        <Input placeholder="بحث..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9" />
+                        <Input
+                          placeholder="بحث..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9 h-9"
+                        />
                         {searchQuery && (
-                          <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setSearchQuery("")}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                            onClick={() => setSearchQuery("")}
+                            aria-label="مسح البحث"
+                          >
                             <X className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                       <Select value={filterType} onValueChange={setFilterType}>
-                        <SelectTrigger className="w-full sm:w-48 h-9"><SelectValue placeholder="نوع المشكلة" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-48 h-9">
+                          <SelectValue placeholder="نوع المشكلة" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">الكل ({issueCounts.total || 0})</SelectItem>
                           {Object.entries(ISSUE_CONFIG).map(([type, config]) => {
                             const count = issueCounts[type] || 0
-                            return count > 0 ? <SelectItem key={type} value={type}>{config.label} ({count})</SelectItem> : null
+                            return count > 0
+                              ? <SelectItem key={type} value={type}>{config.label} ({count})</SelectItem>
+                              : null
                           })}
                         </SelectContent>
                       </Select>
                       <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-                        <SelectTrigger className="w-full sm:w-40 h-9"><SelectValue placeholder="الخطورة" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-40 h-9">
+                          <SelectValue placeholder="الخطورة" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">الكل</SelectItem>
-                          {(issueCounts.severity_error || 0) > 0 && <SelectItem value="error">أخطاء ({issueCounts.severity_error})</SelectItem>}
+                          {(issueCounts.severity_error   || 0) > 0 && <SelectItem value="error">أخطاء ({issueCounts.severity_error})</SelectItem>}
                           {(issueCounts.severity_warning || 0) > 0 && <SelectItem value="warning">تحذيرات ({issueCounts.severity_warning})</SelectItem>}
-                          {(issueCounts.severity_info || 0) > 0 && <SelectItem value="info">قابل للإصلاح ({issueCounts.severity_info})</SelectItem>}
+                          {(issueCounts.severity_info    || 0) > 0 && <SelectItem value="info">قابل للإصلاح ({issueCounts.severity_info})</SelectItem>}
                         </SelectContent>
                       </Select>
                     </div>
@@ -782,16 +903,39 @@ export function DataHealthCheck({
                     <div className="flex items-center justify-between bg-muted p-3 rounded-lg border">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <Checkbox id="health-select-all" checked={filteredIssues.length > 0 && filteredIssues.every((i) => i.selected)} onCheckedChange={toggleSelectAll} className="h-4 w-4" disabled={filteredIssues.length === 0} />
-                          <Label htmlFor="health-select-all" className="text-sm cursor-pointer font-medium">تحديد الكل ({filteredIssues.length})</Label>
+                          <Checkbox
+                            id="health-select-all"
+                            checked={filteredIssues.length > 0 && filteredIssues.every((i) => i.selected)}
+                            onCheckedChange={toggleSelectAll}
+                            className="h-4 w-4"
+                            disabled={filteredIssues.length === 0}
+                          />
+                          <Label htmlFor="health-select-all" className="text-sm cursor-pointer font-medium">
+                            تحديد الكل ({filteredIssues.length})
+                          </Label>
                         </div>
                         {selectedCount > 0 && <Badge variant="default" className="gap-1">{selectedCount} محدد</Badge>}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={exportIssuesCSV} className="gap-1.5" disabled={filteredIssues.length === 0}>
-                          <Download className="h-3.5 w-3.5" /><span className="hidden sm:inline">تصدير</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={exportIssuesCSV}
+                          className="gap-1.5"
+                          disabled={filteredIssues.length === 0}
+                          aria-label="تصدير CSV"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">تصدير</span>
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={deleteSelected} disabled={selectedCount === 0 || loading} className="gap-1.5">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={deleteSelected}
+                          disabled={selectedCount === 0 || loading}
+                          className="gap-1.5"
+                          aria-label={`حذف ${selectedCount} عنصر`}
+                        >
                           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                           حذف ({selectedCount})
                         </Button>
@@ -808,28 +952,40 @@ export function DataHealthCheck({
                           </div>
                         ) : (
                           filteredIssues.map((issue, index) => {
-                            const config = ISSUE_CONFIG[issue.type]
+                            const config       = ISSUE_CONFIG[issue.type]
                             const IconComponent = config.icon
-                            const isExpanded = expandedIssue === issue.id
-                            const isEditing = editState?.issueId === issue.id
-                            const isFixable = issue.type === "fixable_phone" && issue.fixedPhone
+                            const isExpanded   = expandedIssue === issue.id
+                            const isEditing    = editState?.issueId === issue.id
+                            const isFixable    = issue.type === "fixable_phone" && issue.fixedPhone
 
                             return (
                               <div
                                 key={issue.id}
-                                className={`
-                                  ${index < filteredIssues.length - 1 ? "border-b" : ""}
-                                  ${issue.selected ? "bg-primary/5" : ""}
-                                  ${issue.severity === "error" ? "border-l-2 border-l-destructive" : ""}
-                                  ${issue.severity === "warning" ? "border-l-2 border-l-warning" : ""}
-                                  ${issue.severity === "info" ? "border-l-2 border-l-info" : ""}
-                                  transition-colors hover:bg-muted/50
-                                `}
+                                className={cn(
+                                  index < filteredIssues.length - 1 ? "border-b" : "",
+                                  issue.selected                     ? "bg-primary/5" : "",
+                                  issue.severity === "error"         ? "border-l-2 border-l-destructive" : "",
+                                  issue.severity === "warning"       ? "border-l-2 border-l-warning"     : "",
+                                  issue.severity === "info"          ? "border-l-2 border-l-info"        : "",
+                                  "transition-colors hover:bg-muted/50"
+                                )}
                               >
                                 {!isEditing && (
                                   <div className="flex items-start sm:items-center gap-3 p-3">
-                                    <Checkbox checked={issue.selected} onCheckedChange={() => toggleSelect(issue.id)} className="h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0" />
-                                    <IconComponent className={`h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0 ${issue.severity === "error" ? "text-destructive" : issue.severity === "warning" ? "text-warning" : "text-info"}`} />
+                                    <Checkbox
+                                      checked={issue.selected}
+                                      onCheckedChange={() => toggleSelect(issue.id)}
+                                      className="h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0"
+                                      aria-label={`تحديد ${issue.beneficiaryName}`}
+                                    />
+                                    <IconComponent
+                                      className={cn(
+                                        "h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0",
+                                        issue.severity === "error"   && "text-destructive",
+                                        issue.severity === "warning" && "text-warning",
+                                        issue.severity === "info"    && "text-info",
+                                      )}
+                                    />
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-sm font-medium truncate">{issue.beneficiaryName}</span>
@@ -844,23 +1000,48 @@ export function DataHealthCheck({
                                       )}
                                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                         <p className="text-xs text-muted-foreground">{issue.message}</p>
-                                        {issue.preacherId && <span className="text-[10px] text-muted-foreground/70">• {getPreacherName(issue.preacherId)}</span>}
-                                        {issue.stage && <Badge variant="outline" className="text-[10px] h-4">{issue.stage}</Badge>}
+                                        {issue.preacherId && (
+                                          <span className="text-[10px] text-muted-foreground/70">• {getPreacherName(issue.preacherId)}</span>
+                                        )}
+                                        {issue.stage && (
+                                          <Badge variant="outline" className="text-[10px] h-4">{issue.stage}</Badge>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-shrink-0">
                                       {getSeverityBadge(issue.severity)}
                                       <Badge variant="outline" className="text-[10px] hidden sm:flex">{config.label}</Badge>
                                       {isFixable && (
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-info/10 hover:text-info" onClick={() => fixSinglePhone(issue)} disabled={saving} title="إصلاح">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7 hover:bg-info/10 hover:text-info"
+                                          onClick={() => fixSinglePhone(issue)}
+                                          disabled={savingPhone}
+                                          aria-label={`إصلاح رقم ${issue.beneficiaryName}`}
+                                          title="إصلاح"
+                                        >
                                           <Wrench className="h-3 w-3" />
                                         </Button>
                                       )}
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-primary/10 hover:text-primary" onClick={() => startEdit(issue)} title="تعديل">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
+                                        onClick={() => startEdit(issue)}
+                                        aria-label={`تعديل ${issue.beneficiaryName}`}
+                                        title="تعديل"
+                                      >
                                         <Pencil className="h-3 w-3" />
                                       </Button>
                                       {issue.relatedIds && issue.relatedIds.length > 0 && (
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedIssue(isExpanded ? null : issue.id)}>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7"
+                                          onClick={() => setExpandedIssue(isExpanded ? null : issue.id)}
+                                          aria-label={isExpanded ? "طي" : "توسيع"}
+                                        >
                                           {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                         </Button>
                                       )}
@@ -876,25 +1057,43 @@ export function DataHealthCheck({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                       <div className="space-y-1">
                                         <Label className="text-xs font-medium">الاسم</Label>
-                                        <Input value={editState.name} onChange={(e) => setEditState((p) => p && { ...p, name: e.target.value })} className="h-8 text-sm" />
+                                        <Input
+                                          value={editState.name}
+                                          onChange={(e) => setEditState((p) => p && { ...p, name: e.target.value })}
+                                          className="h-8 text-sm"
+                                        />
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-xs font-medium">رقم الهاتف</Label>
-                                        <Input value={editState.phone} onChange={(e) => setEditState((p) => p && { ...p, phone: e.target.value })} className="h-8 text-sm font-mono" dir="ltr" />
+                                        <Input
+                                          value={editState.phone}
+                                          onChange={(e) => setEditState((p) => p && { ...p, phone: e.target.value })}
+                                          className="h-8 text-sm font-mono"
+                                          dir="ltr"
+                                        />
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-xs font-medium">الداعية</Label>
-                                        <Select value={editState.preacherId || "none"} onValueChange={(v) => setEditState((p) => p && { ...p, preacherId: v === "none" ? "" : v })}>
+                                        <Select
+                                          value={editState.preacherId || "none"}
+                                          onValueChange={(v) => setEditState((p) => p && { ...p, preacherId: v === "none" ? "" : v })}
+                                        >
                                           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                                           <SelectContent>
                                             <SelectItem value="none">بدون تعيين</SelectItem>
-                                            {preachers.filter((p) => p.role === "da'i").map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                            {preachers
+                                              .filter((p) => p.role === "da'i")
+                                              .map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
+                                            }
                                           </SelectContent>
                                         </Select>
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-xs font-medium">المرحلة</Label>
-                                        <Select value={editState.stage || "none"} onValueChange={(v) => setEditState((p) => p && { ...p, stage: v === "none" ? "" : v })}>
+                                        <Select
+                                          value={editState.stage || "none"}
+                                          onValueChange={(v) => setEditState((p) => p && { ...p, stage: v === "none" ? "" : v })}
+                                        >
                                           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                                           <SelectContent>
                                             <SelectItem value="none">بدون مرحلة</SelectItem>
@@ -904,9 +1103,25 @@ export function DataHealthCheck({
                                       </div>
                                     </div>
                                     <div className="flex items-center justify-end gap-2 pt-1">
-                                      <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={saving} className="gap-1.5"><Undo2 className="h-3.5 w-3.5" />إلغاء</Button>
-                                      <Button size="sm" onClick={saveEdit} disabled={saving} className="gap-1.5">
-                                        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}حفظ
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={cancelEdit}
+                                        disabled={savingEdit}
+                                        className="gap-1.5"
+                                      >
+                                        <Undo2 className="h-3.5 w-3.5" />إلغاء
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={saveEdit}
+                                        disabled={savingEdit}
+                                        className="gap-1.5"
+                                      >
+                                        {savingEdit
+                                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          : <Save className="h-3.5 w-3.5" />}
+                                        حفظ
                                       </Button>
                                     </div>
                                   </div>
@@ -944,20 +1159,23 @@ export function DataHealthCheck({
           <DialogFooter className="px-4 sm:px-6 pb-4 pt-3 border-t bg-muted">
             <div className="flex gap-2 w-full sm:w-auto">
               {analyzed && issues.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => { setAnalyzed(false); setIssues([]); setEditState(null) }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setAnalyzed(false); setIssues([]); setEditState(null) }}
+                >
                   إعادة الفحص
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>إغلاق</Button>
+              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+                إغلاق
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ═══════════════════════════════════════════════════════════
-          KEY FIX: Confirm dialog rendered via portal to document.body
-          Completely outside the Radix Dialog DOM tree
-          ═══════════════════════════════════════════════════════════ */}
+      {/* Confirm dialog rendered via portal — completely outside Radix Dialog DOM tree */}
       {mounted &&
         createPortal(
           <AlertDialog
@@ -967,14 +1185,8 @@ export function DataHealthCheck({
             }}
           >
             <AlertDialogContent
-              onCloseAutoFocus={(e) => {
-                // CRITICAL: Prevent AlertDialog from touching focus/pointer-events
-                e.preventDefault()
-              }}
-              onOpenAutoFocus={(e) => {
-                // Prevent stealing focus management from parent
-                e.preventDefault()
-              }}
+              onCloseAutoFocus={(e) => e.preventDefault()}
+              onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <AlertDialogHeader>
                 <AlertDialogTitle>{confirmConfig.title}</AlertDialogTitle>
@@ -982,21 +1194,15 @@ export function DataHealthCheck({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleConfirmResult(false)
-                  }}
+                  onClick={(e) => { e.preventDefault(); handleConfirmResult(false) }}
                 >
                   {confirmConfig.cancelText}
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleConfirmResult(true)
-                  }}
+                  onClick={(e) => { e.preventDefault(); handleConfirmResult(true) }}
                   className={cn(
                     confirmConfig.variant === "danger" && buttonVariants({ variant: "destructive" }),
-                    confirmConfig.variant === "info" && "bg-info text-info-foreground hover:bg-info/90"
+                    confirmConfig.variant === "info"   && "bg-info text-info-foreground hover:bg-info/90"
                   )}
                 >
                   {confirmConfig.confirmText}
