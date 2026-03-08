@@ -12,6 +12,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -23,41 +26,66 @@ import {
   Shield,
   Activity,
   Palette,
+  BookOpen,
+  ChevronRight,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "../ui/logo"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle"
 import { LogoutDialog } from "@/components/ui/logout-dialog"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { cn } from "@/lib/utils"
+
+// ─── Nav data ─────────────────────────────────────────────────────────────────
 
 const adminMenuItems = [
-  { title: "Dashboard", url: "/admin", icon: BarChart3 },
-  { title: "User Management", url: "/admin/users", icon: Shield },
+  { title: "Dashboard",       url: "/admin",       icon: BarChart3 },
+  { title: "User Management", url: "/admin/users", icon: Shield    },
 ]
 
 const analyticsMenuItems = [
-  { title: "Employees", url: "/admin/analytics/preachers", icon: UserCheck },
-  { title: "Beneficiaries", url: "/admin/analytics/beneficiaries", icon: Users },
-  { title: "Activities", url: "/admin/analytics/activities", icon: Activity },
+  { title: "Employees",     url: "/admin/analytics/preachers",     icon: UserCheck },
+  { title: "Beneficiaries", url: "/admin/analytics/beneficiaries", icon: Users     },
+  { title: "Activities",    url: "/admin/analytics/activities",    icon: Activity  },
 ]
 
 const managementMenuItems = [
   { title: "Beneficiaries", url: "/admin/beneficiaries", icon: Users },
-  { title: "Activities", url: "/admin/activities", icon: Calendar },
 ]
+
+// Activity sub-pages — shown as a collapsible group under Management
+const activitySubItems = [
+  { title: "Overview",  url: "/admin/activities",          icon: Calendar  },
+  { title: "Maqra'a",  url: "/admin/activities/maqari",   icon: BookOpen  },
+  { title: "Events",   url: "/admin/activities/events",   icon: Calendar  },
+  { title: "Lessons",  url: "/admin/activities/lessons",  icon: Activity  },
+  { title: "Sections", url: "/admin/activities/sections", icon: Users     },
+]
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminSidebar() {
   const { user, logout } = useAuth()
-  const pathname = usePathname()
-  const router = useRouter()
+  const pathname         = usePathname()
+  const router           = useRouter()
 
   const handleLogout = async () => {
     await logout()
     router.push("/")
   }
 
+  // True whenever the user is anywhere inside /admin/activities
+  const activitiesOpen = pathname.startsWith("/admin/activities")
+
   return (
     <Sidebar side="left" dir="ltr" className="bg-sidebar border-r border-border">
+
+      {/* ── Logo ── */}
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-1 py-2">
           <Logo size={32} />
@@ -67,6 +95,7 @@ export function AdminSidebar() {
         </div>
       </SidebarHeader>
 
+      {/* ── Theme toggle ── */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="h-4 w-4 text-muted-foreground" />
@@ -78,13 +107,21 @@ export function AdminSidebar() {
       </div>
 
       <SidebarContent>
+
+        {/* ── Main ── */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">Main</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">
+            Main
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
@@ -98,13 +135,20 @@ export function AdminSidebar() {
 
         <SidebarSeparator />
 
+        {/* ── Analytics ── */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">
+            Analytics
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {analyticsMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
@@ -118,13 +162,22 @@ export function AdminSidebar() {
 
         <SidebarSeparator />
 
+        {/* ── Management ── */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">Management</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold">
+            Management
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+
+              {/* Regular management items (Beneficiaries etc.) */}
               {managementMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.url)}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
@@ -132,15 +185,64 @@ export function AdminSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* ── Activities collapsible ── */}
+              <Collapsible
+                defaultOpen={activitiesOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={activitiesOpen}
+                      tooltip="Activities"
+                      className="w-full"
+                    >
+                      <Calendar className="text-primary" />
+                      <span>Activities</span>
+                      <ChevronRight
+                        className={cn(
+                          "ml-auto h-4 w-4 transition-transform duration-200",
+                          "group-data-[state=open]/collapsible:rotate-90"
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {activitySubItems.map((sub) => (
+                        <SidebarMenuSubItem key={sub.url}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === sub.url}
+                          >
+                            <Link href={sub.url}>
+                              <sub.icon className="h-3.5 w-3.5" />
+                              <span>{sub.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
       </SidebarContent>
 
+      {/* ── Footer ── */}
       <SidebarFooter>
         <div className="flex items-center gap-3 px-2 py-3 group-data-[collapsible=icon]:justify-center">
           <Avatar className="h-9 w-9 shrink-0">
-            <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || ""} />
+            <AvatarImage
+              src={user?.photoURL || ""}
+              alt={user?.displayName || ""}
+            />
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
               {user?.displayName?.charAt(0) || "A"}
             </AvatarFallback>
@@ -156,6 +258,7 @@ export function AdminSidebar() {
           <LogoutDialog onLogout={handleLogout} />
         </div>
       </SidebarFooter>
+
     </Sidebar>
   )
 }

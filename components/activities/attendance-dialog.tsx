@@ -253,7 +253,6 @@ export function AttendanceDialog({
             logged_by_id: user.uid,
             logged_by_name: user.displayName || "Unknown",
             logged_at: timestamp,
-            attended_at: timestamp,
           }
 
           batch.set(attendanceRef, newRecord)
