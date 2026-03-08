@@ -44,14 +44,14 @@ import { cn } from "@/lib/utils"
 // ─── Nav data ─────────────────────────────────────────────────────────────────
 
 const adminMenuItems = [
-  { title: "Dashboard",       url: "/admin",       icon: BarChart3 },
-  { title: "User Management", url: "/admin/users", icon: Shield    },
+  { title: "Dashboard", url: "/admin", icon: BarChart3 },
+  { title: "User Management", url: "/admin/users", icon: Shield },
 ]
 
 const analyticsMenuItems = [
-  { title: "Employees",     url: "/admin/analytics/preachers",     icon: UserCheck },
-  { title: "Beneficiaries", url: "/admin/analytics/beneficiaries", icon: Users     },
-  { title: "Activities",    url: "/admin/analytics/activities",    icon: Activity  },
+  { title: "Employees", url: "/admin/analytics/preachers", icon: UserCheck },
+  { title: "Beneficiaries", url: "/admin/analytics/beneficiaries", icon: Users },
+  { title: "Activities", url: "/admin/analytics/activities", icon: Activity },
 ]
 
 const managementMenuItems = [
@@ -60,19 +60,19 @@ const managementMenuItems = [
 
 // Activity sub-pages — shown as a collapsible group under Management
 const activitySubItems = [
-  { title: "Overview",  url: "/admin/activities",          icon: Calendar  },
-  { title: "Maqra'a",  url: "/admin/activities/maqari",   icon: BookOpen  },
-  { title: "Events",   url: "/admin/activities/events",   icon: Calendar  },
-  { title: "Lessons",  url: "/admin/activities/lessons",  icon: Activity  },
-  { title: "Sections", url: "/admin/activities/sections", icon: Users     },
+  { title: "Overview", url: "/admin/activities", icon: Calendar },
+  { title: "Maqra'a", url: "/admin/activities/maqari", icon: BookOpen },
+  { title: "Events", url: "/admin/activities/events", icon: Calendar },
+  { title: "Lessons", url: "/admin/activities/lessons", icon: Activity },
+  { title: "Sections", url: "/admin/activities/sections", icon: Users },
 ]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminSidebar() {
   const { user, logout } = useAuth()
-  const pathname         = usePathname()
-  const router           = useRouter()
+  const pathname = usePathname()
+  const router = useRouter()
 
   const handleLogout = async () => {
     await logout()
@@ -193,19 +193,12 @@ export function AdminSidebar() {
               >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={activitiesOpen}
-                      tooltip="Activities"
-                      className="w-full"
-                    >
-                      <Calendar className="text-primary" />
-                      <span>Activities</span>
-                      <ChevronRight
-                        className={cn(
-                          "ml-auto h-4 w-4 transition-transform duration-200",
-                          "group-data-[state=open]/collapsible:rotate-90"
-                        )}
-                      />
+                    <SidebarMenuButton isActive={activitiesOpen} tooltip="All Activities" className="w-full flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="text-primary" />
+                        <span>All Activities</span>
+                      </div>
+                      <ChevronRight className={cn("ml-auto h-4 w-4 transition-transform duration-200", "group-data-[state=open]/collapsible:rotate-90")} />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
 

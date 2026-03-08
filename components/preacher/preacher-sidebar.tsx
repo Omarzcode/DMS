@@ -42,26 +42,26 @@ import { cn } from "@/lib/utils"
 // ─── Nav data ─────────────────────────────────────────────────────────────────
 
 const preacherMenuItems = [
-  { title: "Dashboard",              url: "/dashboard",                icon: BarChart3 },
-  { title: "Assigned Beneficiaries", url: "/dashboard/beneficiaries",  icon: Users     },
-  { title: "Quranic Readings",       url: "/dashboard/maqari",         icon: BookOpen  },
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
+  { title: "Assigned Beneficiaries", url: "/dashboard/beneficiaries", icon: Users },
+  { title: "Quranic Readings", url: "/dashboard/maqari", icon: BookOpen },
 ]
 
 // Activity sub-pages — shown as a collapsible group
 const activitySubItems = [
-  { title: "Overview",  url: "/dashboard/activities",          icon: Calendar  },
-  { title: "Maqra'a",  url: "/dashboard/activities/maqari",   icon: BookOpen  },
-  { title: "Events",   url: "/dashboard/activities/events",   icon: Calendar  },
-  { title: "Lessons",  url: "/dashboard/activities/lessons",  icon: Activity  },
-  { title: "Sections", url: "/dashboard/activities/sections", icon: Users     },
+  { title: "Overview", url: "/dashboard/activities", icon: Calendar },
+  { title: "Maqra'a", url: "/dashboard/activities/maqari", icon: BookOpen },
+  { title: "Events", url: "/dashboard/activities/events", icon: Calendar },
+  { title: "Lessons", url: "/dashboard/activities/lessons", icon: Activity },
+  { title: "Sections", url: "/dashboard/activities/sections", icon: Users },
 ]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function PreacherSidebar() {
   const { user, logout } = useAuth()
-  const pathname         = usePathname()
-  const router           = useRouter()
+  const pathname = usePathname()
+  const router = useRouter()
 
   const handleLogout = async () => {
     await logout()
@@ -147,19 +147,12 @@ export function PreacherSidebar() {
               >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={activitiesOpen}
-                      tooltip="All Activities"
-                      className="w-full"
-                    >
-                      <Calendar className="text-primary" />
-                      <span>All Activities</span>
-                      <ChevronRight
-                        className={cn(
-                          "ml-auto h-4 w-4 transition-transform duration-200",
-                          "group-data-[state=open]/collapsible:rotate-90"
-                        )}
-                      />
+                    <SidebarMenuButton isActive={activitiesOpen} tooltip="All Activities" className="w-full flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="text-primary" />
+                        <span>All Activities</span>
+                      </div>
+                      <ChevronRight className={cn("ml-auto h-4 w-4 transition-transform duration-200", "group-data-[state=open]/collapsible:rotate-90")} />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
 
