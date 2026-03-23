@@ -10,6 +10,8 @@ import {
   getDocs,
   orderBy,
   updateDoc,
+  deleteDoc,
+  writeBatch,
   serverTimestamp,
   getCountFromServer,
 } from "firebase/firestore"
@@ -39,6 +41,7 @@ import {
   Activity as ActivityIcon,
   Users as UsersIcon,
   Archive,
+  Trash2,
   AlertTriangle,
 } from "lucide-react"
 import type {
@@ -84,7 +87,7 @@ const FIRESTORE_BATCH_LIMIT = 500
 function formatLoggedAt(logged_at: Timestamp | Date | unknown): string {
   if (!logged_at) return ""
   if (logged_at instanceof Timestamp) return format(logged_at.toDate(), "PP")
-  if (logged_at instanceof Date) return format(logged_at, "PP")
+  if (logged_at instanceof Date)      return format(logged_at, "PP")
   if (typeof logged_at === "object" && "toDate" in (logged_at as object)) {
     return format((logged_at as Timestamp).toDate(), "PP")
   }
@@ -137,8 +140,8 @@ const AttendanceCategory = ({
       {records.map((att) => (
         <div
           key={att.id}
-          className="text-muted-foreground flex justify-between items-center text-xs
-                     hover:text-foreground transition-colors"
+          className="text-muted-foreground flex justify-between items-center
+                     text-xs hover:text-foreground transition-colors"
         >
           <span className="truncate ml-2">{att.activity_name}</span>
           <span className="flex-shrink-0 text-muted-foreground/70">
@@ -157,16 +160,19 @@ export function BeneficiaryDetailsDialog({
   children,
   onUpdate,
 }: BeneficiaryDetailsDialogProps) {
-  const { userRole }  = useAuth()
-  const [open, setOpen]                           = useState(false)
-  const [loading, setLoading]                     = useState(false)
-  const [archiving, setArchiving]                 = useState(false)
-  const [beneficiary, setBeneficiary]             = useState<Beneficiary | null>(null)
-  const [preacher, setPreacher]                   = useState<Preacher | null>(null)
-  const [attendanceStats, setAttendanceStats]     = useState<AttendanceStats | null>(null)
-  const [groupedAttendance, setGroupedAttendance] = useState<GroupedAttendance>({})
+  const { userRole } = useAuth()
+
+  const [open, setOpen]                             = useState(false)
+  const [loading, setLoading]                       = useState(false)
+  const [busy, setBusy]                             = useState(false)
+  const [busyLabel, setBusyLabel]                   = useState("")
+  const [beneficiary, setBeneficiary]               = useState<Beneficiary | null>(null)
+  const [preacher, setPreacher]                     = useState<Preacher | null>(null)
+  const [attendanceStats, setAttendanceStats]       = useState<AttendanceStats | null>(null)
+  const [groupedAttendance, setGroupedAttendance]   = useState<GroupedAttendance>({})
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
-  const [fetchError, setFetchError]               = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm]   = useState(false)
+  const [fetchError, setFetchError]                 = useState<string | null>(null)
 
   const onUpdateRef = useRef(onUpdate)
   onUpdateRef.current = onUpdate
@@ -184,10 +190,14 @@ export function BeneficiaryDetailsDialog({
     setGroupedAttendance({})
 
     try {
-      const beneficiaryDoc = await getDoc(doc(db, "beneficiaries", beneficiaryId))
+      const beneficiaryDoc = await getDoc(
+        doc(db, "beneficiaries", beneficiaryId)
+      )
 
       if (!beneficiaryDoc.exists()) {
-        setFetchError("Beneficiary not found. They may have been archived or deleted.")
+        setFetchError(
+          "Beneficiary not found. They may have been archived or deleted."
+        )
         return
       }
 
@@ -222,20 +232,22 @@ export function BeneficiaryDetailsDialog({
       ])
 
       if (preacherDoc?.exists()) {
-        setPreacher({ id: preacherDoc.id, ...preacherDoc.data() } as Preacher)
+        setPreacher({
+          id: preacherDoc.id,
+          ...preacherDoc.data(),
+        } as Preacher)
       }
 
       const attendanceHistory = attendanceSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() } as AttendanceRecord)
       )
 
-      const stats: AttendanceStats = {
+      setAttendanceStats({
         maqari:   { total: maqariCount.data().count,   attended: attendanceHistory.filter((r) => r.activity_type === "maqari").length   },
         events:   { total: eventsCount.data().count,   attended: attendanceHistory.filter((r) => r.activity_type === "events").length   },
         lessons:  { total: lessonsCount.data().count,  attended: attendanceHistory.filter((r) => r.activity_type === "lessons").length  },
         sections: { total: sectionsCount.data().count, attended: attendanceHistory.filter((r) => r.activity_type === "sections").length },
-      }
-      setAttendanceStats(stats)
+      })
 
       const grouped: GroupedAttendance = {}
       for (const rec of attendanceHistory) {
@@ -258,58 +270,107 @@ export function BeneficiaryDetailsDialog({
 
   // ─── Handlers ────────────────────────────────────────────────
 
-  const handleEditComplete = useCallback((updatedBeneficiary: Beneficiary) => {
-    setBeneficiary(updatedBeneficiary)
+  const handleEditComplete = useCallback((updated: Beneficiary) => {
+    setBeneficiary(updated)
     onUpdateRef.current?.()
   }, [])
 
   const handleTransferComplete = useCallback(() => {
     setOpen(false)
-    requestAnimationFrame(() => {
-      onUpdateRef.current?.()
-    })
+    requestAnimationFrame(() => onUpdateRef.current?.())
   }, [])
 
-  // ─── Soft Delete ─────────────────────────────────────────────
-  //
-  // Instead of physically removing the document we just stamp it with
-  // { deleted: true, deletedAt: <server timestamp> }.
-  //
-  // • Attendance records and progress_logs are intentionally PRESERVED.
-  // • The beneficiary can be fully restored at any time.
-  // • The list view filters these out via  where("deleted", "!=", true).
+  // ── Soft delete (archive) ──────────────────────────────────────
 
-  const handleArchiveBeneficiary = useCallback(async () => {
+  const handleArchive = useCallback(async () => {
     if (!beneficiary) return
-
-    const targetId   = beneficiary.id
-    const targetName = beneficiary.name
-
     setShowArchiveConfirm(false)
-    setArchiving(true)
+    setBusy(true)
+    setBusyLabel("Archiving beneficiary…")
 
     try {
-      await updateDoc(doc(db, "beneficiaries", targetId), {
+      await updateDoc(doc(db, "beneficiaries", beneficiary.id), {
         deleted:   true,
         deletedAt: serverTimestamp(),
       })
 
       toast.success("Beneficiary archived", {
-        description: `"${targetName}" has been archived. Their data is preserved and can be restored later.`,
+        description: `"${beneficiary.name}" has been archived and can be restored later.`,
       })
 
-      setArchiving(false)
+      setBusy(false)
       setOpen(false)
-
-      requestAnimationFrame(() => {
-        onUpdateRef.current?.()
-      })
+      requestAnimationFrame(() => onUpdateRef.current?.())
     } catch (err) {
       console.error("Failed to archive beneficiary:", err)
       toast.error("Archive failed", {
-        description: "An error occurred while archiving. Please try again.",
+        description: "An error occurred. Please try again.",
       })
-      setArchiving(false)
+      setBusy(false)
+    }
+  }, [beneficiary])
+
+  // ── Hard delete (admin only) ───────────────────────────────────
+
+  const handlePermanentDelete = useCallback(async () => {
+    if (!beneficiary) return
+    const targetId   = beneficiary.id
+    const targetName = beneficiary.name
+
+    setShowDeleteConfirm(false)
+    setBusy(true)
+    setBusyLabel("Permanently deleting beneficiary…")
+
+    try {
+      // 1 — attendance records
+      const attendanceSnap = await getDocs(
+        query(
+          collection(db, "attendance"),
+          where("beneficiary_id", "==", targetId)
+        )
+      )
+      if (attendanceSnap.size > 0) {
+        const docs = attendanceSnap.docs
+        for (let i = 0; i < docs.length; i += FIRESTORE_BATCH_LIMIT) {
+          const batch = writeBatch(db)
+          docs
+            .slice(i, i + FIRESTORE_BATCH_LIMIT)
+            .forEach((d) => batch.delete(d.ref))
+          await batch.commit()
+        }
+      }
+
+      // 2 — progress_logs subcollection
+      const logsSnap = await getDocs(
+        collection(db, "beneficiaries", targetId, "progress_logs")
+      )
+      if (logsSnap.size > 0) {
+        const docs = logsSnap.docs
+        for (let i = 0; i < docs.length; i += FIRESTORE_BATCH_LIMIT) {
+          const batch = writeBatch(db)
+          docs
+            .slice(i, i + FIRESTORE_BATCH_LIMIT)
+            .forEach((d) => batch.delete(d.ref))
+          await batch.commit()
+        }
+      }
+
+      // 3 — beneficiary document
+      await deleteDoc(doc(db, "beneficiaries", targetId))
+
+      toast.success("Beneficiary permanently deleted", {
+        description: `"${targetName}" and all related data have been removed.`,
+      })
+
+      setBusy(false)
+      setOpen(false)
+      requestAnimationFrame(() => onUpdateRef.current?.())
+    } catch (err) {
+      console.error("Failed to delete beneficiary:", err)
+      toast.error("Delete failed", {
+        description: "An error occurred. Please try again.",
+      })
+      setBusy(false)
     }
   }, [beneficiary])
 
@@ -318,10 +379,9 @@ export function BeneficiaryDetailsDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(newOpen) => {
-        // Block accidental close while the archive request is in flight
-        if (archiving && !newOpen) return
-        setOpen(newOpen)
+      onOpenChange={(next) => {
+        if (busy && !next) return
+        setOpen(next)
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -329,9 +389,7 @@ export function BeneficiaryDetailsDialog({
       <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {loading
-              ? "Loading..."
-              : beneficiary?.name || "Beneficiary Not Found"}
+            {loading ? "Loading…" : beneficiary?.name || "Beneficiary Not Found"}
           </DialogTitle>
           <DialogDescription>
             {beneficiary
@@ -353,25 +411,29 @@ export function BeneficiaryDetailsDialog({
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
               <p className="text-muted-foreground mb-4">{fetchError}</p>
-              <Button type="button" variant="outline" onClick={fetchBeneficiaryData}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={fetchBeneficiaryData}
+              >
                 Try Again
               </Button>
             </div>
           )}
 
-          {/* Archiving overlay */}
-          {archiving && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50
-                            flex flex-col items-center justify-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-              <p className="text-sm text-muted-foreground">Archiving beneficiary…</p>
+          {/* Busy overlay */}
+          {busy && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm
+                            z-50 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">{busyLabel}</p>
             </div>
           )}
 
           {/* Content */}
           {!loading && !fetchError && beneficiary && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              {/* Left Column */}
+              {/* Left */}
               <div className="space-y-4">
                 <h3 className="font-semibold border-b pb-2">Beneficiary Details</h3>
                 <div className="space-y-3 text-sm">
@@ -419,7 +481,7 @@ export function BeneficiaryDetailsDialog({
                 )}
               </div>
 
-              {/* Right Column */}
+              {/* Right */}
               <div className="space-y-4">
                 <h3 className="font-semibold border-b pb-2 flex items-center gap-2">
                   <CalendarCheck className="h-5 w-5" />
@@ -428,18 +490,10 @@ export function BeneficiaryDetailsDialog({
                 <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
                   {Object.keys(groupedAttendance).length > 0 ? (
                     <>
-                      {groupedAttendance.maqari && (
-                        <AttendanceCategory title="Maqari"   records={groupedAttendance.maqari}   icon={BookOpen}    />
-                      )}
-                      {groupedAttendance.events && (
-                        <AttendanceCategory title="Events"   records={groupedAttendance.events}   icon={CalendarIcon}/>
-                      )}
-                      {groupedAttendance.lessons && (
-                        <AttendanceCategory title="Lessons"  records={groupedAttendance.lessons}  icon={ActivityIcon}/>
-                      )}
-                      {groupedAttendance.sections && (
-                        <AttendanceCategory title="Sections" records={groupedAttendance.sections} icon={UsersIcon}   />
-                      )}
+                      {groupedAttendance.maqari   && <AttendanceCategory title="Maqari"   records={groupedAttendance.maqari}   icon={BookOpen}    />}
+                      {groupedAttendance.events   && <AttendanceCategory title="Events"   records={groupedAttendance.events}   icon={CalendarIcon}/>}
+                      {groupedAttendance.lessons  && <AttendanceCategory title="Lessons"  records={groupedAttendance.lessons}  icon={ActivityIcon}/>}
+                      {groupedAttendance.sections && <AttendanceCategory title="Sections" records={groupedAttendance.sections} icon={UsersIcon}   />}
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -470,49 +524,73 @@ export function BeneficiaryDetailsDialog({
               beneficiary={beneficiary}
               onBeneficiaryUpdated={handleEditComplete}
             >
-              <Button type="button" disabled={archiving}>
+              <Button type="button" disabled={busy}>
                 Edit Details
               </Button>
             </EditBeneficiaryDialog>
 
-            <>
-              <TransferBeneficiaryDialog
-                beneficiary={beneficiary}
-                onTransferComplete={handleTransferComplete}
-              >
-                <Button type="button" variant="secondary" disabled={archiving}>
-                  Transfer
-                </Button>
-              </TransferBeneficiaryDialog>
-
-              {/* ── Archive (soft-delete) button ── */}
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => setShowArchiveConfirm(true)}
-                disabled={archiving}
-                className="gap-2"
-              >
-                <Archive className="h-4 w-4" />
-                Archive Beneficiary
+            <TransferBeneficiaryDialog
+              beneficiary={beneficiary}
+              onTransferComplete={handleTransferComplete}
+            >
+              <Button type="button" variant="secondary" disabled={busy}>
+                Transfer
               </Button>
+            </TransferBeneficiaryDialog>
 
-              <ConfirmDialog
-                open={showArchiveConfirm}
-                onOpenChange={setShowArchiveConfirm}
-                onConfirm={handleArchiveBeneficiary}
-                title="Archive this beneficiary?"
-                description={`"${beneficiary.name}" will be hidden from active lists. Their attendance history and progress data are fully preserved and can be restored at any time.`}
-                confirmText="Yes, Archive"
-                cancelText="Cancel"
-              />
-            </>
-
+            {/* Archive (soft delete) — everyone */}
             <Button
               type="button"
               variant="outline"
+              onClick={() => setShowArchiveConfirm(true)}
+              disabled={busy}
+              className="gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              Archive
+            </Button>
+
+            <ConfirmDialog
+              open={showArchiveConfirm}
+              onOpenChange={setShowArchiveConfirm}
+              onConfirm={handleArchive}
+              title="Archive this beneficiary?"
+              description={`"${beneficiary.name}" will be hidden from the active list. All data is preserved and can be restored at any time.`}
+              confirmText="Yes, Archive"
+              cancelText="Cancel"
+            />
+
+            {/* Permanent delete — admin only */}
+            {userRole === "admin" && (
+              <>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={busy}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Permanently
+                </Button>
+
+                <ConfirmDialog
+                  open={showDeleteConfirm}
+                  onOpenChange={setShowDeleteConfirm}
+                  onConfirm={handlePermanentDelete}
+                  title="Permanently delete this beneficiary?"
+                  description={`This cannot be undone. "${beneficiary.name}" and ALL related attendance and progress data will be erased forever.`}
+                  confirmText="Yes, Delete Forever"
+                  cancelText="Cancel"
+                />
+              </>
+            )}
+
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setOpen(false)}
-              disabled={archiving}
+              disabled={busy}
             >
               Close
             </Button>
