@@ -559,7 +559,7 @@ export function BeneficiaryDetailsDialog({
               </Button>
             </EditBeneficiaryDialog>
 
-            {userRole === "admin" && (
+            {/* {userRole === "admin" && ()} */}
               <>
                 <TransferBeneficiaryDialog
                   beneficiary={beneficiary}
@@ -591,7 +591,7 @@ export function BeneficiaryDetailsDialog({
                   cancelText="Cancel"
                 />
               </>
-            )}
+            
 
             <Button
               type="button"
