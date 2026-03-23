@@ -84,10 +84,10 @@ import { toast } from "sonner"
 
 // ─── Types ────────────────────────────────────────────────────────
 
-type SortField     = "name" | "phone" | "da_wa_stage" | "created_at"
+type SortField = "name" | "phone" | "da_wa_stage" | "created_at"
 type SortDirection = "asc" | "desc"
-type SortValue     = `${SortField}|${SortDirection}`
-type ViewTab       = "active" | "archived"
+type SortValue = `${SortField}|${SortDirection}`
+type ViewTab = "active" | "archived"
 
 // Which bulk sheet is open
 type BulkSheet = "transfer" | "edit" | "delete" | null
@@ -97,8 +97,6 @@ const FIRESTORE_BATCH_LIMIT = 500
 
 const ADVANCED_STAGE_INDICES = [
   DAWA_STAGES.indexOf("متعلم ملتزم"),
-  DAWA_STAGES.indexOf("مشارك نشط"),
-  DAWA_STAGES.indexOf("قائد مجتمعي"),
 ].filter((i) => i !== -1)
 
 const ADVANCED_STAGE_SET = new Set(
@@ -110,7 +108,7 @@ const ADVANCED_STAGE_SET = new Set(
 function getDateValue(createdAt: unknown): Date {
   if (!createdAt) return new Date(0)
   if (createdAt instanceof Timestamp) return createdAt.toDate()
-  if (createdAt instanceof Date)      return createdAt
+  if (createdAt instanceof Date) return createdAt
   if (
     typeof createdAt === "object" &&
     createdAt !== null &&
@@ -139,8 +137,8 @@ function SafeHighlightText({
     return <span className={className}>{text}</span>
   try {
     const escaped = escapeRegExp(highlight.trim())
-    const regex   = new RegExp(`(${escaped})`, "gi")
-    const parts   = text.split(regex)
+    const regex = new RegExp(`(${escaped})`, "gi")
+    const parts = text.split(regex)
     const lowerHL = highlight.trim().toLowerCase()
     return (
       <span className={className}>
@@ -196,39 +194,39 @@ export function AllBeneficiaries() {
 
   // ── Data ──────────────────────────────────────────────────────
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([])
-  const [preachers, setPreachers]         = useState<Preacher[]>([])
-  const [loading, setLoading]             = useState(true)
-  const [refreshing, setRefreshing]       = useState(false)
-  const [fetchError, setFetchError]       = useState<string | null>(null)
+  const [preachers, setPreachers] = useState<Preacher[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   // ── Selection ─────────────────────────────────────────────────
   // Persists across tab switches (as requested)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // ── Bulk action sheets ────────────────────────────────────────
-  const [bulkSheet, setBulkSheet]               = useState<BulkSheet>(null)
-  const [bulkBusy, setBulkBusy]                 = useState(false)
+  const [bulkSheet, setBulkSheet] = useState<BulkSheet>(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
   // Transfer sheet state
   const [bulkTransferPreacher, setBulkTransferPreacher] = useState("")
   // Edit sheet state
-  const [bulkEditStage, setBulkEditStage]       = useState<string>("")
-  const [bulkEditBatch, setBulkEditBatch]       = useState<string>("")
+  const [bulkEditStage, setBulkEditStage] = useState<string>("")
+  const [bulkEditBatch, setBulkEditBatch] = useState<string>("")
   // Delete confirm
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false)
 
   // ── Restore ───────────────────────────────────────────────────
-  const [restoringId, setRestoringId]           = useState<string | null>(null)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
   const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null)
 
   // ── Filters ───────────────────────────────────────────────────
-  const [activeTab, setActiveTab]           = useState<ViewTab>("active")
-  const [searchTerm, setSearchTerm]         = useState("")
-  const [stageFilter, setStageFilter]       = useState<string>("all")
+  const [activeTab, setActiveTab] = useState<ViewTab>("active")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [stageFilter, setStageFilter] = useState<string>("all")
   const [preacherFilter, setPreacherFilter] = useState<string>("all")
-  const [sortField, setSortField]           = useState<SortField>("name")
-  const [sortDirection, setSortDirection]   = useState<SortDirection>("asc")
-  const [currentPage, setCurrentPage]       = useState(1)
-  const [pageSize, setPageSize]             = useState(25)
+  const [sortField, setSortField] = useState<SortField>("name")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   // ─── Fetch ───────────────────────────────────────────────────
 
@@ -347,7 +345,7 @@ export function AllBeneficiaries() {
   )
 
   const stats = useMemo(() => {
-    const now       = new Date()
+    const now = new Date()
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     return {
       activeThisMonth: activeBeneficiaries.filter(
@@ -500,8 +498,8 @@ export function AllBeneficiaries() {
     if (!bulkEditStage && !bulkEditBatch.trim()) return
     const ids = [...selectedIds].filter((id) => allFilteredIds.has(id))
     const data: Record<string, string> = {}
-    if (bulkEditStage)        data.da_wa_stage = bulkEditStage
-    if (bulkEditBatch.trim()) data.batch        = bulkEditBatch.trim()
+    if (bulkEditStage) data.da_wa_stage = bulkEditStage
+    if (bulkEditBatch.trim()) data.batch = bulkEditBatch.trim()
 
     await runBulkUpdate(
       ids.map((id) => ({ id, data })),
@@ -579,7 +577,7 @@ export function AllBeneficiaries() {
     setRestoringId(beneficiary.id)
     try {
       await updateDoc(doc(db, "beneficiaries", beneficiary.id), {
-        deleted:   deleteField(),
+        deleted: deleteField(),
         deletedAt: deleteField(),
       })
       toast.success("Beneficiary restored", {
@@ -618,20 +616,20 @@ export function AllBeneficiaries() {
     if (sortField !== field)
       return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
     return sortDirection === "asc"
-      ? <ArrowUp   className="h-3 w-3 text-primary" />
+      ? <ArrowUp className="h-3 w-3 text-primary" />
       : <ArrowDown className="h-3 w-3 text-primary" />
   }
 
   const exportToCSV = () => {
-    const BOM     = "\uFEFF"
+    const BOM = "\uFEFF"
     const headers = ["Name", "Phone", "Preacher", "Batch", "Stage", "Notes", "Created At"]
-    const rows    = filteredAndSorted.map((b) => [
+    const rows = filteredAndSorted.map((b) => [
       b.name,
       b.phone,
       getPreacherName(b.da_i_id),
-      b.batch       || "",
+      b.batch || "",
       b.da_wa_stage,
-      b.notes       || "",
+      b.notes || "",
       getDateValue(b.created_at).toLocaleDateString(),
     ])
     const csv =
@@ -646,7 +644,7 @@ export function AllBeneficiaries() {
       ].join("\n")
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
-    link.href     = URL.createObjectURL(blob)
+    link.href = URL.createObjectURL(blob)
     link.download = `beneficiaries_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`
     link.click()
     setTimeout(() => URL.revokeObjectURL(link.href), 100)
@@ -807,15 +805,15 @@ export function AllBeneficiaries() {
             hasActiveFilters
               ? "No results found"
               : activeTab === "archived"
-              ? "No archived beneficiaries"
-              : "No beneficiaries yet"
+                ? "No archived beneficiaries"
+                : "No beneficiaries yet"
           }
           description={
             hasActiveFilters
               ? "No beneficiaries match your current search criteria."
               : activeTab === "archived"
-              ? "Beneficiaries you archive will appear here."
-              : "Start by adding new beneficiaries to track their progress."
+                ? "Beneficiaries you archive will appear here."
+                : "Start by adding new beneficiaries to track their progress."
           }
           action={
             !hasActiveFilters && activeTab === "active" ? (
@@ -863,8 +861,8 @@ export function AllBeneficiaries() {
 
           {/* Rows */}
           {paginated.map((beneficiary, index) => {
-            const isChecked    = selectedIds.has(beneficiary.id)
-            const isRestoring  = restoringId === beneficiary.id
+            const isChecked = selectedIds.has(beneficiary.id)
+            const isRestoring = restoringId === beneficiary.id
             const restoreTarget =
               confirmRestoreId === beneficiary.id
                 ? beneficiaries.find((b) => b.id === confirmRestoreId) ?? null
@@ -1033,10 +1031,10 @@ export function AllBeneficiaries() {
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum: number
-                    if (totalPages <= 5)                 pageNum = i + 1
-                    else if (safePage <= 3)              pageNum = i + 1
+                    if (totalPages <= 5) pageNum = i + 1
+                    else if (safePage <= 3) pageNum = i + 1
                     else if (safePage >= totalPages - 2) pageNum = totalPages - 4 + i
-                    else                                 pageNum = safePage - 2 + i
+                    else pageNum = safePage - 2 + i
 
                     return (
                       <Button
@@ -1193,14 +1191,14 @@ export function AllBeneficiaries() {
               <Label htmlFor="bulk-edit-stage">Da'wa Stage</Label>
               <Select
                 value={bulkEditStage}
-                onValueChange={setBulkEditStage}
+                onValueChange={(v) => setBulkEditStage(v === "__keep__" ? "" : v)}
               >
                 <SelectTrigger id="bulk-edit-stage">
                   <SelectValue placeholder="Keep existing stages…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Empty option to clear selection */}
-                  <SelectItem value="">Keep existing</SelectItem>
+                  {/* ✅ Use a real non-empty sentinel instead of "" */}
+                  <SelectItem value="__keep__">Keep existing</SelectItem>
                   {DAWA_STAGES.map((stage) => (
                     <SelectItem key={stage} value={stage}>
                       {stage}
@@ -1351,10 +1349,10 @@ export function AllBeneficiaries() {
       {/* Stats */}
       {!loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatsCard title="Total Beneficiaries" value={activeBeneficiaries.length}      icon={Users}     />
-          <StatsCard title="Search Results"       value={filteredAndSorted.length}        icon={Search}    />
-          <StatsCard title="New This Month"        value={stats.activeThisMonth}           icon={Activity}  />
-          <StatsCard title="Advanced Stages"       value={stats.advancedStage}             icon={TrendingUp}/>
+          <StatsCard title="Total Beneficiaries" value={activeBeneficiaries.length} icon={Users} />
+          <StatsCard title="Search Results" value={filteredAndSorted.length} icon={Search} />
+          <StatsCard title="New This Month" value={stats.activeThisMonth} icon={Activity} />
+          <StatsCard title="Advanced Stages" value={stats.advancedStage} icon={TrendingUp} />
         </div>
       )}
 
@@ -1503,7 +1501,7 @@ export function AllBeneficiaries() {
           <BulkToolbar />
         </div>
 
-        <TabsContent value="active"   className="mt-0">{renderList()}</TabsContent>
+        <TabsContent value="active" className="mt-0">{renderList()}</TabsContent>
         <TabsContent value="archived" className="mt-0">{renderList()}</TabsContent>
       </Tabs>
     </div>
