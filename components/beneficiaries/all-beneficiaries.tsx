@@ -5,7 +5,6 @@ import {
   useEffect,
   useMemo,
   useCallback,
-  useRef,
 } from "react"
 import {
   collection,
@@ -51,9 +50,6 @@ import {
   X,
   Download,
   TrendingUp,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Activity,
   RefreshCw,
   ChevronLeft,
@@ -88,8 +84,6 @@ type SortField = "name" | "phone" | "da_wa_stage" | "created_at"
 type SortDirection = "asc" | "desc"
 type SortValue = `${SortField}|${SortDirection}`
 type ViewTab = "active" | "archived"
-
-// Which bulk sheet is open
 type BulkSheet = "transfer" | "edit" | "delete" | null
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
@@ -161,32 +155,6 @@ function SafeHighlightText({
   }
 }
 
-// ─── BeneficiaryInfo ─────────────────────────────────────────────
-
-function BeneficiaryInfo({
-  beneficiary,
-  searchTerm,
-  preacherName,
-}: {
-  beneficiary: Beneficiary
-  searchTerm: string
-  preacherName: string
-}) {
-  return (
-    <>
-      <div className="font-medium text-sm sm:text-base truncate">
-        <SafeHighlightText text={beneficiary.name} highlight={searchTerm} />
-      </div>
-      <div className="text-xs text-muted-foreground">
-        <SafeHighlightText text={beneficiary.phone} highlight={searchTerm} />
-      </div>
-      <div className="text-xs sm:text-sm text-muted-foreground truncate">
-        {preacherName}
-      </div>
-    </>
-  )
-}
-
 // ─── Component ────────────────────────────────────────────────────
 
 export function AllBeneficiaries() {
@@ -200,18 +168,14 @@ export function AllBeneficiaries() {
   const [fetchError, setFetchError] = useState<string | null>(null)
 
   // ── Selection ─────────────────────────────────────────────────
-  // Persists across tab switches (as requested)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // ── Bulk action sheets ────────────────────────────────────────
   const [bulkSheet, setBulkSheet] = useState<BulkSheet>(null)
   const [bulkBusy, setBulkBusy] = useState(false)
-  // Transfer sheet state
   const [bulkTransferPreacher, setBulkTransferPreacher] = useState("")
-  // Edit sheet state
   const [bulkEditStage, setBulkEditStage] = useState<string>("")
   const [bulkEditBatch, setBulkEditBatch] = useState<string>("")
-  // Delete confirm
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false)
 
   // ── Restore ───────────────────────────────────────────────────
@@ -233,13 +197,11 @@ export function AllBeneficiaries() {
   const fetchData = useCallback(async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true)
     setFetchError(null)
-
     try {
       const [benefSnap, preachSnap] = await Promise.all([
         getDocs(collection(db, "beneficiaries")),
         getDocs(collection(db, "preachers")),
       ])
-
       setBeneficiaries(
         benefSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Beneficiary)
       )
@@ -257,7 +219,6 @@ export function AllBeneficiaries() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Reset page on filter/tab change
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, stageFilter, preacherFilter, sortField, sortDirection, pageSize, activeTab])
@@ -359,7 +320,6 @@ export function AllBeneficiaries() {
 
   // ─── Selection helpers ────────────────────────────────────────
 
-  // All filtered IDs (across all pages)
   const allFilteredIds = useMemo(
     () => new Set(filteredAndSorted.map((b) => b.id)),
     [filteredAndSorted]
@@ -370,7 +330,6 @@ export function AllBeneficiaries() {
     [selectedIds, allFilteredIds]
   )
 
-  // Are all filtered results selected?
   const allFilteredSelected =
     allFilteredIds.size > 0 &&
     [...allFilteredIds].every((id) => selectedIds.has(id))
@@ -385,7 +344,6 @@ export function AllBeneficiaries() {
     })
   }, [])
 
-  // Toggle ALL filtered results (not just current page)
   const toggleAllFiltered = useCallback(() => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -400,15 +358,15 @@ export function AllBeneficiaries() {
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
 
-  // The actual Beneficiary objects that are selected (within current filter)
+  const filteredAndSortedRef = filteredAndSorted
   const selectedBeneficiaries = useMemo(
-    () => filteredAndSorted.filter((b) => selectedIds.has(b.id)),
-    [filteredAndSorted, selectedIds]
+    () => filteredAndSortedRef.filter((b) => selectedIds.has(b.id)),
+    [filteredAndSortedRef, selectedIds]
   )
+  void selectedBeneficiaries // used externally if needed
 
   // ─── Bulk handlers ────────────────────────────────────────────
 
-  // Helper: run updateDoc in batches and update local state
   const runBulkUpdate = useCallback(
     async (
       updates: { id: string; data: Record<string, unknown> }[],
@@ -424,15 +382,12 @@ export function AllBeneficiaries() {
           })
           await batch.commit()
         }
-
-        // Optimistic local update
         setBeneficiaries((prev) =>
           prev.map((b) => {
             const upd = updates.find((u) => u.id === b.id)
             return upd ? { ...b, ...upd.data } : b
           })
         )
-
         toast.success(successMsg, { description: successDesc })
         setBulkSheet(null)
         clearSelection()
@@ -448,7 +403,6 @@ export function AllBeneficiaries() {
     [clearSelection]
   )
 
-  // ── Bulk Archive ──────────────────────────────────────────────
   const handleBulkArchive = useCallback(async () => {
     const ids = [...selectedIds].filter((id) => allFilteredIds.has(id))
     await runBulkUpdate(
@@ -461,7 +415,6 @@ export function AllBeneficiaries() {
     )
   }, [selectedIds, allFilteredIds, runBulkUpdate])
 
-  // ── Bulk Restore ─────────────────────────────────────────────
   const handleBulkRestore = useCallback(async () => {
     const ids = [...selectedIds].filter((id) => allFilteredIds.has(id))
     await runBulkUpdate(
@@ -474,7 +427,6 @@ export function AllBeneficiaries() {
     )
   }, [selectedIds, allFilteredIds, runBulkUpdate])
 
-  // ── Bulk Transfer ─────────────────────────────────────────────
   const handleBulkTransfer = useCallback(async () => {
     if (!bulkTransferPreacher) return
     const preacher = preachers.find((p) => p.id === bulkTransferPreacher)
@@ -485,22 +437,14 @@ export function AllBeneficiaries() {
       `Assigned to ${preacher?.name ?? "new preacher"}.`
     )
     setBulkTransferPreacher("")
-  }, [
-    bulkTransferPreacher,
-    preachers,
-    selectedIds,
-    allFilteredIds,
-    runBulkUpdate,
-  ])
+  }, [bulkTransferPreacher, preachers, selectedIds, allFilteredIds, runBulkUpdate])
 
-  // ── Bulk Edit (stage + batch) ─────────────────────────────────
   const handleBulkEdit = useCallback(async () => {
     if (!bulkEditStage && !bulkEditBatch.trim()) return
     const ids = [...selectedIds].filter((id) => allFilteredIds.has(id))
     const data: Record<string, string> = {}
     if (bulkEditStage) data.da_wa_stage = bulkEditStage
     if (bulkEditBatch.trim()) data.batch = bulkEditBatch.trim()
-
     await runBulkUpdate(
       ids.map((id) => ({ id, data })),
       `${ids.length} beneficiar${ids.length === 1 ? "y" : "ies"} updated`,
@@ -510,33 +454,23 @@ export function AllBeneficiaries() {
     setBulkEditBatch("")
   }, [bulkEditStage, bulkEditBatch, selectedIds, allFilteredIds, runBulkUpdate])
 
-  // ── Bulk Permanent Delete (admin only) ───────────────────────
   const handleBulkPermanentDelete = useCallback(async () => {
     setShowBulkDeleteConfirm(false)
     setBulkBusy(true)
     const ids = [...selectedIds].filter((id) => allFilteredIds.has(id))
-
     try {
       for (const id of ids) {
-        // attendance
         const attSnap = await getDocs(
-          query(
-            collection(db, "attendance"),
-            where("beneficiary_id", "==", id)
-          )
+          query(collection(db, "attendance"), where("beneficiary_id", "==", id))
         )
         if (attSnap.size > 0) {
           const docs = attSnap.docs
           for (let i = 0; i < docs.length; i += FIRESTORE_BATCH_LIMIT) {
             const batch = writeBatch(db)
-            docs
-              .slice(i, i + FIRESTORE_BATCH_LIMIT)
-              .forEach((d) => batch.delete(d.ref))
+            docs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((d) => batch.delete(d.ref))
             await batch.commit()
           }
         }
-
-        // progress_logs
         const logsSnap = await getDocs(
           collection(db, "beneficiaries", id, "progress_logs")
         )
@@ -544,20 +478,13 @@ export function AllBeneficiaries() {
           const docs = logsSnap.docs
           for (let i = 0; i < docs.length; i += FIRESTORE_BATCH_LIMIT) {
             const batch = writeBatch(db)
-            docs
-              .slice(i, i + FIRESTORE_BATCH_LIMIT)
-              .forEach((d) => batch.delete(d.ref))
+            docs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((d) => batch.delete(d.ref))
             await batch.commit()
           }
         }
-
-        // beneficiary doc
         await deleteDoc(doc(db, "beneficiaries", id))
       }
-
-      // Remove from local state
       setBeneficiaries((prev) => prev.filter((b) => !ids.includes(b.id)))
-
       toast.success(
         `${ids.length} beneficiar${ids.length === 1 ? "y" : "ies"} permanently deleted`
       )
@@ -572,7 +499,6 @@ export function AllBeneficiaries() {
     }
   }, [selectedIds, allFilteredIds, clearSelection])
 
-  // ── Single restore ────────────────────────────────────────────
   const handleRestore = useCallback(async (beneficiary: Beneficiary) => {
     setRestoringId(beneficiary.id)
     try {
@@ -603,23 +529,6 @@ export function AllBeneficiaries() {
 
   // ─── Sort helpers ─────────────────────────────────────────────
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((p) => (p === "asc" ? "desc" : "asc"))
-    } else {
-      setSortField(field)
-      setSortDirection("asc")
-    }
-  }
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field)
-      return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-    return sortDirection === "asc"
-      ? <ArrowUp className="h-3 w-3 text-primary" />
-      : <ArrowDown className="h-3 w-3 text-primary" />
-  }
-
   const exportToCSV = () => {
     const BOM = "\uFEFF"
     const headers = ["Name", "Phone", "Preacher", "Batch", "Stage", "Notes", "Created At"]
@@ -637,9 +546,7 @@ export function AllBeneficiaries() {
       [
         headers.join(","),
         ...rows.map((row) =>
-          row
-            .map((cell) => `"${(cell || "").replace(/"/g, '""')}"`)
-            .join(",")
+          row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")
         ),
       ].join("\n")
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
@@ -667,134 +574,127 @@ export function AllBeneficiaries() {
     setSortDirection(value.slice(sep + 1) as SortDirection)
   }
 
-  // ─── Bulk action toolbar ──────────────────────────────────────
+  // ─── Bulk toolbar ─────────────────────────────────────────────
 
   const BulkToolbar = () => {
     if (!someSelected) return null
 
     return (
-      <div
-        className="sticky top-0 z-30 flex flex-wrap items-center gap-2
-                   rounded-lg border border-primary/30 bg-primary/5
-                   px-4 py-2.5 shadow-sm"
-      >
-        {/* Count + clear */}
-        <div className="flex items-center gap-2 mr-2">
-          <CheckSquare className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">
-            {selectedCount} selected
-          </span>
+      <div className="sticky top-0 z-30 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 shadow-sm">
+        {/* Top row: count + clear */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4 text-primary flex-shrink-0" />
+            <span className="text-sm font-medium">{selectedCount} selected</span>
+          </div>
           <button
             onClick={clearSelection}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
             aria-label="Clear selection"
           >
             <XSquare className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="h-4 w-px bg-border mx-1" />
-
-        {/* Transfer */}
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5 h-8"
-          onClick={() => setBulkSheet("transfer")}
-          disabled={bulkBusy}
-        >
-          <ArrowRightLeft className="h-3.5 w-3.5" />
-          Transfer
-        </Button>
-
-        {/* Edit */}
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5 h-8"
-          onClick={() => setBulkSheet("edit")}
-          disabled={bulkBusy}
-        >
-          <PencilLine className="h-3.5 w-3.5" />
-          Edit
-        </Button>
-
-        {/* Archive / Restore depending on tab */}
-        {activeTab === "active" ? (
+        {/* Action buttons — scrollable on mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none -mx-1 px-1">
           <Button
             size="sm"
             variant="outline"
-            className="gap-1.5 h-8"
-            onClick={handleBulkArchive}
+            className="gap-1.5 h-9 flex-shrink-0 text-xs"
+            onClick={() => setBulkSheet("transfer")}
             disabled={bulkBusy}
           >
-            {bulkBusy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Archive className="h-3.5 w-3.5" />
-            )}
-            Archive
+            <ArrowRightLeft className="h-3.5 w-3.5" />
+            Transfer
           </Button>
-        ) : (
+
           <Button
             size="sm"
             variant="outline"
-            className="gap-1.5 h-8"
-            onClick={handleBulkRestore}
+            className="gap-1.5 h-9 flex-shrink-0 text-xs"
+            onClick={() => setBulkSheet("edit")}
             disabled={bulkBusy}
           >
-            {bulkBusy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ArchiveRestore className="h-3.5 w-3.5" />
-            )}
-            Restore
+            <PencilLine className="h-3.5 w-3.5" />
+            Edit
           </Button>
-        )}
 
-        {/* Permanent delete — admin only */}
-        {userRole === "admin" && (
-          <>
+          {activeTab === "active" ? (
             <Button
               size="sm"
-              variant="destructive"
-              className="gap-1.5 h-8"
-              onClick={() => setShowBulkDeleteConfirm(true)}
+              variant="outline"
+              className="gap-1.5 h-9 flex-shrink-0 text-xs"
+              onClick={handleBulkArchive}
               disabled={bulkBusy}
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete Forever
+              {bulkBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+              Archive
             </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 h-9 flex-shrink-0 text-xs"
+              onClick={handleBulkRestore}
+              disabled={bulkBusy}
+            >
+              {bulkBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ArchiveRestore className="h-3.5 w-3.5" />
+              )}
+              Restore
+            </Button>
+          )}
 
-            <ConfirmDialog
-              open={showBulkDeleteConfirm}
-              onOpenChange={setShowBulkDeleteConfirm}
-              onConfirm={handleBulkPermanentDelete}
-              title={`Permanently delete ${selectedCount} beneficiar${selectedCount === 1 ? "y" : "ies"}?`}
-              description="This cannot be undone. All attendance records and progress logs for every selected beneficiary will be erased forever."
-              confirmText="Yes, Delete Forever"
-              cancelText="Cancel"
-            />
-          </>
-        )}
+          {userRole === "admin" && (
+            <>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="gap-1.5 h-9 flex-shrink-0 text-xs"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                disabled={bulkBusy}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </Button>
+
+              <ConfirmDialog
+                open={showBulkDeleteConfirm}
+                onOpenChange={setShowBulkDeleteConfirm}
+                onConfirm={handleBulkPermanentDelete}
+                title={`Permanently delete ${selectedCount} beneficiar${selectedCount === 1 ? "y" : "ies"}?`}
+                description="This cannot be undone. All attendance records and progress logs for every selected beneficiary will be erased forever."
+                confirmText="Yes, Delete Forever"
+                cancelText="Cancel"
+              />
+            </>
+          )}
+        </div>
       </div>
     )
   }
 
-  // ─── Shared list renderer ─────────────────────────────────────
+  // ─── List renderer ────────────────────────────────────────────
 
   const renderList = () => (
     <div className="border rounded-lg sm:rounded-xl bg-card overflow-hidden">
       {loading ? (
         <div className="p-4 space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-4">
+            <div key={i} className="flex items-center gap-3 p-3">
+              <Skeleton className="h-5 w-5 rounded" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="h-3 w-32" />
-                <Skeleton className="h-3 w-24" />
               </div>
-              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-5 w-20 rounded-full" />
             </div>
           ))}
         </div>
@@ -823,40 +723,32 @@ export function AllBeneficiaries() {
         />
       ) : (
         <>
-          {/* Column headers */}
-          <div
-            className="hidden sm:flex items-center px-5 py-3 bg-muted/50 border-b
-                       text-xs text-muted-foreground font-medium gap-4"
-          >
-            {/* Select-all checkbox */}
-            <div className="flex items-center gap-3 w-8">
+          {/* Column headers — desktop only */}
+          <div className="hidden sm:flex items-center px-5 py-3 bg-muted/50 border-b text-xs text-muted-foreground font-medium gap-4">
+            <div className="w-8 flex items-center">
               <Checkbox
                 checked={allFilteredSelected}
                 onCheckedChange={toggleAllFiltered}
                 aria-label="Select all filtered beneficiaries"
               />
             </div>
+            <div className="flex-1">Name</div>
+            <div className="w-40">Stage</div>
+            <div className="w-20">Batch</div>
+            {activeTab === "archived" && <div className="w-24 text-center">Action</div>}
+          </div>
 
-            <button
-              className="flex-1 flex items-center gap-1 hover:text-foreground
-                         transition-colors text-left"
-              onClick={() => handleSort("name")}
-              aria-label="Sort by name"
-            >
-              Name {getSortIcon("name")}
-            </button>
-            <button
-              className="w-32 flex items-center gap-1 hover:text-foreground
-                         transition-colors text-left"
-              onClick={() => handleSort("da_wa_stage")}
-              aria-label="Sort by stage"
-            >
-              Stage {getSortIcon("da_wa_stage")}
-            </button>
-            <div className="w-20 text-center">Batch</div>
-            {activeTab === "archived" && (
-              <div className="w-24 text-center">Restore</div>
-            )}
+          {/* Mobile select-all bar */}
+          <div className="flex sm:hidden items-center gap-3 px-4 py-2.5 bg-muted/50 border-b">
+            <Checkbox
+              checked={allFilteredSelected}
+              onCheckedChange={toggleAllFiltered}
+              aria-label="Select all filtered beneficiaries"
+              className="h-5 w-5"
+            />
+            <span className="text-xs text-muted-foreground">
+              Select all ({filteredAndSorted.length})
+            </span>
           </div>
 
           {/* Rows */}
@@ -872,78 +764,136 @@ export function AllBeneficiaries() {
               <div
                 key={beneficiary.id}
                 className={[
-                  "flex flex-col sm:flex-row justify-between items-start sm:items-center",
-                  "p-4 sm:p-5 transition-colors",
-                  isChecked ? "bg-primary/5" : "",
+                  "flex items-start gap-3 px-4 py-3.5 transition-colors",
+                  isChecked ? "bg-primary/5" : "hover:bg-muted/20",
                   index < paginated.length - 1 ? "border-b" : "",
                 ].join(" ")}
               >
-                {/* Checkbox — stops propagation so row click still works */}
+                {/* Checkbox */}
                 <div
-                  className="flex-shrink-0 mr-3 mt-0.5 sm:mt-0"
+                  className="flex-shrink-0 pt-0.5"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Checkbox
                     checked={isChecked}
                     onCheckedChange={() => toggleOne(beneficiary.id)}
                     aria-label={`Select ${beneficiary.name}`}
+                    className="h-5 w-5"
                   />
                 </div>
 
-                {/* Info — active rows open detail dialog, archived rows are static */}
-                {activeTab === "active" ? (
-                  <BeneficiaryDetailsDialog
-                    beneficiaryId={beneficiary.id}
-                    onUpdate={() => fetchData(true)}
-                  >
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View details for ${beneficiary.name}`}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ")
-                          e.currentTarget.click()
-                      }}
-                      className="flex-1 min-w-0 mb-2 sm:mb-0 cursor-pointer
-                                 hover:opacity-80 transition-opacity
-                                 focus-visible:outline-none focus-visible:ring-2
-                                 focus-visible:ring-primary focus-visible:ring-inset"
+                {/* Main content */}
+                <div className="flex-1 min-w-0">
+                  {activeTab === "active" ? (
+                    <BeneficiaryDetailsDialog
+                      beneficiaryId={beneficiary.id}
+                      onUpdate={() => fetchData(true)}
                     >
-                      <BeneficiaryInfo
-                        beneficiary={beneficiary}
-                        searchTerm={searchTerm}
-                        preacherName={getPreacherName(beneficiary.da_i_id)}
-                      />
-                    </div>
-                  </BeneficiaryDetailsDialog>
-                ) : (
-                  <div className="flex-1 min-w-0 mb-2 sm:mb-0 opacity-60">
-                    <BeneficiaryInfo
-                      beneficiary={beneficiary}
-                      searchTerm={searchTerm}
-                      preacherName={getPreacherName(beneficiary.da_i_id)}
-                    />
-                  </div>
-                )}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View details for ${beneficiary.name}`}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ")
+                            e.currentTarget.click()
+                        }}
+                        className="cursor-pointer focus-visible:outline-none
+                                   focus-visible:ring-2 focus-visible:ring-primary
+                                   focus-visible:ring-inset rounded-sm"
+                      >
+                        {/* Name + badges */}
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-medium text-sm leading-snug">
+                            <SafeHighlightText
+                              text={beneficiary.name}
+                              highlight={searchTerm}
+                            />
+                          </span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Badge
+                              variant="outline"
+                              className="text-[11px] px-1.5 py-0 h-5 whitespace-nowrap"
+                            >
+                              {beneficiary.da_wa_stage}
+                            </Badge>
+                            {beneficiary.batch && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[11px] px-1.5 py-0 h-5"
+                              >
+                                {beneficiary.batch}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
 
-                {/* Badges + optional single restore */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    {beneficiary.da_wa_stage}
-                  </Badge>
-                  {beneficiary.batch && (
-                    <Badge variant="secondary" className="text-xs">
-                      {beneficiary.batch}
-                    </Badge>
+                        {/* Phone • Preacher */}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground">
+                            <SafeHighlightText
+                              text={beneficiary.phone}
+                              highlight={searchTerm}
+                            />
+                          </span>
+                          <span className="text-xs text-muted-foreground/40">•</span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            {getPreacherName(beneficiary.da_i_id)}
+                          </span>
+                        </div>
+                      </div>
+                    </BeneficiaryDetailsDialog>
+                  ) : (
+                    <div className="opacity-60">
+                      {/* Name + badges */}
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-medium text-sm leading-snug">
+                          <SafeHighlightText
+                            text={beneficiary.name}
+                            highlight={searchTerm}
+                          />
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <Badge
+                            variant="outline"
+                            className="text-[11px] px-1.5 py-0 h-5 whitespace-nowrap"
+                          >
+                            {beneficiary.da_wa_stage}
+                          </Badge>
+                          {beneficiary.batch && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[11px] px-1.5 py-0 h-5"
+                            >
+                              {beneficiary.batch}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phone • Preacher */}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs text-muted-foreground">
+                          <SafeHighlightText
+                            text={beneficiary.phone}
+                            highlight={searchTerm}
+                          />
+                        </span>
+                        <span className="text-xs text-muted-foreground/40">•</span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {getPreacherName(beneficiary.da_i_id)}
+                        </span>
+                      </div>
+                    </div>
                   )}
 
+                  {/* Restore button — archived tab only */}
                   {activeTab === "archived" && (
-                    <>
+                    <div className="mt-2.5">
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="gap-1.5 text-xs"
+                        className="gap-1.5 text-xs h-8"
                         disabled={isRestoring}
                         onClick={() => setConfirmRestoreId(beneficiary.id)}
                       >
@@ -968,7 +918,7 @@ export function AllBeneficiaries() {
                         confirmText="Yes, Restore"
                         cancelText="Cancel"
                       />
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
@@ -977,36 +927,25 @@ export function AllBeneficiaries() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div
-              className="flex flex-col sm:flex-row items-center justify-between
-                         gap-3 px-4 py-3 border-t bg-muted/30"
-            >
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t bg-muted/30">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>
-                  Showing{" "}
-                  {Math.min(
-                    (safePage - 1) * pageSize + 1,
-                    filteredAndSorted.length
-                  )}{" "}
-                  to{" "}
+                  {Math.min((safePage - 1) * pageSize + 1, filteredAndSorted.length)}–
                   {Math.min(safePage * pageSize, filteredAndSorted.length)} of{" "}
-                  {filteredAndSorted.length} results
+                  {filteredAndSorted.length}
                 </span>
-
-                <div className="flex items-center gap-2">
-                  <span                  >Show</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Show</span>
                   <select
                     value={pageSize}
                     onChange={(e) => setPageSize(Number(e.target.value))}
-                    className="h-8 rounded-md border border-border bg-background
-                               px-2 text-sm"
+                    className="h-7 rounded border border-border bg-background px-1.5 text-xs"
                     aria-label="Results per page"
                   >
                     {PAGE_SIZE_OPTIONS.map((size) => (
                       <option key={size} value={size}>{size}</option>
                     ))}
                   </select>
-                  <span>per page</span>
                 </div>
               </div>
 
@@ -1041,7 +980,7 @@ export function AllBeneficiaries() {
                         key={pageNum}
                         variant={safePage === pageNum ? "default" : "ghost"}
                         size="sm"
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 text-xs"
                         onClick={() => setCurrentPage(pageNum)}
                         aria-label={`Go to page ${pageNum}`}
                         aria-current={safePage === pageNum ? "page" : undefined}
@@ -1079,9 +1018,9 @@ export function AllBeneficiaries() {
   // ─── Main render ──────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
-      {/* ── Bulk action sheets ───────────────────────────────── */}
+      {/* ── Bulk Sheets ─────────────────────────────────────────── */}
 
       {/* Transfer Sheet */}
       <Sheet
@@ -1126,7 +1065,6 @@ export function AllBeneficiaries() {
               </Select>
             </div>
 
-            {/* Preview */}
             {bulkTransferPreacher && (
               <p className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded-md">
                 {selectedCount} beneficiar{selectedCount === 1 ? "y" : "ies"} will be
@@ -1181,14 +1119,13 @@ export function AllBeneficiaries() {
             </SheetTitle>
             <SheetDescription>
               Only filled fields will be updated. Leave a field blank to keep
-              each beneficiary's existing value.
+              each beneficiary&apos;s existing value.
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-5 py-2">
-            {/* Stage */}
             <div className="space-y-2">
-              <Label htmlFor="bulk-edit-stage">Da'wa Stage</Label>
+              <Label htmlFor="bulk-edit-stage">Da&apos;wa Stage</Label>
               <Select
                 value={bulkEditStage}
                 onValueChange={(v) => setBulkEditStage(v === "__keep__" ? "" : v)}
@@ -1197,7 +1134,6 @@ export function AllBeneficiaries() {
                   <SelectValue placeholder="Keep existing stages…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* ✅ Use a real non-empty sentinel instead of "" */}
                   <SelectItem value="__keep__">Keep existing</SelectItem>
                   {DAWA_STAGES.map((stage) => (
                     <SelectItem key={stage} value={stage}>
@@ -1208,7 +1144,6 @@ export function AllBeneficiaries() {
               </Select>
             </div>
 
-            {/* Batch */}
             <div className="space-y-2">
               <Label htmlFor="bulk-edit-batch">Batch</Label>
               <Input
@@ -1219,7 +1154,6 @@ export function AllBeneficiaries() {
               />
             </div>
 
-            {/* Preview */}
             {(bulkEditStage || bulkEditBatch.trim()) && (
               <div className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded-md space-y-1">
                 <p className="font-medium text-foreground mb-1">
@@ -1229,17 +1163,13 @@ export function AllBeneficiaries() {
                 {bulkEditStage && (
                   <p>
                     Stage →{" "}
-                    <span className="font-medium text-foreground">
-                      {bulkEditStage}
-                    </span>
+                    <span className="font-medium text-foreground">{bulkEditStage}</span>
                   </p>
                 )}
                 {bulkEditBatch.trim() && (
                   <p>
                     Batch →{" "}
-                    <span className="font-medium text-foreground">
-                      {bulkEditBatch.trim()}
-                    </span>
+                    <span className="font-medium text-foreground">{bulkEditBatch.trim()}</span>
                   </p>
                 )}
               </div>
@@ -1271,60 +1201,55 @@ export function AllBeneficiaries() {
       </Sheet>
 
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center
-                        justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-            <h2 className="text-lg sm:text-2xl font-bold truncate">
-              All Beneficiaries
-            </h2>
-            <Badge variant="secondary" className="text-xs">
-              {activeBeneficiaries.length}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Users className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+          <h2 className="text-lg sm:text-2xl font-bold truncate">
+            All Beneficiaries
+          </h2>
+          <Badge variant="secondary" className="text-xs flex-shrink-0">
+            {activeBeneficiaries.length}
+          </Badge>
+          {archivedBeneficiaries.length > 0 && (
+            <Badge variant="outline" className="text-xs gap-1 flex-shrink-0">
+              <Archive className="h-3 w-3" />
+              {archivedBeneficiaries.length}
             </Badge>
-            {archivedBeneficiaries.length > 0 && (
-              <Badge variant="outline" className="text-xs gap-1">
-                <Archive className="h-3 w-3" />
-                {archivedBeneficiaries.length} archived
-              </Badge>
-            )}
-          </div>
+          )}
+        </div>
 
-          <div className="flex items-center gap-1 w-full sm:w-auto flex-wrap">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-              aria-label="Refresh data"
-              title="Refresh data"
-              className="h-9 w-9 sm:h-10 sm:w-10"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-              />
-            </Button>
+        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => fetchData(true)}
+            disabled={refreshing}
+            aria-label="Refresh data"
+            className="h-9 w-9"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportToCSV}
-              disabled={loading || filteredAndSorted.length === 0}
-            >
-              <Download className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">
-                Export ({filteredAndSorted.length})
-              </span>
-            </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportToCSV}
+            disabled={loading || filteredAndSorted.length === 0}
+            className="h-9"
+          >
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">
+              Export ({filteredAndSorted.length})
+            </span>
+          </Button>
 
-            <DataHealthCheck
-              beneficiaries={activeBeneficiaries}
-              preachers={preachers}
-              onDataChanged={() => fetchData(true)}
-            />
-            <ContactImportDialog onImportComplete={() => fetchData(true)} />
-            <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
-          </div>
+          <DataHealthCheck
+            beneficiaries={activeBeneficiaries}
+            preachers={preachers}
+            onDataChanged={() => fetchData(true)}
+          />
+          <ContactImportDialog onImportComplete={() => fetchData(true)} />
+          <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
         </div>
       </div>
 
@@ -1348,7 +1273,7 @@ export function AllBeneficiaries() {
 
       {/* Stats */}
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatsCard title="Total Beneficiaries" value={activeBeneficiaries.length} icon={Users} />
           <StatsCard title="Search Results" value={filteredAndSorted.length} icon={Search} />
           <StatsCard title="New This Month" value={stats.activeThisMonth} icon={Activity} />
@@ -1380,16 +1305,16 @@ export function AllBeneficiaries() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Shared filters */}
-        <div className="flex flex-col gap-4 mb-4">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4
-                               text-muted-foreground" />
+        {/* Filters */}
+        <div className="flex flex-col gap-3 mb-4">
+          {/* Search */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or phone number…"
+              placeholder="Search by name or phone…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 pl-10 h-10 sm:h-11"
+              className="pr-10 pl-10 h-11"
             />
             {searchTerm && (
               <Button
@@ -1404,10 +1329,11 @@ export function AllBeneficiaries() {
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          {/* Filter dropdowns — horizontal scroll on mobile */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
             <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by stage" />
+              <SelectTrigger className="w-40 flex-shrink-0 h-9 text-xs">
+                <SelectValue placeholder="Stage" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
@@ -1418,8 +1344,8 @@ export function AllBeneficiaries() {
             </Select>
 
             <Select value={preacherFilter} onValueChange={setPreacherFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by preacher" />
+              <SelectTrigger className="w-40 flex-shrink-0 h-9 text-xs">
+                <SelectValue placeholder="Preacher" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Preachers</SelectItem>
@@ -1434,28 +1360,27 @@ export function AllBeneficiaries() {
             </Select>
 
             <Select value={sortValue} onValueChange={handleSortValueChange}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Sort by" />
+              <SelectTrigger className="w-40 flex-shrink-0 h-9 text-xs">
+                <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="name|asc">Name (A → Z)</SelectItem>
                 <SelectItem value="name|desc">Name (Z → A)</SelectItem>
                 <SelectItem value="created_at|desc">Newest First</SelectItem>
                 <SelectItem value="created_at|asc">Oldest First</SelectItem>
-                <SelectItem value="da_wa_stage|asc">Stage (Ascending)</SelectItem>
-                <SelectItem value="da_wa_stage|desc">Stage (Descending)</SelectItem>
+                <SelectItem value="da_wa_stage|asc">Stage ↑</SelectItem>
+                <SelectItem value="da_wa_stage|desc">Stage ↓</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          {/* Active filter badges */}
           {hasActiveFilters && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-muted-foreground">
-                Active filters:
-              </span>
+              <span className="text-xs text-muted-foreground">Filters:</span>
               {searchTerm && (
-                <Badge variant="secondary" className="gap-2">
-                  Search: {searchTerm}
+                <Badge variant="secondary" className="gap-1.5 text-xs">
+                  &ldquo;{searchTerm}&rdquo;
                   <X
                     className="h-3 w-3 cursor-pointer hover:text-destructive"
                     role="button"
@@ -1465,8 +1390,8 @@ export function AllBeneficiaries() {
                 </Badge>
               )}
               {stageFilter !== "all" && (
-                <Badge variant="secondary" className="gap-2">
-                  Stage: {stageFilter}
+                <Badge variant="secondary" className="gap-1.5 text-xs">
+                  {stageFilter}
                   <X
                     className="h-3 w-3 cursor-pointer hover:text-destructive"
                     role="button"
@@ -1476,8 +1401,8 @@ export function AllBeneficiaries() {
                 </Badge>
               )}
               {preacherFilter !== "all" && (
-                <Badge variant="secondary" className="gap-2">
-                  Preacher: {getPreacherName(preacherFilter)}
+                <Badge variant="secondary" className="gap-1.5 text-xs">
+                  {getPreacherName(preacherFilter)}
                   <X
                     className="h-3 w-3 cursor-pointer hover:text-destructive"
                     role="button"
@@ -1490,14 +1415,14 @@ export function AllBeneficiaries() {
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="h-7"
+                className="h-7 text-xs px-2"
               >
                 Clear All
               </Button>
             </div>
           )}
 
-          {/* Bulk toolbar — shown whenever something is selected */}
+          {/* Bulk toolbar */}
           <BulkToolbar />
         </div>
 
