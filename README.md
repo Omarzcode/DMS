@@ -85,18 +85,20 @@ that works seamlessly across all devices and screen sizes.
 
 ## 2. Screenshots
 
-> 📸 Screenshots and demo GIFs will be added here.
 
-| Admin Dashboard | Beneficiary Management |
-|----------------|----------------------|
-| ![Admin Dashboard](./public/placeholder.jpg) | ![Beneficiary Management](./public/placeholder.jpg) |
+| Admin Dashboard |
+| ![Admin Dashboard](./public/dashboard.png) |
+|----------------|
+|Beneficiary Management|
+ ![Beneficiary Management](./public/bene_management.png) |
 
-| Activity Tracking | Analytics Charts |
-|------------------|-----------------|
-| ![Activity Tracking](./public/placeholder.jpg) | ![Analytics](./public/placeholder.jpg) |
+| Activity Tracking |
+|------------------|
+| ![Activity Tracking](./public/tracking.png) |
+|-----------------|
+|Analytics Charts |
+| ![Analytics](./public/charts.png) |
 
-> To add real screenshots: replace the placeholder paths above with actual
-> screenshots from your deployment.
 
 ---
 
