@@ -90,7 +90,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 const FIRESTORE_BATCH_LIMIT = 500
 
 const ADVANCED_STAGE_INDICES = [
-  DAWA_STAGES.indexOf("Committed Learner"),
+  DAWA_STAGES.indexOf("متعلم ملتزم"),
 ].filter((i) => i !== -1)
 
 const ADVANCED_STAGE_SET = new Set(
@@ -1314,7 +1314,7 @@ export function AllBeneficiaries() {
               placeholder="Search by name or phone…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 pl-10 h-11"
+              className="pr-10 pl-10 sm:pl-12 h-11"
             />
             {searchTerm && (
               <Button
