@@ -32,3 +32,14 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyBL4TqCt0RdLh_8TMNEtpLNRHC9fxf8fhA"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "daawa-hasr.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID = "daawa-hasr"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "daawa-hasr.firebasestorage.app"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "19914706265"
+NEXT_PUBLIC_FIREBASE_APP_ID = "1:19914706265:web:1c80045560d9cf74529048"
+NEXT_PUBLIC_GOOGLE_CLIENT_ID = "19914706265-hao537r16nict5qu1uilc35jqdr2fcif.apps.googleusercontent.com"
