@@ -1,10 +1,8 @@
 // public/sw.js
-const CACHE_NAME = 'ems-v1'
+const CACHE_NAME = 'ems-v2'
 const OFFLINE_URL = '/offline'
 
-// Updated to match your current file structure in /public
 const STATIC_ASSETS = [
-  '/',
   '/offline',
   '/manifest.json',
   '/ic_launcher-web.png',
@@ -42,20 +40,25 @@ self.addEventListener('activate', (event) => {
 
 // ─── Fetch ────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url
+
+  // Never intercept Next.js internal chunks — they are hashed and must
+  // always come fresh from the server to avoid stale-chunk errors.
+  if (url.includes('/_next/')) return
+
   // Skip Firebase & Google Auth requests
   if (
-    event.request.url.includes('firestore.googleapis.com') ||
-    event.request.url.includes('firebase') ||
-    event.request.url.includes('google.com/o/oauth2') ||
-    event.request.url.includes('accounts.google.com')
+    url.includes('firestore.googleapis.com') ||
+    url.includes('firebase') ||
+    url.includes('google.com/o/oauth2') ||
+    url.includes('accounts.google.com')
   ) {
-    return 
+    return
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful responses for GET requests only
         if (event.request.method === 'GET' && response.status === 200) {
           const responseClone = response.clone()
           caches.open(CACHE_NAME).then((cache) => {
@@ -65,10 +68,8 @@ self.addEventListener('fetch', (event) => {
         return response
       })
       .catch(() => {
-        // Offline fallback
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse
-          
           if (event.request.mode === 'navigate') {
             return caches.match(OFFLINE_URL)
           }

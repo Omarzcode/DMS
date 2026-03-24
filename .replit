@@ -36,7 +36,6 @@ externalPort = 80
 [userenv]
 
 [userenv.shared]
-NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyBL4TqCt0RdLh_8TMNEtpLNRHC9fxf8fhA"
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "daawa-hasr.firebaseapp.com"
 NEXT_PUBLIC_FIREBASE_PROJECT_ID = "daawa-hasr"
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "daawa-hasr.firebasestorage.app"
