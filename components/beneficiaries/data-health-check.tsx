@@ -48,6 +48,7 @@ import {
   Wrench,
   Zap,
   ArrowRight,
+  Delete,
 } from "lucide-react"
 import { doc, deleteDoc, updateDoc, writeBatch } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -66,6 +67,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { be } from "date-fns/locale"
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -121,15 +123,15 @@ const ISSUE_CONFIG: Record<
   IssueType,
   { label: string; severity: "error" | "warning" | "info"; icon: React.ElementType }
 > = {
-  fixable_phone:       { label: "رقم قابل للإصلاح",    severity: "info",    icon: Wrench      },
-  duplicate_phone:     { label: "رقم مكرر",             severity: "error",   icon: Copy        },
-  invalid_phone:       { label: "رقم غير صحيح",         severity: "error",   icon: Phone       },
-  missing_name:        { label: "اسم مفقود",            severity: "error",   icon: UserX       },
-  missing_phone:       { label: "رقم مفقود",            severity: "error",   icon: Phone       },
-  missing_preacher:    { label: "بدون داعية",           severity: "warning", icon: Users       },
-  orphan_preacher:     { label: "داعية غير موجود",      severity: "warning", icon: FileWarning },
-  missing_stage:       { label: "بدون مرحلة",           severity: "warning", icon: AlertCircle },
-  duplicate_name_phone:{ label: "سجل مكرر بالكامل",    severity: "error",   icon: Copy        },
+  fixable_phone:       { label: "Fixable Phone Number",    severity: "info",    icon: Wrench      },
+  duplicate_phone:     { label: "Duplicate Phone",             severity: "error",   icon: Copy        },
+  invalid_phone:       { label: "Invalid Phone Number",         severity: "error",   icon: Phone       },
+  missing_name:        { label: "Missing Name",            severity: "error",   icon: UserX       },
+  missing_phone:       { label: "Missing Phone Number",            severity: "error",   icon: Phone       },
+  missing_preacher:    { label: "Without Preacher",           severity: "warning", icon: Users       },
+  orphan_preacher:     { label: "Preacher Not Found",      severity: "warning", icon: FileWarning },
+  missing_stage:       { label: "Without Stage",           severity: "warning", icon: AlertCircle },
+  duplicate_name_phone:{ label: "Completely Duplicate Record",    severity: "error",   icon: Copy        },
 }
 
 const BATCH_SIZE = 25
@@ -162,8 +164,8 @@ export function DataHealthCheck({
   const [confirmConfig, setConfirmConfig] = useState<ConfirmConfig>({
     title: "",
     description: "",
-    confirmText: "تأكيد",
-    cancelText: "إلغاء",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
     variant: "default",
   })
   // Fix 2: Use useRef instead of useState for the resolve callback
@@ -186,8 +188,8 @@ export function DataHealthCheck({
         setConfirmConfig({
           title:       opts.title,
           description: opts.description,
-          confirmText: opts.confirmText ?? "تأكيد",
-          cancelText:  opts.cancelText  ?? "إلغاء",
+          confirmText: opts.confirmText ?? "Confirm",
+          cancelText:  opts.cancelText  ?? "Cancel",
           variant:     opts.variant     ?? "default",
         })
         resolveRef.current = resolve
@@ -243,14 +245,14 @@ export function DataHealthCheck({
 
   const getPhoneIssueDescription = useCallback((phone: string): string => {
     const parts: string[] = []
-    if (/\s/.test(phone))                                    parts.push("مسافات")
+    if (/\s/.test(phone))                                    parts.push("Spaces")
     if (phone.includes("+20"))                               parts.push("+20")
     if (phone.startsWith("002") || phone.startsWith("0020")) parts.push("002")
     if (/^20\d{10}$/.test(phone.replace(/\s/g, "")))        parts.push("20")
-    if (phone.includes("-"))                                 parts.push("شرطات")
-    if (phone.includes("."))                                 parts.push("نقاط")
-    if (phone.includes("(") || phone.includes(")"))         parts.push("أقواس")
-    return parts.join("، ")
+    if (phone.includes("-"))                                 parts.push("Hyphens")
+    if (phone.includes("."))                                 parts.push("Dots")
+    if (phone.includes("(") || phone.includes(")"))         parts.push("Parentheses")
+    return parts.join(", ")
   }, [])
 
   // ─── Analysis ──────────────────────────────────────────────────
@@ -275,7 +277,7 @@ export function DataHealthCheck({
             stage: b.da_wa_stage || "",
             type: "fixable_phone",
             severity: "info",
-            message: `الرقم يحتوي على ${getPhoneIssueDescription(b.phone)} — يمكن إصلاحه تلقائياً`,
+            message: `The phone number contains ${getPhoneIssueDescription(b.phone)} — it can be fixed automatically`,
             selected: true,
             fixedPhone: normalizePhone(b.phone),
           })
@@ -303,7 +305,7 @@ export function DataHealthCheck({
               stage: b.da_wa_stage || "",
               type: "duplicate_phone",
               severity: "error",
-              message: `الرقم ${phone} مكرر في ${group.length} سجل`,
+              message: `Phone number ${phone} is duplicated in ${group.length} record(s)`,
               relatedIds: group.filter((g) => g.id !== b.id).map((g) => g.id),
               selected: false,
             })
@@ -331,7 +333,7 @@ export function DataHealthCheck({
               stage: group[i].da_wa_stage || "",
               type: "duplicate_name_phone",
               severity: "error",
-              message: `سجل مكرر بالكامل (الاسم والرقم) — يمكن حذفه بأمان`,
+              message: `Completely duplicate record (name and phone) — can be safely deleted`,
               relatedIds: [group[0].id],
               selected: true,
             })
@@ -344,19 +346,19 @@ export function DataHealthCheck({
         if (!b.name?.trim()) {
           foundIssues.push({
             id: `issue-${issueId++}`, beneficiaryId: b.id,
-            beneficiaryName: b.name || "(بدون اسم)", beneficiaryPhone: b.phone,
+            beneficiaryName: b.name || "(No Name)", beneficiaryPhone: b.phone,
             preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
             type: "missing_name", severity: "error",
-            message: "المستفيد بدون اسم", selected: false,
+            message: "Beneficiary without name", selected: false,
           })
         }
         if (!b.phone?.trim()) {
           foundIssues.push({
             id: `issue-${issueId++}`, beneficiaryId: b.id,
-            beneficiaryName: b.name, beneficiaryPhone: b.phone || "(بدون رقم)",
+            beneficiaryName: b.name, beneficiaryPhone: b.phone || "(No Phone)",
             preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
             type: "missing_phone", severity: "error",
-            message: "المستفيد بدون رقم هاتف", selected: false,
+            message: "Beneficiary without phone number", selected: false,
           })
         }
         if (b.phone?.trim()) {
@@ -369,7 +371,7 @@ export function DataHealthCheck({
               beneficiaryName: b.name, beneficiaryPhone: b.phone,
               preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
               type: "invalid_phone", severity: "error",
-              message: `الرقم "${b.phone}" ليس رقم مصري صحيح`, selected: false,
+              message: `Phone "${b.phone}" is not a valid Egyptian number`, selected: false,
             })
           }
         }
@@ -379,7 +381,7 @@ export function DataHealthCheck({
             beneficiaryName: b.name, beneficiaryPhone: b.phone,
             preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
             type: "missing_preacher", severity: "warning",
-            message: "المستفيد غير معيّن لأي داعية", selected: false,
+            message: "Beneficiary not assigned to any preacher", selected: false,
           })
         }
         if (b.da_i_id?.trim() && !preacherIds.has(b.da_i_id)) {
@@ -388,7 +390,7 @@ export function DataHealthCheck({
             beneficiaryName: b.name, beneficiaryPhone: b.phone,
             preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
             type: "orphan_preacher", severity: "warning",
-            message: `معيّن لداعية غير موجود (${b.da_i_id})`, selected: false,
+            message: `Assigned to non-existent preacher (${b.da_i_id})`, selected: false,
           })
         }
         if (!b.da_wa_stage?.trim()) {
@@ -397,7 +399,7 @@ export function DataHealthCheck({
             beneficiaryName: b.name, beneficiaryPhone: b.phone,
             preacherId: b.da_i_id || "", stage: b.da_wa_stage || "",
             type: "missing_stage", severity: "warning",
-            message: "المستفيد بدون مرحلة دعوية", selected: false,
+            message: "Beneficiary without a stage", selected: false,
           })
         }
       }
@@ -408,11 +410,11 @@ export function DataHealthCheck({
 
       const fixableCount = foundIssues.filter((i) => i.type === "fixable_phone").length
       if (foundIssues.length === 0)
-        toast.success("البيانات سليمة! لا توجد مشاكل")
+        toast.success("Data is healthy! No issues found")
       else if (fixableCount > 0)
-        toast.warning(`تم العثور على ${foundIssues.length} مشكلة — منها ${fixableCount} قابلة للإصلاح التلقائي`)
+        toast.warning(`Found ${foundIssues.length} issue(s) — of which ${fixableCount} can be fixed automatically`)
       else
-        toast.warning(`تم العثور على ${foundIssues.length} مشكلة`)
+        toast.warning(`Found ${foundIssues.length} issue(s)`)
     })
   }, [
     beneficiaries,
@@ -435,10 +437,10 @@ export function DataHealthCheck({
     try {
       await updateDoc(doc(db, "beneficiaries", issue.beneficiaryId), { phone: issue.fixedPhone })
       setIssues((prev) => prev.filter((i) => i.id !== issue.id))
-      toast.success(`تم إصلاح رقم ${issue.beneficiaryName}`)
+      toast.success(`Fixed phone number for ${issue.beneficiaryName}`)
       onDataChanged()
     } catch {
-      toast.error("فشل إصلاح الرقم")
+      toast.error("Failed to fix phone number")
     } finally {
       setSavingPhone(false)
     }
@@ -446,13 +448,13 @@ export function DataHealthCheck({
 
   const fixAllPhones = async (onlySelected = false) => {
     const toFix = onlySelected ? selectedFixableIssues : fixableIssues
-    if (toFix.length === 0) { toast.error("لا توجد أرقام قابلة للإصلاح"); return }
+    if (toFix.length === 0) { toast.error("No phone numbers to fix"); return }
 
     const confirmed = await confirm({
-      title:       "إصلاح الأرقام تلقائياً",
-      description: `سيتم إصلاح ${toFix.length} رقم هاتف تلقائياً.`,
-      confirmText: `إصلاح ${toFix.length} رقم`,
-      cancelText:  "إلغاء",
+      title:       "Fix Phone Numbers Automatically",
+      description: `Will automatically fix ${toFix.length} phone number(s).`,
+      confirmText: `Fix ${toFix.length} Number(s)`,
+      cancelText:  "Cancel",
       variant:     "info",
     })
     if (!confirmed) return
@@ -479,10 +481,10 @@ export function DataHealthCheck({
         toFix.filter((i) => uniqueFixMap.has(i.beneficiaryId)).map((i) => i.id)
       )
       setIssues((prev) => prev.filter((i) => !fixedIds.has(i.id)))
-      toast.success(`تم إصلاح ${fixed} رقم بنجاح`)
+      toast.success(`Successfully fixed ${fixed} number(s)`)
       onDataChanged()
     }
-    if (failed > 0) toast.error(`فشل إصلاح ${failed} رقم`)
+    if (failed > 0) toast.error(`Failed to fix ${failed} number(s)`)
     setFixing(false)
   }
 
@@ -535,7 +537,7 @@ export function DataHealthCheck({
     if (!editState) return
     const issue = issues.find((i) => i.id === editState.issueId)
     if (!issue) return
-    if (!editState.name.trim()) { toast.error("الاسم مطلوب"); return }
+    if (!editState.name.trim()) { toast.error("Name is required"); return }
 
     let formattedPhone = editState.phone.trim()
     if (formattedPhone) {
@@ -552,7 +554,7 @@ export function DataHealthCheck({
       if (editState.stage        !== issue.stage)            u.da_wa_stage = editState.stage
 
       if (Object.keys(u).length === 0) {
-        toast.info("لم يتم تغيير أي بيانات")
+        toast.info("No changes were made")
         setEditState(null)
         return
       }
@@ -573,10 +575,10 @@ export function DataHealthCheck({
         )
       )
       setEditState(null)
-      toast.success("تم تحديث البيانات بنجاح")
+      toast.success("Data updated successfully")
       onDataChanged()
     } catch {
-      toast.error("فشل تحديث البيانات")
+      toast.error("Failed to update data")
     } finally {
       setSavingEdit(false)
     }
@@ -596,18 +598,18 @@ export function DataHealthCheck({
   // Fix 7: Use writeBatch instead of deleteDoc in a loop
   const deleteSelected = async () => {
     const sel = issues.filter((i) => i.selected)
-    if (sel.length === 0) { toast.error("لا توجد عناصر محددة"); return }
+    if (sel.length === 0) { toast.error("No items selected"); return }
 
     const deletable = sel.filter((i) => i.type !== "fixable_phone")
-    if (deletable.length === 0) { toast.info("العناصر المحددة قابلة للإصلاح وليست للحذف."); return }
+    if (deletable.length === 0) { toast.info("Selected items are fixable and cannot be deleted."); return }
 
     const uniqueIds = [...new Set(deletable.map((i) => i.beneficiaryId))]
 
     const confirmed = await confirm({
-      title:       "حذف المستفيدين",
-      description: `هل أنت متأكد من حذف ${uniqueIds.length} مستفيد؟ لا يمكن التراجع.`,
-      confirmText: `حذف ${uniqueIds.length} مستفيد`,
-      cancelText:  "إلغاء",
+      title:       "Delete Beneficiaries",
+      description: `Are you sure you want to delete ${uniqueIds.length} beneficiary(ies)? This cannot be undone.`,
+      confirmText: `Delete ${uniqueIds.length} Beneficiary(ies)`,
+      cancelText:  "Cancel",
       variant:     "danger",
     })
     if (!confirmed) return
@@ -632,26 +634,26 @@ export function DataHealthCheck({
     if (deleted > 0) {
       // Only remove successfully deleted IDs from local state
       const deletedSet = new Set(uniqueIds)
-      toast.success(`تم حذف ${deleted} مستفيد بنجاح`)
+      toast.success(`Successfully deleted ${deleted} beneficiary(ies)`)
       setIssues((prev) => prev.filter((i) => !deletedSet.has(i.beneficiaryId)))
       onDataChanged()
     }
-    if (failed > 0) toast.error(`فشل حذف ${failed} مستفيد`)
+    if (failed > 0) toast.error(`Failed to delete ${failed} beneficiary(ies)`)
   }
 
   // ─── Export ────────────────────────────────────────────────────
 
   const exportIssuesCSV = () => {
     const BOM     = "\uFEFF"
-    const headers = ["الاسم", "الرقم", "الرقم المصحح", "الداعية", "المرحلة", "نوع المشكلة", "الخطورة", "التفاصيل"]
+    const headers = ["Name", "Phone", "Corrected Phone", "Preacher", "Stage", "Issue Type", "Severity", "Details"]
     const rows    = filteredIssues.map((i) => [
       i.beneficiaryName,
       i.beneficiaryPhone,
       i.fixedPhone || "",
-      preachers.find((p) => p.id === i.preacherId)?.name || "غير معيّن",
-      i.stage || "بدون مرحلة",
+      preachers.find((p) => p.id === i.preacherId)?.name || "Not Assigned",
+      i.stage || "No Stage",
       ISSUE_CONFIG[i.type].label,
-      i.severity === "error" ? "خطأ" : i.severity === "warning" ? "تحذير" : "معلومة",
+      i.severity === "error" ? "Error" : i.severity === "warning" ? "Warning" : "Info",
       i.message,
     ])
     const csv  = BOM + [headers.join(","), ...rows.map((r) => r.map((c) => `"${(c || "").replace(/"/g, '""')}"`).join(","))].join("\n")
@@ -685,9 +687,9 @@ export function DataHealthCheck({
 
   const getSeverityBadge = (severity: "error" | "warning" | "info") => {
     const cfg = {
-      error:   { label: "خطأ",    className: "bg-destructive/15 text-destructive border-destructive/30" },
-      warning: { label: "تحذير",  className: "bg-warning/15 text-warning border-warning/30"            },
-      info:    { label: "إصلاح",  className: "bg-info/15 text-info border-info/30"                     },
+      error:   { label: "Error",    className: "bg-destructive/15 text-destructive border-destructive/30" },
+      warning: { label: "Warning",  className: "bg-warning/15 text-warning border-warning/30"            },
+      info:    { label: "Fixing",   className: "bg-info/15 text-info border-info/30"                     },
     }[severity]
     return (
       <Badge variant="outline" className={`text-[10px] ${cfg.className}`}>
@@ -697,8 +699,8 @@ export function DataHealthCheck({
   }
 
   const getPreacherName = (id: string) => {
-    if (!id) return "غير معيّن"
-    return preachers.find((p) => p.id === id)?.name || "غير معروف"
+    if (!id) return "Not Assigned"
+    return preachers.find((p) => p.id === id)?.name || "Unknown"
   }
 
   const healthScore = useMemo(() => {
@@ -711,7 +713,7 @@ export function DataHealthCheck({
   }, [beneficiaries, issues])
 
   const getHealthColor = (s: number) => s >= 90 ? "text-success" : s >= 70 ? "text-warning" : "text-destructive"
-  const getHealthLabel = (s: number) => s >= 90 ? "ممتاز" : s >= 70 ? "جيد" : s >= 50 ? "يحتاج تحسين" : "ضعيف"
+  const getHealthLabel = (s: number) => s >= 90 ? "Excellent" : s >= 70 ? "Good" : s >= 50 ? "Needs Improvement" : "Poor"
 
   // ─── Render ────────────────────────────────────────────────────
 
@@ -721,7 +723,7 @@ export function DataHealthCheck({
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5">
             <HeartPulse className="h-4 w-4" />
-            <span className="hidden sm:inline">فحص البيانات</span>
+            <span className="hidden sm:inline">Data Check</span>
           </Button>
         </DialogTrigger>
 
@@ -732,9 +734,9 @@ export function DataHealthCheck({
                 <HeartPulse className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <div>فحص صحة البيانات</div>
+                <div>Data Health Check</div>
                 <DialogDescription className="text-xs sm:text-sm mt-1">
-                  تحليل شامل لجودة بيانات المستفيدين واكتشاف المشاكل
+                  Comprehensive analysis of beneficiary data quality and issue detection
                 </DialogDescription>
               </div>
             </DialogTitle>
@@ -748,9 +750,9 @@ export function DataHealthCheck({
                   <ShieldAlert className="h-16 w-16 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">فحص بيانات المستفيدين</h3>
+                  <h3 className="text-xl font-semibold mb-2">Beneficiary Data Check</h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    سيتم تحليل {beneficiaries.length} سجل للبحث عن المشاكل
+                    Will analyze {beneficiaries.length} record(s) to find issues
                   </p>
                 </div>
                 <Button
@@ -762,7 +764,7 @@ export function DataHealthCheck({
                   {loading || isPending
                     ? <Loader2 className="h-5 w-5 animate-spin" />
                     : <HeartPulse className="h-5 w-5" />}
-                  بدء الفحص
+                  Start Check
                 </Button>
               </div>
             )}
@@ -780,31 +782,31 @@ export function DataHealthCheck({
                     <div className="flex-1">
                       <Progress value={healthScore} className="h-3" />
                       <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                        <span>{beneficiaries.length} سجل</span>
-                        <span>{issues.length} مشكلة</span>
+                        <span>{beneficiaries.length} record(s)</span>
+                        <span>{issues.length} issue(s)</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {(issueCounts.severity_error || 0) > 0 && (
                       <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 gap-1">
-                        <AlertCircle className="h-3 w-3" />{issueCounts.severity_error} خطأ
+                        <AlertCircle className="h-3 w-3" />{issueCounts.severity_error} Error(s)
                       </Badge>
                     )}
                     {(issueCounts.severity_warning || 0) > 0 && (
                       <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 gap-1">
-                        <AlertCircle className="h-3 w-3" />{issueCounts.severity_warning} تحذير
+                        <AlertCircle className="h-3 w-3" />{issueCounts.severity_warning} Warning(s)
                       </Badge>
                     )}
                     {/* Fix 8: Use consistent severity_info key for the fixable badge */}
                     {(issueCounts.severity_info || 0) > 0 && (
                       <Badge variant="outline" className="bg-info/10 text-info border-info/30 gap-1">
-                        <Wrench className="h-3 w-3" />{issueCounts.severity_info} قابل للإصلاح
+                        <Wrench className="h-3 w-3" />{issueCounts.severity_info} Fixable
                       </Badge>
                     )}
                     {issues.length === 0 && (
                       <Badge variant="outline" className="bg-success/10 text-success border-success/30 gap-1">
-                        <CheckCircle className="h-3 w-3" />لا توجد مشاكل!
+                        <CheckCircle className="h-3 w-3" />No issues!
                       </Badge>
                     )}
                   </div>
@@ -818,8 +820,8 @@ export function DataHealthCheck({
                         <Zap className="h-5 w-5 text-info" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold">إصلاح سريع — {fixableIssues.length} رقم</h4>
-                        <p className="text-xs text-muted-foreground">أرقام يمكن إصلاحها تلقائياً</p>
+                        <h4 className="text-sm font-semibold">Quick Fix — {fixableIssues.length} number(s)</h4>
+                        <p className="text-xs text-muted-foreground">Phone numbers that can be fixed automatically</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -832,7 +834,7 @@ export function DataHealthCheck({
                           className="gap-1.5 border-info/30 text-info hover:bg-info/10"
                         >
                           {fixing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5" />}
-                          إصلاح المحدد ({selectedFixableIssues.length})
+                          Fix Selected ({selectedFixableIssues.length})
                         </Button>
                       )}
                       <Button
@@ -842,7 +844,7 @@ export function DataHealthCheck({
                         className="gap-1.5 bg-info hover:bg-info/90 text-info-foreground"
                       >
                         {fixing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-                        إصلاح الكل ({fixableIssues.length})
+                        Fix All ({fixableIssues.length})
                       </Button>
                     </div>
                   </div>
@@ -855,7 +857,7 @@ export function DataHealthCheck({
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         <Input
-                          placeholder="بحث..."
+                          placeholder="Search..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-9 h-9"
@@ -866,7 +868,7 @@ export function DataHealthCheck({
                             size="icon"
                             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                             onClick={() => setSearchQuery("")}
-                            aria-label="مسح البحث"
+                            aria-label="Clear search"
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -874,10 +876,10 @@ export function DataHealthCheck({
                       </div>
                       <Select value={filterType} onValueChange={setFilterType}>
                         <SelectTrigger className="w-full sm:w-48 h-9">
-                          <SelectValue placeholder="نوع المشكلة" />
+                          <SelectValue placeholder="Issue Type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">الكل ({issueCounts.total || 0})</SelectItem>
+                          <SelectItem value="all">All ({issueCounts.total || 0})</SelectItem>
                           {Object.entries(ISSUE_CONFIG).map(([type, config]) => {
                             const count = issueCounts[type] || 0
                             return count > 0
@@ -888,13 +890,13 @@ export function DataHealthCheck({
                       </Select>
                       <Select value={filterSeverity} onValueChange={setFilterSeverity}>
                         <SelectTrigger className="w-full sm:w-40 h-9">
-                          <SelectValue placeholder="الخطورة" />
+                          <SelectValue placeholder="Severity" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">الكل</SelectItem>
-                          {(issueCounts.severity_error   || 0) > 0 && <SelectItem value="error">أخطاء ({issueCounts.severity_error})</SelectItem>}
-                          {(issueCounts.severity_warning || 0) > 0 && <SelectItem value="warning">تحذيرات ({issueCounts.severity_warning})</SelectItem>}
-                          {(issueCounts.severity_info    || 0) > 0 && <SelectItem value="info">قابل للإصلاح ({issueCounts.severity_info})</SelectItem>}
+                          <SelectItem value="all">All</SelectItem>
+                          {(issueCounts.severity_error   || 0) > 0 && <SelectItem value="error">Errors ({issueCounts.severity_error})</SelectItem>}
+                          {(issueCounts.severity_warning || 0) > 0 && <SelectItem value="warning">Warnings ({issueCounts.severity_warning})</SelectItem>}
+                          {(issueCounts.severity_info    || 0) > 0 && <SelectItem value="info">Fixable ({issueCounts.severity_info})</SelectItem>}
                         </SelectContent>
                       </Select>
                     </div>
@@ -911,10 +913,10 @@ export function DataHealthCheck({
                             disabled={filteredIssues.length === 0}
                           />
                           <Label htmlFor="health-select-all" className="text-sm cursor-pointer font-medium">
-                            تحديد الكل ({filteredIssues.length})
+                            Select All ({filteredIssues.length})
                           </Label>
                         </div>
-                        {selectedCount > 0 && <Badge variant="default" className="gap-1">{selectedCount} محدد</Badge>}
+                        {selectedCount > 0 && <Badge variant="default" className="gap-1">{selectedCount} selected</Badge>}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -923,10 +925,10 @@ export function DataHealthCheck({
                           onClick={exportIssuesCSV}
                           className="gap-1.5"
                           disabled={filteredIssues.length === 0}
-                          aria-label="تصدير CSV"
+                          aria-label="Export CSV"
                         >
                           <Download className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">تصدير</span>
+                          <span className="hidden sm:inline">Export</span>
                         </Button>
                         <Button
                           variant="destructive"
@@ -934,10 +936,10 @@ export function DataHealthCheck({
                           onClick={deleteSelected}
                           disabled={selectedCount === 0 || loading}
                           className="gap-1.5"
-                          aria-label={`حذف ${selectedCount} عنصر`}
+                          aria-label={`Delete ${selectedCount} item(s)`}
                         >
                           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                          حذف ({selectedCount})
+                          Delete ({selectedCount})
                         </Button>
                       </div>
                     </div>
@@ -948,7 +950,7 @@ export function DataHealthCheck({
                         {filteredIssues.length === 0 ? (
                           <div className="p-8 text-center text-muted-foreground">
                             <CheckCircle className="h-10 w-10 mx-auto mb-3 text-success" />
-                            <p className="font-medium">لا توجد مشاكل تطابق الفلتر</p>
+                            <p className="font-medium">No issues match the filter</p>
                           </div>
                         ) : (
                           filteredIssues.map((issue, index) => {
@@ -976,7 +978,7 @@ export function DataHealthCheck({
                                       checked={issue.selected}
                                       onCheckedChange={() => toggleSelect(issue.id)}
                                       className="h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0"
-                                      aria-label={`تحديد ${issue.beneficiaryName}`}
+                                      aria-label={`Select ${issue.beneficiaryName}`}
                                     />
                                     <IconComponent
                                       className={cn(
@@ -1018,8 +1020,8 @@ export function DataHealthCheck({
                                           className="h-7 w-7 hover:bg-info/10 hover:text-info"
                                           onClick={() => fixSinglePhone(issue)}
                                           disabled={savingPhone}
-                                          aria-label={`إصلاح رقم ${issue.beneficiaryName}`}
-                                          title="إصلاح"
+                                          aria-label={`Fix phone for ${issue.beneficiaryName}`}
+                                          title="Fix"
                                         >
                                           <Wrench className="h-3 w-3" />
                                         </Button>
@@ -1029,8 +1031,8 @@ export function DataHealthCheck({
                                         size="icon"
                                         className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
                                         onClick={() => startEdit(issue)}
-                                        aria-label={`تعديل ${issue.beneficiaryName}`}
-                                        title="تعديل"
+                                        aria-label={`Edit ${issue.beneficiaryName}`}
+                                        title="Edit"
                                       >
                                         <Pencil className="h-3 w-3" />
                                       </Button>
@@ -1040,7 +1042,7 @@ export function DataHealthCheck({
                                           size="icon"
                                           className="h-7 w-7"
                                           onClick={() => setExpandedIssue(isExpanded ? null : issue.id)}
-                                          aria-label={isExpanded ? "طي" : "توسيع"}
+                                          aria-label={isExpanded ? "Collapse" : "Expand"}
                                         >
                                           {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                         </Button>
@@ -1052,11 +1054,11 @@ export function DataHealthCheck({
                                 {isEditing && editState && (
                                   <div className="p-3 space-y-3 bg-primary/5">
                                     <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                                      <Pencil className="h-4 w-4" />تعديل بيانات المستفيد
+                                      <Pencil className="h-4 w-4" />Edit Beneficiary Data
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                       <div className="space-y-1">
-                                        <Label className="text-xs font-medium">الاسم</Label>
+                                        <Label className="text-xs font-medium">Name</Label>
                                         <Input
                                           value={editState.name}
                                           onChange={(e) => setEditState((p) => p && { ...p, name: e.target.value })}
@@ -1064,7 +1066,7 @@ export function DataHealthCheck({
                                         />
                                       </div>
                                       <div className="space-y-1">
-                                        <Label className="text-xs font-medium">رقم الهاتف</Label>
+                                        <Label className="text-xs font-medium">Phone Number</Label>
                                         <Input
                                           value={editState.phone}
                                           onChange={(e) => setEditState((p) => p && { ...p, phone: e.target.value })}
@@ -1073,14 +1075,14 @@ export function DataHealthCheck({
                                         />
                                       </div>
                                       <div className="space-y-1">
-                                        <Label className="text-xs font-medium">الداعية</Label>
+                                        <Label className="text-xs font-medium">Preacher</Label>
                                         <Select
                                           value={editState.preacherId || "none"}
                                           onValueChange={(v) => setEditState((p) => p && { ...p, preacherId: v === "none" ? "" : v })}
                                         >
                                           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="none">بدون تعيين</SelectItem>
+                                            <SelectItem value="none">No Assignment</SelectItem>
                                             {preachers
                                               .filter((p) => p.role === "da'i")
                                               .map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
@@ -1089,14 +1091,14 @@ export function DataHealthCheck({
                                         </Select>
                                       </div>
                                       <div className="space-y-1">
-                                        <Label className="text-xs font-medium">المرحلة</Label>
+                                        <Label className="text-xs font-medium">Stage</Label>
                                         <Select
                                           value={editState.stage || "none"}
                                           onValueChange={(v) => setEditState((p) => p && { ...p, stage: v === "none" ? "" : v })}
                                         >
                                           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="none">بدون مرحلة</SelectItem>
+                                            <SelectItem value="none">No Stage</SelectItem>
                                             {DAWA_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                           </SelectContent>
                                         </Select>
@@ -1110,7 +1112,7 @@ export function DataHealthCheck({
                                         disabled={savingEdit}
                                         className="gap-1.5"
                                       >
-                                        <Undo2 className="h-3.5 w-3.5" />إلغاء
+                                        <Undo2 className="h-3.5 w-3.5" />Cancel
                                       </Button>
                                       <Button
                                         size="sm"
@@ -1121,7 +1123,7 @@ export function DataHealthCheck({
                                         {savingEdit
                                           ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                           : <Save className="h-3.5 w-3.5" />}
-                                        حفظ
+                                        Save
                                       </Button>
                                     </div>
                                   </div>
@@ -1129,7 +1131,7 @@ export function DataHealthCheck({
 
                                 {isExpanded && !isEditing && issue.relatedIds && (
                                   <div className="px-12 pb-3 space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">السجلات المرتبطة:</p>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Related Records:</p>
                                     {issue.relatedIds.map((relId) => {
                                       const r = beneficiaries.find((b) => b.id === relId)
                                       if (!r) return null
@@ -1164,7 +1166,7 @@ export function DataHealthCheck({
                   size="sm"
                   onClick={() => { setAnalyzed(false); setIssues([]); setEditState(null) }}
                 >
-                  إعادة الفحص
+                  Re-Check
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
@@ -1214,4 +1216,48 @@ export function DataHealthCheck({
         )}
     </>
   )
+}
+
+function beneficiary(ies: any) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setAnalyzed(arg0: boolean) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setIssues(arg0: never[]) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setFilterType(arg0: string) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setFilterSeverity(arg0: string) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setSearchQuery(arg0: string) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setExpandedIssue(arg0: null) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setEditState(arg0: null) {
+  throw new Error("Function not implemented.")
+}
+
+
+function setOpen(newOpen: boolean) {
+  throw new Error("Function not implemented.")
 }

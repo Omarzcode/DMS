@@ -73,7 +73,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
     ).length
 
     // Advanced stages
-    const advancedStages = ["Committed Learner", "Active Participant", "Community Leader"]
+    const advancedStages = ["Committed Learner"]
     const advancedCount = beneficiaries.filter((b) =>
       advancedStages.includes(b.da_wa_stage)
     ).length

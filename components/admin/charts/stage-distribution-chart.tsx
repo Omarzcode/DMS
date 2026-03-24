@@ -32,26 +32,21 @@ const STAGE_COLORS = [
   "hsl(38, 92%, 50%)", // Initial Interest - amber
   "hsl(262, 83%, 58%)", // Regular Attendance - purple
   "hsl(142, 76%, 36%)", // Committed Learner - green
-  "hsl(172, 66%, 50%)", // Active Participant - teal
-  "hsl(346, 87%, 43%)", // Community Leader - rose
 ]
 
 const STAGE_LABELS: Record<string, string> = {
-  "تواصل جديد": "New Contact",
-  "اهتمام أولي": "Initial Interest",
-  "حضور منتظم": "Regular Attend",
-  "متعلم ملتزم": "Committed",
-  "مشارك نشط": "Active",
-  "قائد مجتمعي": "Leader",
+  "New Contact": "New Contact",
+  "Initial Interest": "Initial Interest",
+  "Regular Attendance": "Regular Attend",
+  "Committed Learner": "Committed",
+  
 }
 
 const STAGE_FULL_LABELS: Record<string, string> = {
-  "تواصل جديد": "New Contact",
-  "اهتمام أولي": "Initial Interest",
-  "حضور منتظم": "Regular Attendance",
-  "متعلم ملتزم": "Committed Learner",
-  "مشارك نشط": "Active Participant",
-  "قائد مجتمعي": "Community Leader",
+  "New Contact": "New Contact",
+  "Initial Interest": "Initial Interest",
+  "Regular Attendance": "Regular Attendance",
+  "Committed Learner": "Committed Learner",
 }
 
 export function StageDistributionChart({

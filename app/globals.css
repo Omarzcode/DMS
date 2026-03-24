@@ -1,3 +1,4 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
 /* === Font Imports (must come before @tailwind) === */
 
 @tailwind base;
@@ -212,6 +213,9 @@
     font-family: var(--font-sans), system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     direction: ltr;
+    /* ✅ Moved scrollbar here — not on * */
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) hsl(var(--muted));
   }
 }
 
@@ -221,7 +225,6 @@
     text-wrap: balance;
   }
 
-  /* Opacity variations */
   .text-muted-foreground\/60 {
     color: hsl(var(--muted-foreground) / 0.6);
   }
@@ -237,23 +240,49 @@
   .border-border\/50 {
     border-color: hsl(var(--border) / 0.5);
   }
+
+  /* ✅ Scrollbar hide utility for horizontal scroll containers */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* === Gradients (auto dark mode via CSS variables) === */
+/* === Gradients === */
 .gradient-bg-primary {
-  background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-to)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--gradient-from)) 0%,
+    hsl(var(--gradient-to)) 100%
+  );
 }
 
 .gradient-bg-secondary {
-  background: linear-gradient(135deg, hsl(var(--gradient-secondary-from)) 0%, hsl(var(--gradient-secondary-to)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--gradient-secondary-from)) 0%,
+    hsl(var(--gradient-secondary-to)) 100%
+  );
 }
 
 .gradient-bg-accent {
-  background: linear-gradient(135deg, hsl(var(--gradient-accent-from)) 0%, hsl(var(--gradient-accent-to)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--gradient-accent-from)) 0%,
+    hsl(var(--gradient-accent-to)) 100%
+  );
 }
 
 .gradient-text-primary {
-  background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-to)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--gradient-from)) 0%,
+    hsl(var(--gradient-to)) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -261,20 +290,24 @@
 
 .gradient-border {
   position: relative;
-  background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-to)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--gradient-from)) 0%,
+    hsl(var(--gradient-to)) 100%
+  );
   border-radius: var(--radius);
   padding: 1px;
 }
 
 .gradient-border::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 1px;
   background: hsl(var(--background));
   border-radius: calc(var(--radius) - 1px);
 }
 
-/* === Glass Effect (auto dark mode via CSS variables) === */
+/* === Glass Effect === */
 .glass-effect {
   background: hsl(var(--glass-bg) / var(--glass-bg-opacity));
   backdrop-filter: blur(12px);
@@ -297,6 +330,14 @@
   will-change: opacity, transform;
 }
 
+.animate-breathe {
+  animation: breathe 2s ease-in-out infinite;
+}
+
+.animate-slide {
+  animation: slide 1.2s ease-in-out infinite;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -311,6 +352,7 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
 @keyframes breathe {
   0%, 100% { opacity: 0.4; transform: scale(0.95); }
   50% { opacity: 1; transform: scale(1); }
@@ -321,13 +363,6 @@
   100% { transform: translateX(300%); }
 }
 
-.animate-breathe {
-  animation: breathe 2s ease-in-out infinite;
-}
-
-.animate-slide {
-  animation: slide 1.2s ease-in-out infinite;
-}
 /* === Scrollbar (Chromium + Safari) === */
 ::-webkit-scrollbar {
   width: 6px;
@@ -338,18 +373,16 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-to)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--gradient-from)) 0%,
+    hsl(var(--gradient-to)) 100%
+  );
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary));
-}
-
-/* Scrollbar (Firefox) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary)) hsl(var(--muted));
 }
 
 /* === Responsive Utilities === */
@@ -437,6 +470,8 @@
 }
 
 /* === Accessibility & Touch === */
+
+/* ✅ Use .touch-target class only where needed — not forced on all buttons */
 .touch-target {
   @apply min-h-[44px] min-w-[44px];
 }
@@ -471,7 +506,8 @@
 
 /* === Responsive Components === */
 .card-responsive {
-  @apply rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm sm:shadow-md lg:shadow-lg border border-transparent;
+  @apply rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8
+         shadow-sm sm:shadow-md lg:shadow-lg border border-transparent;
 }
 
 .dark .card-responsive {
@@ -583,57 +619,49 @@
   }
 }
 
-/* === Bottom Nav: safe-area-pb adds extra inset for notched phones === */
 .safe-area-pb {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* === Bottom nav content clearance on mobile === */
-/* SidebarInset renders as <main id="main-content">; add room above fixed bottom nav */
 @media (max-width: 767px) {
   #main-content {
     padding-bottom: 4.5rem;
   }
 }
 
-/* === Print Styles === */
 /* === Mobile-First Optimization === */
 @media (max-width: 640px) {
-  /* Improve touch targets on mobile */
-  button,
-  a,
-  input[type="button"],
-  input[type="submit"],
-  [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
 
-  /* Better spacing on mobile */
-  .container-responsive {
-    @apply px-3 sm:px-6;
-  }
-
-  /* Prevent zoom on focus for iOS */
+  /* ✅ Prevent zoom on input focus for iOS — KEEP */
   input,
   textarea,
   select {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 
-  /* Better tap experience */
+  /* ✅ Better tap experience — KEEP */
   * {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Ensure proper viewport spacing on notch phones */
+  /* ✅ Safe area for notch phones — KEEP */
   body {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+
+  /* ✅ Better container spacing — KEEP */
+  .container-responsive {
+    @apply px-3;
+  }
+
+  /* ❌ REMOVED — was forcing ALL buttons/links to 44px
+     Use .touch-target class instead on specific elements */
 }
 
-@print {
+/* === Print Styles === */
+@media print {
   .print-hide {
     @apply hidden;
   }
@@ -647,17 +675,8 @@
   section,
   article,
   p,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  span,
-  li,
-  td,
-  th,
-  label {
+  h1, h2, h3, h4, h5, h6,
+  span, li, td, th, label {
     color: #000 !important;
     background: #fff !important;
   }

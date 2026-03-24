@@ -14,10 +14,10 @@ export type UserRole = "admin" | "da'i" | "pending"
 // ─── Da'wa Stages ─────────────────────────────────────────────────
 
 export const DAWA_STAGES = [
-  "تواصل جديد",
-  "اهتمام أولي",
-  "حضور منتظم",
-  "متعلم ملتزم",
+  "New Contact",
+  "Initial Interest",
+  "Regular Attendance",
+  "Committed Learner",
 ] as const
 
 export type DawaStage = (typeof DAWA_STAGES)[number]

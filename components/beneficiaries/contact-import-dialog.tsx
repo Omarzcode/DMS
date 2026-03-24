@@ -201,7 +201,7 @@ export function ContactImportDialog({
   // Fix 2: Inline confirm state (same portal pattern as DataHealthCheck)
   const [confirmOpen, setConfirmOpen]     = useState(false)
   const [confirmConfig, setConfirmConfig] = useState<ConfirmConfig>({
-    title: "", description: "", confirmText: "تأكيد", cancelText: "إلغاء", variant: "default",
+    title: "", description: "", confirmText: "Confirm", cancelText: "Cancel", variant: "default",
   })
   const resolveRef = useRef<((v: boolean) => void) | null>(null)
 
@@ -227,8 +227,8 @@ export function ContactImportDialog({
         setConfirmConfig({
           title:       opts.title,
           description: opts.description,
-          confirmText: opts.confirmText ?? "تأكيد",
-          cancelText:  opts.cancelText  ?? "إلغاء",
+          confirmText: opts.confirmText ?? "Confirm",
+          cancelText:  opts.cancelText  ?? "Cancel",
           variant:     opts.variant     ?? "default",
         })
         resolveRef.current = resolve
@@ -267,7 +267,7 @@ export function ContactImportDialog({
       )
     } catch (err) {
       console.error("Error loading preachers:", err)
-      toast.error("فشل تحميل قائمة الدعاة")
+      toast.error("Failed to load preachers list")
     } finally {
       setLoadingPreachers(false)
     }
@@ -332,12 +332,12 @@ export function ContactImportDialog({
             !phone          ? "invalid" :
             !formattedPhone ? "invalid" : "pending"
           const error =
-            !phone          ? "لا يوجد رقم" :
-            !formattedPhone ? "رقم غير صحيح" : undefined
+            !phone          ? "No phone number" :
+            !formattedPhone ? "Invalid phone number" : undefined
 
           records.push({
             id:            generateId(records.length),
-            name:          current.name || `جهة اتصال ${records.length + 1}`,
+            name:          current.name || `Contact ${records.length + 1}`,
             phone,
             formattedPhone,
             originalPhone: phone,
@@ -381,9 +381,9 @@ export function ContactImportDialog({
     const isHeader =
       firstLineLower.includes("name")  ||
       firstLineLower.includes("phone") ||
-      firstLineLower.includes("اسم")   ||
-      firstLineLower.includes("هاتف")  ||
-      firstLineLower.includes("رقم")
+      firstLineLower.includes("contact") ||
+      firstLineLower.includes("mobile") ||
+      firstLineLower.includes("number")
     const startIndex = isHeader ? 1 : 0
 
     for (let i = startIndex; i < lines.length; i++) {
@@ -411,12 +411,12 @@ export function ContactImportDialog({
         !phone          ? "invalid" :
         !formattedPhone ? "invalid" : "pending"
       const error =
-        !phone          ? "لا يوجد رقم" :
-        !formattedPhone ? "رقم غير صحيح" : undefined
+        !phone          ? "No phone number" :
+        !formattedPhone ? "Invalid phone number" : undefined
 
       records.push({
         id:            generateId(i),
-        name:          name || `مستفيد ${i + 1}`,
+        name:          name || `Beneficiary ${i + 1}`,
         phone,
         formattedPhone,
         originalPhone: phone,
@@ -453,7 +453,7 @@ export function ContactImportDialog({
   const processFile = useCallback(
     (file: globalThis.File) => {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`حجم الملف كبير جداً. الحد الأقصى ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+        toast.error(`File size too large. Maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`)
         return
       }
 
@@ -461,7 +461,7 @@ export function ContactImportDialog({
       const validExtensions = importMethod === "vcf" ? ["vcf", "vcard"] : ["csv", "txt"]
 
       if (!extension || !validExtensions.includes(extension)) {
-        toast.error(`صيغة غير مدعومة. الصيغ المدعومة: ${validExtensions.join(", ")}`)
+        toast.error(`Unsupported format. Supported formats: ${validExtensions.join(", ")}`)
         return
       }
 
@@ -479,7 +479,7 @@ export function ContactImportDialog({
               : parseCSV(fileContent)
 
           if (bareRecords.length === 0) {
-            toast.error("لم يتم العثور على جهات اتصال في الملف")
+            toast.error("No contacts found in file")
             return
           }
 
@@ -491,7 +491,7 @@ export function ContactImportDialog({
           for (const record of bareRecords) {
             if (record.formattedPhone && seenPhones.has(record.formattedPhone)) {
               intraDuplicates.push(
-                `${record.name} (${record.formattedPhone}) — مكرر مع ${seenPhones.get(record.formattedPhone)}`
+                `${record.name} (${record.formattedPhone}) — duplicate with ${seenPhones.get(record.formattedPhone)}`
               )
               continue
             }
@@ -506,25 +506,25 @@ export function ContactImportDialog({
           setCurrentStep(2)
           setDuplicateCheckDone(false)
 
-          let message = `تم تحميل ${withSettings.length} جهة اتصال`
+          let message = `Loaded ${withSettings.length} contacts`
           if (intraDuplicates.length > 0) {
-            message += ` (تم تجاهل ${intraDuplicates.length} مكرر داخل الملف)`
+            message += ` (ignored ${intraDuplicates.length} duplicates in file)`
             // Show which ones were dropped
             toast.warning(
-              `تم تجاهل ${intraDuplicates.length} جهة مكررة داخل الملف`,
+              `Ignored ${intraDuplicates.length} duplicate contacts in file`,
               {
                 description: intraDuplicates.slice(0, 3).join("\n") +
-                  (intraDuplicates.length > 3 ? `\n...و${intraDuplicates.length - 3} أخرى` : ""),
+                  (intraDuplicates.length > 3 ? `\n...and ${intraDuplicates.length - 3} more` : ""),
               }
             )
           }
           toast.success(message)
         } catch (err) {
           console.error("Error parsing file:", err)
-          toast.error("تعذر قراءة الملف. تأكد من صحة التنسيق")
+          toast.error("Unable to read file. Make sure the format is correct")
         }
       }
-      reader.onerror = () => toast.error("حدث خطأ أثناء قراءة الملف")
+      reader.onerror = () => toast.error("An error occurred while reading the file")
       reader.readAsText(file, "UTF-8")
     },
     [importMethod, parseVCF, parseCSV, applySettingsToRecords, commonSettings]
@@ -577,7 +577,7 @@ export function ContactImportDialog({
         }
       })
     )
-    toast.success("تم تطبيق الإعدادات على جميع الجهات")
+    toast.success("Settings applied to all contacts")
   }
 
   // Fix 9: Use functional setContacts to avoid stale state during async loop
@@ -591,7 +591,7 @@ export function ContactImportDialog({
       )
 
       if (validContacts.length === 0) {
-        toast.info("لا توجد جهات صالحة للفحص")
+        toast.info("No valid contacts to check")
         return
       }
 
@@ -619,7 +619,7 @@ export function ContactImportDialog({
             return {
               ...contact,
               status:   "duplicate" as const,
-              error:    "رقم مسجل مسبقاً في النظام",
+              error:    "Phone already registered in the system",
               selected: false,
             }
           }
@@ -634,11 +634,11 @@ export function ContactImportDialog({
         (c) => existingPhoneSet.has(c.formattedPhone)
       ).length
 
-      if (dupCount > 0) toast.warning(`تم العثور على ${dupCount} رقم مكرر في النظام`)
-      else              toast.success("لم يتم العثور على أرقام مكررة")
+      if (dupCount > 0) toast.warning(`Found ${dupCount} duplicate phone numbers in the system`)
+      else              toast.success("No duplicate phone numbers found")
     } catch (err) {
       console.error("Error checking phones:", err)
-      toast.error("حدث خطأ أثناء فحص الأرقام المكررة")
+      toast.error("An error occurred while checking for duplicate phone numbers")
     } finally {
       setLoading(false)
     }
@@ -657,10 +657,10 @@ export function ContactImportDialog({
 
           if (!updates.phone.trim()) {
             updated.status = "invalid"
-            updated.error  = "لا يوجد رقم"
+            updated.error  = "No phone number"
           } else if (!newFormatted) {
             updated.status = "invalid"
-            updated.error  = "رقم غير صحيح"
+            updated.error  = "Invalid phone number"
           } else if (contact.status === "invalid") {
             updated.status = "pending"
             updated.error  = undefined
@@ -680,9 +680,9 @@ export function ContactImportDialog({
     setContacts((prev) => prev.filter((c) => c.id !== id))
     setDeletedContacts((prev) => [...prev, contactToDelete])
 
-    toast.info("تم حذف الجهة", {
+    toast.info("Contact deleted", {
       action: {
-        label:   "تراجع",
+        label:   "Undo",
         // Capture the specific contact — not the last in the stack
         onClick: () => restoreContact(contactToDelete),
       },
@@ -693,7 +693,7 @@ export function ContactImportDialog({
   const restoreContact = useCallback((contact: ContactRecord) => {
     setDeletedContacts((prev) => prev.filter((c) => c.id !== contact.id))
     setContacts((prev) => [...prev, contact])
-    toast.success("تم استعادة الجهة")
+    toast.success("Contact restored")
   }, [])
 
   const undoLastDelete = useCallback(() => {
@@ -761,7 +761,7 @@ export function ContactImportDialog({
     )
 
     if (selectedContacts.length === 0) {
-      toast.error("لا توجد جهات محددة للاستيراد")
+      toast.error("No contacts selected for import")
       return
     }
 
@@ -772,10 +772,10 @@ export function ContactImportDialog({
 
     if (duplicateSelected > 0) {
       const confirmed = await confirm({
-        title:       "جهات مكررة محددة",
-        description: `هناك ${duplicateSelected} جهة مكررة محددة. هل تريد المتابعة وإضافتها؟`,
-        confirmText: "متابعة",
-        cancelText:  "إلغاء",
+        title:       "Duplicate contacts selected",
+        description: `There are ${duplicateSelected} duplicate contact(s) selected. Do you want to proceed and add them?`,
+        confirmText: "Continue",
+        cancelText:  "Cancel",
         variant:     "danger",
       })
       if (!confirmed) return
@@ -783,7 +783,7 @@ export function ContactImportDialog({
 
     // Validate required fields
     if (!commonSettings.da_i_id) {
-      toast.error("يرجى تحديد الداعية المسؤول قبل الاستيراد")
+      toast.error("Please select a preacher before importing")
       return
     }
 
@@ -808,7 +808,7 @@ export function ContactImportDialog({
 
         for (const contact of currentBatch) {
           if (!isValidEgyptianPhone(contact.formattedPhone || contact.phone)) {
-            statusUpdates.set(contact.id, { status: "error", error: "رقم غير صالح للاستيراد" })
+            statusUpdates.set(contact.id, { status: "error", error: "Invalid phone number for import" })
             failed++
             continue
           }
@@ -817,7 +817,7 @@ export function ContactImportDialog({
             name:        contact.name.trim(),
             phone:       contact.formattedPhone,
             da_i_id:     contact.da_i_id,
-            da_wa_stage: contact.da_wa_stage,
+            da_wa_stage: contact.da_wa_stage as "New Contact" | "Initial Interest" | "Regular Attendance" | "Committed Learner",
             // Fix 10: Include batch field
             batch:       contact.batch.trim() || commonSettings.batch.trim() || "—",
             notes:       contact.notes.trim(),
@@ -836,7 +836,7 @@ export function ContactImportDialog({
         } catch (batchError) {
           console.error("Batch commit failed:", batchError)
           batchIds.forEach((id) =>
-            statusUpdates.set(id, { status: "error", error: "فشل في حفظ الدفعة" })
+            statusUpdates.set(id, { status: "error", error: "Failed to save batch" })
           )
           failed += batchIds.length
         }
@@ -866,18 +866,18 @@ export function ContactImportDialog({
       setFailedCount(failed)
 
       if (successful > 0) {
-        toast.success("تم الاستيراد بنجاح", {
-          description: `تم إضافة ${successful} مستفيد${failed > 0 ? ` (فشل ${failed})` : ""}`,
+        toast.success("Import completed successfully", {
+          description: `Added ${successful} beneficiary(ies)${failed > 0 ? ` (${failed} failed)` : ""}`,
         })
         onImportComplete?.()
       } else if (failed > 0) {
-        toast.error("فشل الاستيراد", {
-          description: `فشل إضافة ${failed} مستفيد`,
+        toast.error("Import failed", {
+          description: `Failed to add ${failed} beneficiary(ies)`,
         })
       }
     } catch (err) {
       console.error("Import failed:", err)
-      toast.error("حدث خطأ أثناء الاستيراد")
+      toast.error("An error occurred during import")
     } finally {
       setLoading(false)
     }
@@ -887,11 +887,11 @@ export function ContactImportDialog({
 
   const getStatusBadge = (status: ContactRecord["status"]) => {
     const config = {
-      pending:   { label: "قيد الانتظار", variant: "secondary"    as const, icon: null,                                  className: "" },
-      success:   { label: "ناجح",         variant: "default"       as const, icon: <CheckCircle className="h-3 w-3" />,  className: "bg-success/20 text-success" },
-      error:     { label: "خطأ",          variant: "destructive"   as const, icon: <AlertCircle className="h-3 w-3" />,  className: "" },
-      duplicate: { label: "مكرر",         variant: "outline"       as const, icon: <AlertCircle className="h-3 w-3" />,  className: "border-warning text-warning hover:bg-warning/10" },
-      invalid:   { label: "غير صالح",     variant: "destructive"   as const, icon: <X className="h-3 w-3" />,            className: "" },
+      pending:   { label: "Pending", variant: "secondary"    as const, icon: null,                                  className: "" },
+      success:   { label: "Success",         variant: "default"       as const, icon: <CheckCircle className="h-3 w-3" />,  className: "bg-success/20 text-success" },
+      error:     { label: "Error",          variant: "destructive"   as const, icon: <AlertCircle className="h-3 w-3" />,  className: "" },
+      duplicate: { label: "Duplicate",         variant: "outline"       as const, icon: <AlertCircle className="h-3 w-3" />,  className: "border-warning text-warning hover:bg-warning/10" },
+      invalid:   { label: "Invalid",     variant: "destructive"   as const, icon: <X className="h-3 w-3" />,            className: "" },
     }
     const cfg = config[status]
     return (
@@ -915,8 +915,8 @@ export function ContactImportDialog({
         <DialogTrigger asChild>
           <Button variant="outline" className="gap-2 hover:bg-primary/5 transition-colors">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">استيراد جهات اتصال</span>
-            <span className="sm:hidden">استيراد</span>
+            <span className="hidden sm:inline">Import Contacts</span>
+            <span className="sm:hidden">Import</span>
           </Button>
         </DialogTrigger>
 
@@ -927,9 +927,9 @@ export function ContactImportDialog({
                 <Smartphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <div>استيراد جهات الاتصال</div>
+                <div>Import Contacts</div>
                 <DialogDescription className="text-xs sm:text-sm mt-1">
-                  {fileName ? `الملف: ${fileName}` : "استيراد جماعي لجهات الاتصال من الملفات"}
+                  {fileName ? `File: ${fileName}` : "Bulk import contacts from files"}
                 </DialogDescription>
               </div>
             </DialogTitle>
@@ -938,7 +938,7 @@ export function ContactImportDialog({
             <div className="flex items-center justify-between mt-4 px-2">
               {[1, 2, 3].map((step, index) => {
                 const status = getStepStatus(step)
-                const labels = ["اختيار الملف", "المراجعة والتعديل", "الاستيراد"]
+                const labels = ["Select File", "Review & Edit", "Import"]
                 return (
                   <div key={step} className="flex items-center flex-1">
                     <div className="flex flex-col items-center gap-2 flex-1">
@@ -981,8 +981,8 @@ export function ContactImportDialog({
             {currentStep === 1 && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="text-center py-4">
-                  <h3 className="font-semibold text-lg mb-2">اختر نوع الملف المراد استيراده</h3>
-                  <p className="text-sm text-muted-foreground">حدد صيغة الملف الذي تريد استيراد الجهات منه</p>
+                  <h3 className="font-semibold text-lg mb-2">Select the file type to import</h3>
+                  <p className="text-sm text-muted-foreground">Choose the file format you want to import contacts from</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
@@ -1008,10 +1008,10 @@ export function ContactImportDialog({
                         </div>
                         <div className="text-center">
                           <h4 className="font-semibold text-base mb-1">
-                            {method === "vcf" ? "ملف vCard" : "ملف نصي"}
+                            {method === "vcf" ? "vCard File" : "CSV/Text File"}
                           </h4>
                           <p className="text-xs text-muted-foreground">
-                            {method === "vcf" ? "استيراد من جهات اتصال الهاتف" : "استيراد من ملف Excel أو نصي"}
+                            {method === "vcf" ? "Import from phone contacts" : "Import from Excel or text file"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1 font-mono">
                             {method === "vcf" ? ".vcf" : ".csv / .txt"}
@@ -1052,11 +1052,11 @@ export function ContactImportDialog({
                       <div className="space-y-2">
                         <h4 className="font-medium text-base">
                           {isDragging
-                            ? "أفلت الملف هنا"
-                            : importMethod === "vcf" ? "ارفع ملف vCard" : "ارفع ملف CSV أو TXT"}
+                            ? "Drop file here"
+                            : importMethod === "vcf" ? "Upload vCard file" : "Upload CSV or TXT file"}
                         </h4>
-                        <p className="text-sm text-muted-foreground">اسحب الملف وأفلته هنا أو انقر للاختيار</p>
-                        <p className="text-xs text-muted-foreground/70">الحد الأقصى: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
+                        <p className="text-sm text-muted-foreground">Drag and drop file here or click to select</p>
+                        <p className="text-xs text-muted-foreground/70">Maximum: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
                       </div>
                       <Input
                         type="file"
@@ -1067,7 +1067,7 @@ export function ContactImportDialog({
                       />
                       <Button variant="default" onClick={() => fileInputRef.current?.click()} className="gap-2">
                         <Upload className="h-4 w-4" />
-                        اختر ملف
+                        Choose File
                       </Button>
                     </div>
                   </div>
@@ -1076,14 +1076,14 @@ export function ContactImportDialog({
                   <div className="mt-6 p-4 bg-info/10 border border-info/30 rounded-lg">
                     <h5 className="font-medium text-sm mb-2 flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-info" />
-                      كيفية تصدير جهات الاتصال من هاتفك:
+                      How to export contacts from your phone:
                     </h5>
                     <ol className="text-sm text-muted-foreground space-y-1 pr-5 list-decimal">
-                      <li>افتح تطبيق <strong>جهات الاتصال</strong> في هاتفك</li>
-                      <li>اضغط على <strong>القائمة</strong> (⋮) أو <strong>الإعدادات</strong></li>
-                      <li>اختر <strong>تصدير</strong> أو <strong>مشاركة</strong></li>
-                      <li>{importMethod === "vcf" ? "حدد تصدير كملف vCard (.vcf)" : "احفظ كملف CSV أو TXT"}</li>
-                      <li>احفظ الملف وارفعه هنا</li>
+                      <li>Open <strong>Contacts</strong> app on your phone</li>
+                      <li>Tap <strong>Menu</strong> (⋮) or <strong>Settings</strong></li>
+                      <li>Choose <strong>Export</strong> or <strong>Share</strong></li>
+                      <li>{importMethod === "vcf" ? "Select export as vCard file (.vcf)" : "Save as CSV or TXT file"}</li>
+                      <li>Save the file and upload it here</li>
                     </ol>
                   </div>
                 </div>
@@ -1103,7 +1103,7 @@ export function ContactImportDialog({
                       <div className="p-1.5 rounded bg-primary/10">
                         <Filter className="h-4 w-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">الإعدادات المشتركة</span>
+                      <span className="font-medium text-sm">Common Settings</span>
                     </div>
                     {showSettings ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
@@ -1113,7 +1113,7 @@ export function ContactImportDialog({
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Da'wa Stage */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">مرحلة الدعوة</Label>
+                          <Label className="text-sm font-medium">Stage</Label>
                           <Select
                             value={commonSettings.da_wa_stage}
                             onValueChange={(v) => setCommonSettings((p) => ({ ...p, da_wa_stage: v }))}
@@ -1127,11 +1127,11 @@ export function ContactImportDialog({
 
                         {/* Fix 10: Batch field in common settings */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">المجموعة / الدفعة *</Label>
+                          <Label className="text-sm font-medium">Batch / Group *</Label>
                           <Input
                             value={commonSettings.batch}
                             onChange={(e) => setCommonSettings((p) => ({ ...p, batch: e.target.value }))}
-                            placeholder="مثال: 2024-أ، المجموعة المسائية"
+                            placeholder="Example: 2024-A, Evening Group"
                             className="h-9"
                           />
                         </div>
@@ -1139,21 +1139,21 @@ export function ContactImportDialog({
                         {/* Preacher selector — admin only */}
                         {userRole === "admin" && !assignedPreacherId && (
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">تعيين لداعية</Label>
+                            <Label className="text-sm font-medium">Assign to Preacher</Label>
                             {loadingPreachers ? (
                               <div className="flex items-center gap-2 p-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-sm">جاري التحميل...</span>
+                                <span className="text-sm">Loading...</span>
                               </div>
                             ) : (
                               <Select
                                 value={commonSettings.da_i_id}
                                 onValueChange={(v) => setCommonSettings((p) => ({ ...p, da_i_id: v }))}
                               >
-                                <SelectTrigger className="h-9"><SelectValue placeholder="اختر داعية" /></SelectTrigger>
+                                <SelectTrigger className="h-9"><SelectValue placeholder="Select Preacher" /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value={user?.uid || ""}>
-                                    (أنا) {user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "داعية"}
+                                    (Me) {user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "Preacher"}
                                   </SelectItem>
                                   {preachers.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -1166,11 +1166,11 @@ export function ContactImportDialog({
 
                         {/* Notes */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">ملاحظات (اختياري)</Label>
+                          <Label className="text-sm font-medium">Notes (Optional)</Label>
                           <Input
                             value={commonSettings.notes}
                             onChange={(e) => setCommonSettings((p) => ({ ...p, notes: e.target.value }))}
-                            placeholder="ملاحظات عامة"
+                            placeholder="General notes"
                             className="h-9"
                           />
                         </div>
@@ -1179,7 +1179,7 @@ export function ContactImportDialog({
                       <div className="flex flex-wrap gap-2 pt-2">
                         <Button onClick={applyCommonSettings} className="gap-2" size="sm">
                           <CheckCheck className="h-4 w-4" />
-                          تطبيق على الجميع
+                          Apply to All
                         </Button>
                         <Button
                           variant="outline"
@@ -1189,7 +1189,7 @@ export function ContactImportDialog({
                           size="sm"
                         >
                           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          فحص الأرقام المكررة
+                          Check Duplicates
                         </Button>
                       </div>
 
@@ -1197,7 +1197,7 @@ export function ContactImportDialog({
                         <Alert className="text-xs border-warning/50 bg-warning/5">
                           <AlertCircle className="h-4 w-4 text-warning" />
                           <AlertDescription className="text-warning">
-                            يُنصح بفحص الأرقام المكررة قبل الاستيراد لتجنب التكرار في قاعدة البيانات
+                            It is recommended to check for duplicate phone numbers before importing to avoid duplicates in the database
                           </AlertDescription>
                         </Alert>
                       )}
@@ -1210,24 +1210,24 @@ export function ContactImportDialog({
                   <div className="flex items-center gap-3 flex-wrap">
                     <h4 className="font-semibold text-base flex items-center gap-2">
                       <Users className="h-5 w-5 text-primary" />
-                      الجهات ({filteredContacts.length} من {contacts.length})
+                      Contacts ({filteredContacts.length} of {contacts.length})
                     </h4>
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary" className="gap-1">
-                        <CheckCircle className="h-3 w-3" />محدد: {statusCounts.selected}
+                        <CheckCircle className="h-3 w-3" />Selected: {statusCounts.selected}
                       </Badge>
                       {statusCounts.success > 0 && (
-                        <Badge className="gap-1 bg-success/20 text-success">ناجح: {statusCounts.success}</Badge>
+                        <Badge className="gap-1 bg-success/20 text-success">Success: {statusCounts.success}</Badge>
                       )}
                       {statusCounts.error > 0 && (
-                        <Badge variant="destructive" className="gap-1">خطأ: {statusCounts.error}</Badge>
+                        <Badge variant="destructive" className="gap-1">Error: {statusCounts.error}</Badge>
                       )}
                       {statusCounts.invalid > 0 && (
-                        <Badge variant="destructive" className="gap-1">غير صالح: {statusCounts.invalid}</Badge>
+                        <Badge variant="destructive" className="gap-1">Invalid: {statusCounts.invalid}</Badge>
                       )}
                       {statusCounts.duplicate > 0 && (
                         <Badge variant="outline" className="gap-1 border-warning text-warning">
-                          مكرر: {statusCounts.duplicate}
+                          Duplicate: {statusCounts.duplicate}
                         </Badge>
                       )}
                     </div>
@@ -1237,7 +1237,7 @@ export function ContactImportDialog({
                     <div className="relative flex-1 sm:flex-none">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
-                        placeholder="بحث..."
+                        placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9 h-9 w-full sm:w-48"
@@ -1247,7 +1247,7 @@ export function ContactImportDialog({
                           variant="ghost" size="icon"
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                           onClick={() => setSearchQuery("")}
-                          aria-label="مسح البحث"
+                          aria-label="Clear search"
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -1256,12 +1256,12 @@ export function ContactImportDialog({
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
                       <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">الكل ({statusCounts.total})</SelectItem>
-                        <SelectItem value="pending">قيد الانتظار ({statusCounts.pending})</SelectItem>
-                        <SelectItem value="success">ناجح ({statusCounts.success})</SelectItem>
-                        <SelectItem value="error">خطأ ({statusCounts.error})</SelectItem>
-                        <SelectItem value="invalid">غير صالح ({statusCounts.invalid})</SelectItem>
-                        <SelectItem value="duplicate">مكرر ({statusCounts.duplicate})</SelectItem>
+                        <SelectItem value="all">All ({statusCounts.total})</SelectItem>
+                        <SelectItem value="pending">Pending ({statusCounts.pending})</SelectItem>
+                        <SelectItem value="success">Success ({statusCounts.success})</SelectItem>
+                        <SelectItem value="error">Error ({statusCounts.error})</SelectItem>
+                        <SelectItem value="invalid">Invalid ({statusCounts.invalid})</SelectItem>
+                        <SelectItem value="duplicate">Duplicate ({statusCounts.duplicate})</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1281,7 +1281,7 @@ export function ContactImportDialog({
                           disabled={selectableFilteredContacts.length === 0}
                         />
                         <Label htmlFor="select-all" className="text-sm cursor-pointer font-medium">
-                          تحديد الكل ({selectableFilteredContacts.length})
+                          Select All ({selectableFilteredContacts.length})
                         </Label>
                       </div>
                       {deletedContacts.length > 0 && (
@@ -1291,7 +1291,7 @@ export function ContactImportDialog({
                           className="gap-1.5 text-xs text-primary hover:text-primary"
                         >
                           <Undo2 className="h-3 w-3" />
-                          تراجع ({deletedContacts.length})
+                          Undo ({deletedContacts.length})
                         </Button>
                       )}
                     </div>
@@ -1301,8 +1301,8 @@ export function ContactImportDialog({
                       className="gap-2 text-xs"
                     >
                       {showDetails
-                        ? <><EyeOff className="h-3 w-3" />عرض مبسط</>
-                        : <><Eye className="h-3 w-3" />عرض تفصيلي</>}
+                        ? <><EyeOff className="h-3 w-3" />Simple View</>
+                        : <><Eye className="h-3 w-3" />Detailed View</>}
                     </Button>
                   </div>
 
@@ -1310,8 +1310,8 @@ export function ContactImportDialog({
                   <TableResponsive maxHeight="400px">
                     {filteredContacts.length === 0 ? (
                       <TableEmpty
-                        title="لا توجد جهات تطابق البحث"
-                        description="جرّب تغيير معايير البحث أو الفلتر"
+                        title="No contacts matching the search"
+                        description="Try changing your search criteria or filter"
                         icon={<Users className="h-10 w-10 text-muted-foreground/50" />}
                       />
                     ) : (
@@ -1319,17 +1319,17 @@ export function ContactImportDialog({
                         <thead className="bg-muted sticky top-0 z-10">
                           <tr className="border-b text-xs text-muted-foreground">
                             <th className="p-3 text-center w-12">#</th>
-                            <th className="p-3 text-right">الاسم</th>
-                            <th className="p-3 text-right">رقم الهاتف</th>
+                            <th className="p-3 text-right">Name</th>
+                            <th className="p-3 text-right">Phone</th>
                             {showDetails && (
                               <>
-                                <th className="p-3 text-right">المرحلة</th>
-                                <th className="p-3 text-right">الدفعة</th>
-                                <th className="p-3 text-right">ملاحظات</th>
+                                <th className="p-3 text-right">Stage</th>
+                                <th className="p-3 text-right">Batch</th>
+                                <th className="p-3 text-right">Notes</th>
                               </>
                             )}
-                            <th className="p-3 text-center">الحالة</th>
-                            <th className="p-3 text-center w-20">إجراءات</th>
+                            <th className="p-3 text-center">Status</th>
+                            <th className="p-3 text-center w-20">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1353,7 +1353,7 @@ export function ContactImportDialog({
                                   }
                                   disabled={contact.status === "success" || contact.status === "invalid"}
                                   className="h-4 w-4"
-                                  aria-label={`تحديد ${contact.name}`}
+                                  aria-label={`Select ${contact.name}`}
                                 />
                               </td>
 
@@ -1371,7 +1371,7 @@ export function ContactImportDialog({
                                       {contact.name}
                                     </span>
                                     {contact.isEdited && (
-                                      <Badge variant="outline" className="text-[10px] px-1">معدل</Badge>
+                                      <Badge variant="outline" className="text-[10px] px-1">Edited</Badge>
                                     )}
                                   </div>
                                 )}
@@ -1397,7 +1397,7 @@ export function ContactImportDialog({
                                   <div className="flex items-center gap-2">
                                     <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                                     <span className="text-sm font-mono" dir="ltr">
-                                      {contact.formattedPhone || contact.phone || "لا يوجد"}
+                                      {contact.formattedPhone || contact.phone || "None"}
                                     </span>
                                   </div>
                                 )}
@@ -1434,7 +1434,7 @@ export function ContactImportDialog({
                                         updateContact(contact.id, { batch: e.target.value })
                                       }
                                       className="h-8 text-xs"
-                                      placeholder="الدفعة"
+                                      placeholder="Batch"
                                       disabled={contact.status === "success"}
                                     />
                                   </td>
@@ -1446,7 +1446,7 @@ export function ContactImportDialog({
                                         updateContact(contact.id, { notes: e.target.value })
                                       }
                                       className="h-8 text-xs"
-                                      placeholder="ملاحظات"
+                                      placeholder="Notes"
                                       disabled={contact.status === "success"}
                                     />
                                   </td>
@@ -1475,8 +1475,8 @@ export function ContactImportDialog({
                                   onClick={() => deleteContact(contact.id)}
                                   className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                                   disabled={contact.status === "success"}
-                                  aria-label={`حذف ${contact.name}`}
-                                  title="حذف"
+                                  aria-label={`Delete ${contact.name}`}
+                                  title="Delete"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -1509,33 +1509,33 @@ export function ContactImportDialog({
                   <h3 className="font-semibold text-xl mb-2">
                     {!loading && importProgress >= 100
                       ? failedCount > 0 && importedCount === 0
-                        ? "فشل الاستيراد"
-                        : "تم الاستيراد بنجاح!"
-                      : "جاري الاستيراد..."}
+                        ? "Import Failed"
+                        : "Import Completed Successfully!"
+                      : "Importing..."}
                   </h3>
                   <p className="text-muted-foreground">
                     {!loading && importProgress >= 100
-                      ? `تم إضافة ${importedCount} مستفيد بنجاح${failedCount > 0 ? ` (فشل ${failedCount})` : ""}`
-                      : "الرجاء الانتظار حتى يتم استيراد جميع الجهات"}
+                      ? `Successfully added ${importedCount} beneficiary(ies)${failedCount > 0 ? ` (${failedCount} failed)` : ""}`
+                      : "Please wait while all contacts are being imported"}
                   </p>
                 </div>
 
                 <div className="max-w-md mx-auto space-y-3">
                   <Progress value={importProgress} className="h-3" />
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">التقدم</span>
+                    <span className="text-muted-foreground">Progress</span>
                     <span className="font-medium">{Math.round(importProgress)}%</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-4">
                     <div className="text-center p-4 rounded-lg bg-success/10 border border-success/30">
                       <div className="text-2xl font-bold text-success">{importedCount}</div>
-                      <div className="text-xs text-success mt-1">تم بنجاح</div>
+                      <div className="text-xs text-success mt-1">Successful</div>
                     </div>
                     {failedCount > 0 && (
                       <div className="text-center p-4 rounded-lg bg-destructive/10 border border-destructive/30">
                         <div className="text-2xl font-bold text-destructive">{failedCount}</div>
-                        <div className="text-xs text-destructive mt-1">فشل</div>
+                        <div className="text-xs text-destructive mt-1">Failed</div>
                       </div>
                     )}
                   </div>
@@ -1543,7 +1543,7 @@ export function ContactImportDialog({
                   {!loading && failedCount > 0 && (
                     <div className="mt-4 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
                       <h4 className="text-sm font-medium text-destructive mb-2">
-                        الجهات التي فشل استيرادها:
+                        Failed to import:
                       </h4>
                       <div className="max-h-32 overflow-y-auto space-y-1">
                         {contacts
@@ -1567,16 +1567,16 @@ export function ContactImportDialog({
             <div className="flex-1 flex items-center gap-4 text-sm text-muted-foreground order-2 sm:order-1">
               {currentStep === 2 && (
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-medium">جاهز للاستيراد:</span>
+                  <span className="font-medium">Ready to import:</span>
                   <Badge variant="default" className="gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    {selectedCount} جهة
+                    {selectedCount} contact(s)
                   </Badge>
                   {!duplicateCheckDone && selectedCount > 0 && (
-                    <span className="text-xs text-warning">⚠ لم يتم فحص التكرار</span>
+                    <span className="text-xs text-warning">⚠ Duplicate check not done</span>
                   )}
                   {!commonSettings.batch.trim() && selectedCount > 0 && (
-                    <span className="text-xs text-warning">⚠ لم يتم تحديد الدفعة</span>
+                    <span className="text-xs text-warning">⚠ Batch not specified</span>
                   )}
                 </div>
               )}
@@ -1598,7 +1598,7 @@ export function ContactImportDialog({
                   size="sm"
                   className="flex-1 sm:flex-none"
                 >
-                  رجوع
+                  Back
                 </Button>
               )}
 
@@ -1610,7 +1610,7 @@ export function ContactImportDialog({
                 size="sm"
                 className="flex-1 sm:flex-none"
               >
-                {currentStep === 3 && !loading && importProgress >= 100 ? "إغلاق" : "إلغاء"}
+                {currentStep === 3 && !loading && importProgress >= 100 ? "Close" : "Cancel"}
               </Button>
 
               {currentStep === 2 && (
@@ -1623,12 +1623,12 @@ export function ContactImportDialog({
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      جاري الاستيراد...
+                      Importing...
                     </>
                   ) : (
                     <>
                       <Upload className="h-4 w-4" />
-                      استيراد ({selectedCount})
+                      Import ({selectedCount})
                     </>
                   )}
                 </Button>
@@ -1645,7 +1645,7 @@ export function ContactImportDialog({
                   className="gap-2 flex-1 sm:flex-none"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  مراجعة الفاشلة
+                  Review Failed
                 </Button>
               )}
             </div>

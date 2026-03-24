@@ -22,12 +22,11 @@ interface InactiveBeneficiariesProps {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  "تواصل جديد": "New Contact",
-  "اهتمام أولي": "Initial Interest",
-  "حضور منتظم": "Regular Attendance",
-  "متعلم ملتزم": "Committed Learner",
-  "مشارك نشط": "Active Participant",
-  "قائد مجتمعي": "Community Leader",
+  "New Contact": "New Contact",
+  "Initial Interest": "Initial Interest",
+  "Regular Attendance": "Regular Attendance",
+  "Committed Learner": "Committed Learner",
+  
 }
 
 export function InactiveBeneficiaries({ data }: InactiveBeneficiariesProps) {

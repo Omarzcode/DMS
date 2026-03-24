@@ -59,7 +59,17 @@ function isValidEgyptianPhone(phone: string): boolean {
 
 // ─── Default form state factory ───────────────────────────────────
 
-const makeDefaultForm = (assignedPreacherId?: string, uid?: string) => ({
+const makeDefaultForm = (
+  assignedPreacherId?: string,
+  uid?: string
+): {
+  name: string
+  phone: string
+  batch: string
+  da_wa_stage: "New Contact" | "Initial Interest" | "Regular Attendance" | "Committed Learner"
+  notes: string
+  da_i_id: string
+} => ({
   name:         "",
   phone:        "",
   batch:        "",
@@ -322,7 +332,7 @@ export function AddBeneficiaryDialog({
                 setFormData({
                   ...formData,
                   // Fix 2: Proper type cast
-                  da_wa_stage: value as (typeof DAWA_STAGES)[number],
+                  da_wa_stage: value as "New Contact" | "Initial Interest" | "Regular Attendance" | "Committed Learner",
                 })
               }
             >

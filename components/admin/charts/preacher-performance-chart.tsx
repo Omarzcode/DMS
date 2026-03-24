@@ -51,9 +51,8 @@ export function PreacherPerformanceChart({
                 }).length
 
                 const advancedStages = [
-                    "متعلم ملتزم",
-                    "مشارك نشط",
-                    "قائد مجتمعي",
+                    "Committed Learner",
+                    
                 ]
                 const advancedCount = data.beneficiaries.filter(
                     (b) =>
