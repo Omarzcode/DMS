@@ -111,7 +111,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold gradient-text-primary leading-normal">
-                    Main Dashboard
+                    Main Dashboard!
                   </h1>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-secondary" />
