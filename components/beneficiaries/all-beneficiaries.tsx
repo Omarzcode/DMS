@@ -90,7 +90,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 const FIRESTORE_BATCH_LIMIT = 500
 
 const ADVANCED_STAGE_INDICES = [
-  DAWA_STAGES.indexOf("متعلم ملتزم"),
+  DAWA_STAGES.indexOf("Committed learner"),
 ].filter((i) => i !== -1)
 
 const ADVANCED_STAGE_SET = new Set(
