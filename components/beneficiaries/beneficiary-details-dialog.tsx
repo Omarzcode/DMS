@@ -55,6 +55,7 @@ import { EditBeneficiaryDialog } from "./edit-beneficiary-dialog"
 import { TransferBeneficiaryDialog } from "./transfer-beneficiary-dialog"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { DialogFooter } from "../ui/dialog"
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -519,7 +520,7 @@ export function BeneficiaryDetailsDialog({
 
         {/* Footer */}
         {!loading && !fetchError && beneficiary && (
-          <DialogFooter className="flex-wrap justify-start gap-2 pt-4 border-t">
+          <ResponsiveDialogFooter className="flex-wrap justify-start gap-2 pt-4 border-t">
             <EditBeneficiaryDialog
               beneficiary={beneficiary}
               onBeneficiaryUpdated={handleEditComplete}
