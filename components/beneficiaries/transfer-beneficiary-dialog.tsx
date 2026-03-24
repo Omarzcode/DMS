@@ -6,14 +6,14 @@ import { collection, query, where, getDocs, doc, updateDoc, addDoc } from "fireb
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -176,8 +176,8 @@ export function TransferBeneficiaryDialog({
   if (userRole !== "admin") return null
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {children || (
           <Button variant="outline" size="sm">
             {/* Fix 7: mr-2 so margin is between icon and text */}
@@ -186,16 +186,16 @@ export function TransferBeneficiaryDialog({
             Transfer
           </Button>
         )}
-      </DialogTrigger>
+      </ResponsiveDialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Transfer Beneficiary</DialogTitle>
-          <DialogDescription>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Transfer Beneficiary</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Transfer <strong>{beneficiary.name}</strong> to a different preacher.
             This action will be logged for audit purposes.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="space-y-4">
           {error && (
@@ -248,7 +248,7 @@ export function TransferBeneficiaryDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <ResponsiveDialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -271,8 +271,8 @@ export function TransferBeneficiaryDialog({
               "Transfer Beneficiary"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

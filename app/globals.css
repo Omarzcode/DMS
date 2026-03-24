@@ -583,6 +583,19 @@
   }
 }
 
+/* === Bottom Nav: safe-area-pb adds extra inset for notched phones === */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* === Bottom nav content clearance on mobile === */
+/* SidebarInset renders as <main id="main-content">; add room above fixed bottom nav */
+@media (max-width: 767px) {
+  #main-content {
+    padding-bottom: 4.5rem;
+  }
+}
+
 /* === Print Styles === */
 /* === Mobile-First Optimization === */
 @media (max-width: 640px) {

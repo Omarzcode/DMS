@@ -12,14 +12,14 @@ import {
 import { Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -379,23 +379,23 @@ export function ViewAttendeesDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>{children}</DialogTrigger>
+      <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+        <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
 
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0">
+        <ResponsiveDialogContent>
           {/* Header */}
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <ResponsiveDialogHeader className="px-6 pt-6 pb-4 border-b">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="flex items-center gap-2 text-base">
+                <ResponsiveDialogTitle className="flex items-center gap-2 text-base">
                   <Users className="h-5 w-5 flex-shrink-0" />
                   Attendees
-                </DialogTitle>
-                <DialogDescription className="mt-1 text-xs">
+                </ResponsiveDialogTitle>
+                <ResponsiveDialogDescription className="mt-1 text-xs">
                   {loading
                     ? "Loading attendees..."
                     : `${attendees.length} ${attendees.length === 1 ? "person" : "people"} attended "${activity.name}"`}
-                </DialogDescription>
+                </ResponsiveDialogDescription>
               </div>
 
               {/* Export button — top right of header */}
@@ -412,7 +412,7 @@ export function ViewAttendeesDialog({
                 </Button>
               )}
             </div>
-          </DialogHeader>
+          </ResponsiveDialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col px-6 py-4 gap-3">
             {/* Error */}
@@ -632,7 +632,7 @@ export function ViewAttendeesDialog({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="px-6 py-4 border-t bg-muted/30">
+          <ResponsiveDialogFooter className="px-6 py-4 border-t bg-muted/30">
             <div className="flex-1 text-sm text-muted-foreground">
               {!loading && attendees.length > 0 && (
                 <span>
@@ -645,9 +645,9 @@ export function ViewAttendeesDialog({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       {/* Fix 6: removeConfirm holds the full record, not just id + name strings */}
       <ConfirmDialog

@@ -12,14 +12,14 @@ import {
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -322,23 +322,23 @@ export function AttendanceDialog({
   // ─── Render ──────────────────────────────────────────────────
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader className="px-6 pt-6 pb-4 border-b">
+          <ResponsiveDialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Log Attendance
-          </DialogTitle>
-          <DialogDescription>
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Mark attendance for &ldquo;{activity.name}&rdquo;.
             {alreadyPresentIds.size > 0 && (
               <span className="block mt-1 text-xs">
                 {alreadyPresentIds.size} already marked as present.
               </span>
             )}
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col px-6 py-4 gap-4">
           {/* Error */}
@@ -572,7 +572,7 @@ export function AttendanceDialog({
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-muted/30 gap-2">
+        <ResponsiveDialogFooter className="px-6 py-4 border-t bg-muted/30 gap-2">
           <div className="flex-1 text-sm text-muted-foreground">
             {newSelectedCount > 0 && (
               <span>
@@ -606,8 +606,8 @@ export function AttendanceDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

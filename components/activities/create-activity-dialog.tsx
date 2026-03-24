@@ -5,14 +5,14 @@ import { collection, addDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -239,25 +239,25 @@ export function CreateActivityDialog({
   const TypeIcon = currentConfig.icon
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {children || (
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             Create Activity
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="flex items-center gap-2">
             <div className="p-1.5 rounded-md bg-primary/10">
               <TypeIcon className="h-4 w-4 text-primary" />
             </div>
             Create New {currentConfig.label}
-          </DialogTitle>
-          <DialogDescription>{currentConfig.description}</DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{currentConfig.description}</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Global Error */}
@@ -414,7 +414,7 @@ export function CreateActivityDialog({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="gap-2 pt-2">
+          <ResponsiveDialogFooter className="gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -444,9 +444,9 @@ export function CreateActivityDialog({
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

@@ -18,14 +18,14 @@ import {
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -377,26 +377,26 @@ export function BeneficiaryDetailsDialog({
   // ─── Render ──────────────────────────────────────────────────
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(next) => {
         if (busy && !next) return
         setOpen(next)
       }}
     >
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
 
-      <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>
             {loading ? "Loading…" : beneficiary?.name || "Beneficiary Not Found"}
-          </DialogTitle>
-          <DialogDescription>
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             {beneficiary
               ? `Assigned to: ${preacher?.name || "Unassigned"}`
               : "Details about the beneficiary will appear here."}
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="flex-1 overflow-y-auto relative">
           {/* Loading */}
@@ -594,9 +594,9 @@ export function BeneficiaryDetailsDialog({
             >
               Close
             </Button>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         )}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
