@@ -16,6 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -47,7 +48,6 @@ const preacherMenuItems = [
   { title: "Quranic Readings", url: "/dashboard/maqari", icon: BookOpen },
 ]
 
-// Activity sub-pages — shown as a collapsible group
 const activitySubItems = [
   { title: "Overview", url: "/dashboard/activities", icon: Calendar },
   { title: "Maqra'a", url: "/dashboard/activities/maqari", icon: BookOpen },
@@ -62,13 +62,17 @@ export function PreacherSidebar() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+  const { isMobile, setOpenMobile } = useSidebar()
 
   const handleLogout = async () => {
     await logout()
     router.push("/")
   }
 
-  // True whenever the user is anywhere inside /dashboard/activities
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false)
+  }
+
   const activitiesOpen = pathname.startsWith("/dashboard/activities")
 
   return (
@@ -108,10 +112,6 @@ export function PreacherSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    // Use startsWith for /dashboard/beneficiaries and
-                    // /dashboard/maqari so child pages also highlight the item.
-                    // Use exact match for /dashboard itself to avoid it
-                    // lighting up on every dashboard sub-page.
                     isActive={
                       item.url === "/dashboard"
                         ? pathname === "/dashboard"
@@ -119,7 +119,7 @@ export function PreacherSidebar() {
                     }
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={closeOnMobile}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
                     </Link>
@@ -140,7 +140,6 @@ export function PreacherSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
 
-              {/* Collapsible activities section */}
               <Collapsible
                 defaultOpen={activitiesOpen}
                 className="group/collapsible"
@@ -164,7 +163,7 @@ export function PreacherSidebar() {
                             asChild
                             isActive={pathname === sub.url}
                           >
-                            <Link href={sub.url}>
+                            <Link href={sub.url} onClick={closeOnMobile}>
                               <sub.icon className="h-3.5 w-3.5" />
                               <span>{sub.title}</span>
                             </Link>

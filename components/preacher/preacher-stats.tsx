@@ -169,7 +169,7 @@ export function PreacherStats() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -212,16 +212,16 @@ export function PreacherStats() {
   // ─── Render ──────────────────────────────────────────────────
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
       {statCards.map((stat) => (
         <Card key={stat.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">{stat.title}</CardTitle>
             {/* Fix 11: Icons are decorative — aria-hidden */}
             <stat.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stat.value.toLocaleString()}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stat.value.toLocaleString()}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               {/* Fix 10: Use showTrend from config — no hardcoded title comparison */}
               {stat.showTrend && stat.value > 0 && (

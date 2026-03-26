@@ -16,6 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -58,7 +59,6 @@ const managementMenuItems = [
   { title: "Beneficiaries", url: "/admin/beneficiaries", icon: Users },
 ]
 
-// Activity sub-pages — shown as a collapsible group under Management
 const activitySubItems = [
   { title: "Overview", url: "/admin/activities", icon: Calendar },
   { title: "Maqra'a", url: "/admin/activities/maqari", icon: BookOpen },
@@ -73,13 +73,17 @@ export function AdminSidebar() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+  const { isMobile, setOpenMobile } = useSidebar()
 
   const handleLogout = async () => {
     await logout()
     router.push("/")
   }
 
-  // True whenever the user is anywhere inside /admin/activities
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false)
+  }
+
   const activitiesOpen = pathname.startsWith("/admin/activities")
 
   return (
@@ -122,7 +126,7 @@ export function AdminSidebar() {
                     isActive={pathname === item.url}
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={closeOnMobile}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
                     </Link>
@@ -149,7 +153,7 @@ export function AdminSidebar() {
                     isActive={pathname === item.url}
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={closeOnMobile}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
                     </Link>
@@ -170,7 +174,6 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
 
-              {/* Regular management items (Beneficiaries etc.) */}
               {managementMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
@@ -178,7 +181,7 @@ export function AdminSidebar() {
                     isActive={pathname.startsWith(item.url)}
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={closeOnMobile}>
                       <item.icon className="text-primary" />
                       <span>{item.title}</span>
                     </Link>
@@ -210,7 +213,7 @@ export function AdminSidebar() {
                             asChild
                             isActive={pathname === sub.url}
                           >
-                            <Link href={sub.url}>
+                            <Link href={sub.url} onClick={closeOnMobile}>
                               <sub.icon className="h-3.5 w-3.5" />
                               <span>{sub.title}</span>
                             </Link>

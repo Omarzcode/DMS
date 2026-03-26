@@ -66,7 +66,7 @@ export default function AdminDashboard() {
         <AdminSidebar />
         <SidebarInset className="bg-gradient-to-br from-primary/5 via-secondary/5 to-background">
           {/* Header */}
-          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-6">
+          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6">
             <SidebarTrigger className="-mr-1 text-primary hover:bg-muted" />
             <Separator
               orientation="vertical"
@@ -102,19 +102,19 @@ export default function AdminDashboard() {
           </header>
 
           {/* Main Content */}
-          <div className="flex flex-1 flex-col gap-8 p-6 max-w-[1600px] mx-auto w-full">
+          <div className="flex flex-1 flex-col gap-4 sm:gap-8 p-4 sm:p-6 max-w-[1600px] mx-auto w-full">
             {/* Page Title */}
             <div className="space-y-1 animate-fade-in">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 gradient-bg-primary rounded-xl shadow-lg">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 sm:p-2.5 gradient-bg-primary rounded-xl shadow-lg shrink-0">
+                  <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold gradient-text-primary leading-normal">
+                  <h1 className="text-2xl sm:text-3xl font-bold gradient-text-primary leading-tight">
                     Main Dashboard!
                   </h1>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-secondary" />
+                    <Sparkles className="h-3.5 w-3.5 text-secondary shrink-0" />
                     Overview of system performance and key metrics
                   </p>
                 </div>

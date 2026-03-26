@@ -596,6 +596,14 @@
   @apply flex flex-nowrap overflow-x-auto;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .gap-responsive {
   @apply gap-2 sm:gap-4 lg:gap-6 xl:gap-8;
 }

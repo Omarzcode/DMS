@@ -10,6 +10,7 @@ import {
   BreadcrumbLink,
 } from "@/components/ui/breadcrumb"
 import { ActivityList } from "@/components/activities/activity-list"
+import { MobileActivitySubNav } from "@/components/activities/mobile-activity-subnav"
 
 export default function AdminLessonsPage() {
   return (
@@ -17,7 +18,7 @@ export default function AdminLessonsPage() {
       <SidebarProvider>
         <AdminSidebar />
         <SidebarInset>
-          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-6">
+          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6">
             <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
             <Separator orientation="vertical" className="mr-2 h-4 bg-muted" />
             <Breadcrumb>
@@ -48,6 +49,7 @@ export default function AdminLessonsPage() {
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4">
+            <MobileActivitySubNav basePath="/admin/activities" />
             <ActivityList type="lessons" title="All Lessons" />
           </div>
         </SidebarInset>
