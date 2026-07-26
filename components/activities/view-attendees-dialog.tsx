@@ -61,7 +61,7 @@ interface ViewAttendeesDialogProps {
   onAttendanceUpdated?: (activityId: string, newCount: number) => void
 }
 
-type SortField     = "name" | "date" | "preacher"
+type SortField = "name" | "date" | "preacher"
 type SortDirection = "asc" | "desc"
 
 // ─── Utilities ───────────────────────────────────────────────────
@@ -84,8 +84,8 @@ function SafeHighlightText({
   }
   try {
     const escaped = escapeRegExp(highlight.trim())
-    const regex   = new RegExp(`(${escaped})`, "gi")
-    const parts   = text.split(regex)
+    const regex = new RegExp(`(${escaped})`, "gi")
+    const parts = text.split(regex)
     const lowerHL = highlight.trim().toLowerCase()
     return (
       <span className={className}>
@@ -108,8 +108,8 @@ function SafeHighlightText({
 function formatTimestamp(value: FirestoreDate | unknown): string {
   if (!value) return "Unknown"
   try {
-    if (value instanceof Timestamp)  return format(value.toDate(), "PP")
-    if (value instanceof Date)       return format(value, "PP")
+    if (value instanceof Timestamp) return format(value.toDate(), "PP")
+    if (value instanceof Date) return format(value, "PP")
     if (
       typeof value === "object" && value !== null &&
       "toDate" in value && typeof (value as { toDate: unknown }).toDate === "function"
@@ -133,9 +133,9 @@ function formatTimestamp(value: FirestoreDate | unknown): string {
 // ─── Avatar ────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  "bg-blue-500",   "bg-green-500",  "bg-purple-500",
-  "bg-orange-500", "bg-pink-500",   "bg-teal-500",
-  "bg-red-500",    "bg-indigo-500",
+  "bg-blue-500", "bg-green-500", "bg-purple-500",
+  "bg-orange-500", "bg-pink-500", "bg-teal-500",
+  "bg-red-500", "bg-indigo-500",
 ]
 
 function getAvatarColor(name: string): string {
@@ -145,7 +145,7 @@ function getAvatarColor(name: string): string {
 }
 
 function AttendeeAvatar({ name }: { name: string }) {
-  const initial    = name?.trim()?.[0]?.toUpperCase() || "?"
+  const initial = name?.trim()?.[0]?.toUpperCase() || "?"
   const colorClass = getAvatarColor(name || "")
   return (
     <div
@@ -167,9 +167,9 @@ function exportAttendeesCSV(
   attendees: AttendanceRecord[],
   activityName: string
 ) {
-  const BOM     = "\uFEFF"
+  const BOM = "\uFEFF"
   const headers = ["Beneficiary Name", "Logged By", "Date Attended"]
-  const rows    = attendees.map((a) => [
+  const rows = attendees.map((a) => [
     a.beneficiary_name,
     a.logged_by_name || "Unknown",
     formatTimestamp(a.logged_at),
@@ -183,7 +183,7 @@ function exportAttendeesCSV(
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
   const link = document.createElement("a")
-  link.href  = URL.createObjectURL(blob)
+  link.href = URL.createObjectURL(blob)
   link.download = `attendees_${activityName.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`
   link.click()
   setTimeout(() => URL.revokeObjectURL(link.href), 100)
@@ -196,14 +196,14 @@ export function ViewAttendeesDialog({
   children,
   onAttendanceUpdated,
 }: ViewAttendeesDialogProps) {
-  const [open, setOpen]             = useState(false)
-  const [loading, setLoading]       = useState(true)
-  const [attendees, setAttendees]   = useState<AttendanceRecord[]>([])
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [attendees, setAttendees] = useState<AttendanceRecord[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [error, setError]           = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
-  const [sortField, setSortField]   = useState<SortField>("name")
-  const [sortDir, setSortDir]       = useState<SortDirection>("asc")
+  const [sortField, setSortField] = useState<SortField>("name")
+  const [sortDir, setSortDir] = useState<SortDirection>("asc")
   const [preacherFilter, setPreacherFilter] = useState<string>("all")
   const [removeConfirm, setRemoveConfirm] = useState<{
     open: boolean
@@ -365,7 +365,7 @@ export function ViewAttendeesDialog({
       : <ArrowDown className="h-3 w-3 text-primary" />
   }
 
-  
+
 
   // ─── Derived data ─────────────────────────────────────────────
 
@@ -432,7 +432,7 @@ export function ViewAttendeesDialog({
   const allVisibleSelected = visibleIds.length > 0 &&
     visibleIds.every((id) => selectedIds.has(id))
   const hasActiveFilters = searchTerm !== "" || preacherFilter !== "all"
-// ─── Selection handlers ──────────────────────────────────────
+  // ─── Selection handlers ──────────────────────────────────────
 
   const handleToggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -683,8 +683,8 @@ export function ViewAttendeesDialog({
                         isRemoving
                           ? "opacity-50 bg-destructive/5 border-destructive/20"
                           : isSelected
-                          ? "bg-primary/5 border-primary/30 hover:bg-primary/10"
-                          : "bg-muted/50 border-transparent hover:bg-muted hover:border-border",
+                            ? "bg-primary/5 border-primary/30 hover:bg-primary/10"
+                            : "bg-muted/50 border-transparent hover:bg-muted hover:border-border",
                       ].join(" ")}
                     >
                       {/* Selection checkbox */}
@@ -736,7 +736,10 @@ export function ViewAttendeesDialog({
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setRemoveConfirm({ open: true, record })}
+                          onClick={(e) => {
+                            e.stopPropagation() // 🔥 Prevents event bubbling
+                            setRemoveConfirm({ open: true, record })
+                          }}
                           disabled={isRemoving}
                           aria-label={`Remove ${record.beneficiary_name} from attendees`}
                           title="Remove attendance"
@@ -789,7 +792,10 @@ export function ViewAttendeesDialog({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => setBulkRemoveConfirmOpen(true)}
+                  onClick={(e) => {
+                    e.stopPropagation() // 🔥 Prevents event bubbling
+                    setBulkRemoveConfirmOpen(true)
+                  }}
                   disabled={removingIds.length > 0}
                   className="gap-1.5"
                 >
@@ -802,36 +808,36 @@ export function ViewAttendeesDialog({
               </Button>
             </div>
           </ResponsiveDialogFooter>
+
+          {/* 🔥 Moved INSIDE ResponsiveDialogContent - Single remove confirmation */}
+          <ConfirmDialog
+            open={removeConfirm.open}
+            onOpenChange={(isOpen) =>
+              setRemoveConfirm((prev) => ({ ...prev, open: isOpen }))
+            }
+            onConfirm={handleRemoveAttendance}
+            title="Remove attendance record?"
+            description={
+              removeConfirm.record
+                ? `This will remove "${removeConfirm.record.beneficiary_name}" from the attendees list for "${activity.name}". This action cannot be undone.`
+                : ""
+            }
+            confirmText="Yes, Remove"
+            cancelText="Cancel"
+          />
+
+          {/* 🔥 Moved INSIDE ResponsiveDialogContent - Bulk remove confirmation */}
+          <ConfirmDialog
+            open={bulkRemoveConfirmOpen}
+            onOpenChange={setBulkRemoveConfirmOpen}
+            onConfirm={handleBulkRemoveAttendance}
+            title={`Remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"}?`}
+            description={`This will remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"} from "${activity.name}". This action cannot be undone.`}
+            confirmText="Yes, Remove All"
+            cancelText="Cancel"
+          />
         </ResponsiveDialogContent>
       </ResponsiveDialog>
-
-      {/* Single remove confirmation */}
-      <ConfirmDialog
-        open={removeConfirm.open}
-        onOpenChange={(isOpen) =>
-          setRemoveConfirm((prev) => ({ ...prev, open: isOpen }))
-        }
-        onConfirm={handleRemoveAttendance}
-        title="Remove attendance record?"
-        description={
-          removeConfirm.record
-            ? `This will remove "${removeConfirm.record.beneficiary_name}" from the attendees list for "${activity.name}". This action cannot be undone.`
-            : ""
-        }
-        confirmText="Yes, Remove"
-        cancelText="Cancel"
-      />
-
-      {/* Bulk remove confirmation */}
-      <ConfirmDialog
-        open={bulkRemoveConfirmOpen}
-        onOpenChange={setBulkRemoveConfirmOpen}
-        onConfirm={handleBulkRemoveAttendance}
-        title={`Remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"}?`}
-        description={`This will remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"} from "${activity.name}". This action cannot be undone.`}
-        confirmText="Yes, Remove All"
-        cancelText="Cancel"
-      />
     </>
   )
 }
