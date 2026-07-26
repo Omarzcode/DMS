@@ -7,6 +7,9 @@ import {
   query,
   where,
   getCountFromServer,
+  doc,
+  deleteDoc,
+  writeBatch,
 } from "firebase/firestore"
 import { Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -22,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
   Select,
   SelectContent,
@@ -43,6 +47,8 @@ import {
   AlertCircle,
   Download,
   Clock,
+  Trash2,
+  Loader2,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
@@ -281,6 +287,22 @@ function ActivityDateBadge({ activity }: { activity: ActivityWithType }) {
       {!isEventDate && (
         <span className="text-muted-foreground/60">(created)</span>
       )}
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(isOpen) =>
+          setDeleteConfirm((prev) => ({ ...prev, open: isOpen }))
+        }
+        onConfirm={handleDeleteActivity}
+        title={`Delete ${label}?`}
+        description={
+          deleteConfirm.activity
+            ? `This will delete "${deleteConfirm.activity.name}" and remove all attendance records associated with it. This action cannot be undone.`
+            : ""
+        }
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
     </div>
   )
 }
@@ -300,6 +322,11 @@ export function ActivityList({
   const [loadingCounts, setLoadingCounts] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean
+    activity: ActivityWithType | null
+  }>({ open: false, activity: null })
+  const [deletingActivityId, setDeletingActivityId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOption, setSortOption] = useState<SortOption>("event-date-asc")
   const [currentPage, setCurrentPage] = useState(1)
@@ -488,6 +515,8 @@ export function ActivityList({
     [attendanceCounts]
   )
 
+  const FIRESTORE_BATCH_LIMIT = 500
+
   // ─── Handlers ──────────────────────────────────────────────────
 
   const handleAttendanceChange = useCallback(
@@ -499,6 +528,46 @@ export function ActivityList({
     },
     []
   )
+
+  const handleDeleteActivity = useCallback(async () => {
+    const activity = deleteConfirm.activity
+    if (!activity) return
+
+    setDeletingActivityId(activity.id)
+
+    try {
+      const attendanceSnap = await getDocs(
+        query(
+          collection(db, "attendance"),
+          where("activity_id", "==", activity.id)
+        )
+      )
+
+      if (!attendanceSnap.empty) {
+        const docs = attendanceSnap.docs
+        for (let i = 0; i < docs.length; i += FIRESTORE_BATCH_LIMIT) {
+          const batch = writeBatch(db)
+          docs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((docSnap) => {
+            batch.delete(doc(db, "attendance", docSnap.id))
+          })
+          await batch.commit()
+        }
+      }
+
+      await deleteDoc(doc(db, type, activity.id))
+
+      toast.success(`${label} deleted`, {
+        description: `"${activity.name}" has been removed.`,
+      })
+      setDeleteConfirm({ open: false, activity: null })
+      await fetchActivities(true)
+    } catch (err) {
+      console.error("Error deleting activity:", err)
+      toast.error(`Failed to delete ${label.toLowerCase()}.`)
+    } finally {
+      setDeletingActivityId(null)
+    }
+  }, [deleteConfirm.activity, fetchActivities, label, type])
 
   const clearFilters = useCallback(() => {
     setSearchTerm("")
@@ -901,6 +970,24 @@ export function ActivityList({
                               Log Attendance
                             </Button>
                           </AttendanceDialog>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={() =>
+                              setDeleteConfirm({ open: true, activity })
+                            }
+                            disabled={deletingActivityId === activity.id}
+                            aria-label={`Delete ${label}`}
+                            title={`Delete ${label}`}
+                          >
+                            {deletingActivityId === activity.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
