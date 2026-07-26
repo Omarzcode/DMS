@@ -251,7 +251,40 @@ function exportActivitiesCSV(
 
 // ─── Date Badge ───────────────────────────────────────────────────────────────
 
-function ActivityDateBadge({ activity }: { activity: ActivityWithType }) {
+
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function ActivityList({
+  type,
+  creatorId,
+  title,
+}: ActivityListProps) {
+  const [activities, setActivities] = useState<ActivityWithType[]>([])
+  const [attendanceCounts, setAttendanceCounts] = useState<
+    Record<string, number>
+  >({})
+  const [loadingActivities, setLoadingActivities] = useState(true)
+  const [loadingCounts, setLoadingCounts] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean
+    activity: ActivityWithType | null
+  }>({ open: false, activity: null })
+  const [deletingActivityId, setDeletingActivityId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortOption, setSortOption] = useState<SortOption>("event-date-asc")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+
+  const searchRef = useRef<HTMLInputElement>(null)
+  const Icon = ACTIVITY_TYPE_ICONS[type]
+  const colorClass = ACTIVITY_TYPE_COLORS[type]
+  const label = ACTIVITY_TYPE_LABELS[type]
+  const pageTitle = title ?? `All ${label}s`
+
+  function ActivityDateBadge({ activity }: { activity: ActivityWithType }) {
   const dateValue = activity.event_date || activity.created_at
   const date = getDateFromFirestore(dateValue)
   const isEventDate = Boolean(activity.event_date)
@@ -306,37 +339,6 @@ function ActivityDateBadge({ activity }: { activity: ActivityWithType }) {
     </div>
   )
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function ActivityList({
-  type,
-  creatorId,
-  title,
-}: ActivityListProps) {
-  const [activities, setActivities] = useState<ActivityWithType[]>([])
-  const [attendanceCounts, setAttendanceCounts] = useState<
-    Record<string, number>
-  >({})
-  const [loadingActivities, setLoadingActivities] = useState(true)
-  const [loadingCounts, setLoadingCounts] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    open: boolean
-    activity: ActivityWithType | null
-  }>({ open: false, activity: null })
-  const [deletingActivityId, setDeletingActivityId] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [sortOption, setSortOption] = useState<SortOption>("event-date-asc")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
-
-  const searchRef = useRef<HTMLInputElement>(null)
-  const Icon = ACTIVITY_TYPE_ICONS[type]
-  const colorClass = ACTIVITY_TYPE_COLORS[type]
-  const label = ACTIVITY_TYPE_LABELS[type]
-  const pageTitle = title ?? `All ${label}s`
 
   // "/" shortcut to focus search
   useEffect(() => {
