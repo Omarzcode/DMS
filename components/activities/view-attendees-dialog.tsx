@@ -8,7 +8,9 @@ import {
   getDocs,
   doc,
   deleteDoc,
+  writeBatch,
 } from "firebase/firestore"
+import { cn } from "@/lib/utils"
 import { Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import {
@@ -68,7 +70,6 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-// Fix 2: Stable key using content + index
 function SafeHighlightText({
   text,
   highlight,
@@ -104,7 +105,6 @@ function SafeHighlightText({
   }
 }
 
-// Fix 3: Type-safe timestamp formatter — no more `as any`
 function formatTimestamp(value: FirestoreDate | unknown): string {
   if (!value) return "Unknown"
   try {
@@ -130,7 +130,7 @@ function formatTimestamp(value: FirestoreDate | unknown): string {
   }
 }
 
-// ─── Avatar initial helper ────────────────────────────────────────
+// ─── Avatar ────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
   "bg-blue-500",   "bg-green-500",  "bg-purple-500",
@@ -204,20 +204,24 @@ export function ViewAttendeesDialog({
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [sortField, setSortField]   = useState<SortField>("name")
   const [sortDir, setSortDir]       = useState<SortDirection>("asc")
-  // Preacher filter — "all" or a specific logged_by_name
   const [preacherFilter, setPreacherFilter] = useState<string>("all")
-
-  // Fix 6: Use null instead of empty string for no pending removal
   const [removeConfirm, setRemoveConfirm] = useState<{
     open: boolean
     record: AttendanceRecord | null
   }>({ open: false, record: null })
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkRemoveConfirmOpen, setBulkRemoveConfirmOpen] = useState(false)
+  const [removingIds, setRemovingIds] = useState<string[]>([])
 
+  const FIRESTORE_BATCH_LIMIT = 500
   const onAttendanceUpdatedRef = useRef(onAttendanceUpdated)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // Update ref when callback changes
   onAttendanceUpdatedRef.current = onAttendanceUpdated
 
-  // Focus search on "/" keypress while dialog is open
-  const searchRef = useRef<HTMLInputElement>(null)
+  // ─── Focus search on "/" ──────────────────────────────────────
+
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
@@ -240,7 +244,7 @@ export function ViewAttendeesDialog({
         query(
           collection(db, "attendance"),
           where("activity_id", "==", activity.id),
-          where("present",     "==", true)
+          where("present", "==", true)
         )
       )
       const data = snap.docs
@@ -267,6 +271,8 @@ export function ViewAttendeesDialog({
       setSearchTerm("")
       setError(null)
       setRemovingId(null)
+      setSelectedIds(new Set())
+      setBulkRemoveConfirmOpen(false)
       setPreacherFilter("all")
       setSortField("name")
       setSortDir("asc")
@@ -274,7 +280,7 @@ export function ViewAttendeesDialog({
     }
   }
 
-  // ─── Remove Attendance ───────────────────────────────────────
+  // ─── Remove single attendance ─────────────────────────────────
 
   const handleRemoveAttendance = useCallback(async () => {
     const record = removeConfirm.record
@@ -286,7 +292,6 @@ export function ViewAttendeesDialog({
     try {
       await deleteDoc(doc(db, "attendance", record.id))
 
-      // Fix 1: Functional updater — never stale
       setAttendees((prev) => {
         const updated = prev.filter((a) => a.id !== record.id)
         onAttendanceUpdatedRef.current?.(activity.id, updated.length)
@@ -304,9 +309,66 @@ export function ViewAttendeesDialog({
     }
   }, [removeConfirm.record, activity.id])
 
-  // ─── Derived Data ────────────────────────────────────────────
+  // ─── Bulk remove attendance ──────────────────────────────────
 
-  // Unique preacher names for the filter dropdown
+  const handleBulkRemoveAttendance = useCallback(async () => {
+    if (selectedIds.size === 0) return
+
+    setBulkRemoveConfirmOpen(false)
+    const ids = Array.from(selectedIds)
+    setRemovingIds(ids)
+
+    try {
+      for (let i = 0; i < ids.length; i += FIRESTORE_BATCH_LIMIT) {
+        const batch = writeBatch(db)
+        ids.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((id) => {
+          batch.delete(doc(db, "attendance", id))
+        })
+        await batch.commit()
+      }
+
+      setAttendees((prev) => {
+        const updated = prev.filter((a) => !selectedIds.has(a.id))
+        onAttendanceUpdatedRef.current?.(activity.id, updated.length)
+        return updated
+      })
+
+      setSelectedIds(new Set())
+      toast.success("Attendance removed", {
+        description: `${ids.length} selected attendee${ids.length === 1 ? "" : "s"} removed.`,
+      })
+    } catch (err) {
+      console.error("Error removing attendance records:", err)
+      toast.error("Failed to remove selected attendance records.")
+    } finally {
+      setRemovingIds([])
+    }
+  }, [activity.id, selectedIds])
+
+  // ─── Sort handlers ────────────────────────────────────────────
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+    } else {
+      setSortField(field)
+      setSortDir("asc")
+    }
+  }
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 opacity-40" />
+    }
+    return sortDir === "asc"
+      ? <ArrowUp className="h-3 w-3 text-primary" />
+      : <ArrowDown className="h-3 w-3 text-primary" />
+  }
+
+  
+
+  // ─── Derived data ─────────────────────────────────────────────
+
   const uniquePreachers = useMemo(() => {
     const names = new Set<string>()
     attendees.forEach((a) => {
@@ -344,7 +406,7 @@ export function ViewAttendeesDialog({
         case "date": {
           const getMs = (v: unknown) => {
             if (v instanceof Timestamp) return v.toDate().getTime()
-            if (v instanceof Date)      return v.getTime()
+            if (v instanceof Date) return v.getTime()
             if (
               typeof v === "object" && v !== null && "seconds" in v &&
               typeof (v as { seconds: unknown }).seconds === "number"
@@ -361,20 +423,43 @@ export function ViewAttendeesDialog({
     return result
   }, [attendees, searchTerm, preacherFilter, sortField, sortDir])
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"))
-    else { setSortField(field); setSortDir("asc") }
-  }
+  const visibleIds = useMemo(
+    () => filteredAndSorted.map((record) => record.id),
+    [filteredAndSorted]
+  )
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 opacity-40" />
-    return sortDir === "asc"
-      ? <ArrowUp   className="h-3 w-3 text-primary" />
-      : <ArrowDown className="h-3 w-3 text-primary" />
-  }
+  const selectedCount = selectedIds.size
+  const allVisibleSelected = visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedIds.has(id))
+  const hasActiveFilters = searchTerm !== "" || preacherFilter !== "all"
+// ─── Selection handlers ──────────────────────────────────────
 
-  const hasActiveFilters = searchTerm || preacherFilter !== "all"
+  const handleToggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
+  const handleToggleVisibleSelection = useCallback(() => {
+    setSelectedIds((prev) => {
+      const visibleIds = filteredAndSorted.map((r) => r.id)
+      const allSelected = visibleIds.every((id) => prev.has(id))
+      if (allSelected) {
+        // Deselect all visible
+        const next = new Set(prev)
+        visibleIds.forEach((id) => next.delete(id))
+        return next
+      } else {
+        // Select all visible
+        const next = new Set(prev)
+        visibleIds.forEach((id) => next.add(id))
+        return next
+      }
+    })
+  }, [filteredAndSorted])
   // ─── Render ──────────────────────────────────────────────────
 
   return (
@@ -398,7 +483,7 @@ export function ViewAttendeesDialog({
                 </ResponsiveDialogDescription>
               </div>
 
-              {/* Export button — top right of header */}
+              {/* Export button */}
               {!loading && attendees.length > 0 && (
                 <Button
                   variant="outline"
@@ -454,11 +539,28 @@ export function ViewAttendeesDialog({
                 </div>
 
                 {/* Preacher filter + sort controls */}
-                <div className="flex items-center gap-2">
-                  {/* Preacher filter — only show if more than one preacher logged */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Select all checkbox */}
+                  {filteredAndSorted.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-xs gap-1.5"
+                      onClick={handleToggleVisibleSelection}
+                      aria-label={allVisibleSelected ? "Deselect all visible" : "Select all visible"}
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                      {allVisibleSelected ? "Deselect All" : "Select All"}
+                      <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5">
+                        {selectedCount}
+                      </Badge>
+                    </Button>
+                  )}
+
+                  {/* Preacher filter */}
                   {uniquePreachers.length > 1 && (
                     <Select value={preacherFilter} onValueChange={setPreacherFilter}>
-                      <SelectTrigger className="h-8 flex-1 text-xs">
+                      <SelectTrigger className="h-8 flex-1 min-w-[120px] text-xs">
                         <User className="h-3 w-3 mr-1.5 text-muted-foreground" />
                         <SelectValue placeholder="All Preachers" />
                       </SelectTrigger>
@@ -489,6 +591,25 @@ export function ViewAttendeesDialog({
                     ))}
                   </div>
                 </div>
+
+                {/* Bulk remove button */}
+                {selectedCount > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {selectedCount} attendee{selectedCount === 1 ? "" : "s"} selected
+                    </span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={() => setBulkRemoveConfirmOpen(true)}
+                      disabled={removingIds.length > 0}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove Selected
+                    </Button>
+                  </div>
+                )}
 
                 {/* Active filter summary */}
                 {hasActiveFilters && (
@@ -551,7 +672,9 @@ export function ViewAttendeesDialog({
                 ))
               ) : filteredAndSorted.length > 0 ? (
                 filteredAndSorted.map((record) => {
-                  const isRemoving = removingId === record.id
+                  const isRemoving = removingId === record.id || removingIds.includes(record.id)
+                  const isSelected = selectedIds.has(record.id)
+
                   return (
                     <div
                       key={record.id}
@@ -559,11 +682,32 @@ export function ViewAttendeesDialog({
                         "flex items-center justify-between p-3 rounded-md border transition-all duration-200",
                         isRemoving
                           ? "opacity-50 bg-destructive/5 border-destructive/20"
+                          : isSelected
+                          ? "bg-primary/5 border-primary/30 hover:bg-primary/10"
                           : "bg-muted/50 border-transparent hover:bg-muted hover:border-border",
                       ].join(" ")}
                     >
-                      {/* Left: Avatar + name + preacher */}
+                      {/* Selection checkbox */}
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "h-6 w-6 rounded-full transition-colors",
+                            isSelected
+                              ? "bg-primary text-primary-foreground hover:bg-primary/80"
+                              : "hover:bg-muted-foreground/10"
+                          )}
+                          onClick={() => handleToggleSelection(record.id)}
+                          aria-label={isSelected ? "Deselect" : "Select"}
+                          disabled={isRemoving}
+                        >
+                          <UserCheck className={cn(
+                            "h-3.5 w-3.5",
+                            isSelected ? "opacity-100" : "opacity-40"
+                          )} />
+                        </Button>
+
                         <AttendeeAvatar name={record.beneficiary_name} />
                         <div className="min-w-0">
                           <div className="font-medium text-sm truncate">
@@ -572,7 +716,6 @@ export function ViewAttendeesDialog({
                               highlight={searchTerm}
                             />
                           </div>
-                          {/* Preacher attribution — always visible */}
                           <div className="flex items-center gap-1 mt-0.5">
                             <User className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
                             <span className="text-[11px] text-muted-foreground truncate">
@@ -589,7 +732,6 @@ export function ViewAttendeesDialog({
                           {formatTimestamp(record.logged_at)}
                         </Badge>
 
-                        {/* Fix 4: aria-label on icon-only button */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -601,7 +743,7 @@ export function ViewAttendeesDialog({
                         >
                           {isRemoving
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <Trash2  className="h-3.5 w-3.5" />}
+                            : <Trash2 className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
                     </div>
@@ -642,14 +784,28 @@ export function ViewAttendeesDialog({
                 </span>
               )}
             </div>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Close
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectedCount > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkRemoveConfirmOpen(true)}
+                  disabled={removingIds.length > 0}
+                  className="gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove {selectedCount}
+                </Button>
+              )}
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Close
+              </Button>
+            </div>
           </ResponsiveDialogFooter>
         </ResponsiveDialogContent>
       </ResponsiveDialog>
 
-      {/* Fix 6: removeConfirm holds the full record, not just id + name strings */}
+      {/* Single remove confirmation */}
       <ConfirmDialog
         open={removeConfirm.open}
         onOpenChange={(isOpen) =>
@@ -663,6 +819,17 @@ export function ViewAttendeesDialog({
             : ""
         }
         confirmText="Yes, Remove"
+        cancelText="Cancel"
+      />
+
+      {/* Bulk remove confirmation */}
+      <ConfirmDialog
+        open={bulkRemoveConfirmOpen}
+        onOpenChange={setBulkRemoveConfirmOpen}
+        onConfirm={handleBulkRemoveAttendance}
+        title={`Remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"}?`}
+        description={`This will remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"} from "${activity.name}". This action cannot be undone.`}
+        confirmText="Yes, Remove All"
         cancelText="Cancel"
       />
     </>
