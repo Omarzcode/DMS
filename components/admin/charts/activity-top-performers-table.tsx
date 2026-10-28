@@ -35,6 +35,7 @@ import {
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
 import { formatDistanceToNow, format } from "date-fns"
+import { ViewAttendeesDialog } from "@/components/activities/view-attendees-dialog"
 
 interface ActivityTopPerformersTableProps {
   data: DashboardData
@@ -143,6 +144,7 @@ export function ActivityTopPerformersTable({
 
       return {
         id: activity.id,
+        rawActivity: activity,
         name: activity.name || "Untitled Activity",
         type: normalizedType,
         creatorName: activity.creator_name || "Assigned Da'i",
@@ -429,12 +431,21 @@ export function ActivityTopPerformersTable({
 
                         {/* Name & Description */}
                         <td className="py-3.5 px-4">
-                          <div className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span>{item.name}</span>
-                            {item.totalAttendance >= 20 && (
-                              <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                            )}
-                          </div>
+                          <ViewAttendeesDialog
+                            activity={item.rawActivity}
+                            onAttendanceUpdated={data.refresh}
+                          >
+                            <button
+                              type="button"
+                              className="font-semibold text-foreground hover:text-primary hover:underline cursor-pointer flex items-center gap-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm group/btn"
+                              title="Click to view activity details & attendees"
+                            >
+                              <span>{item.name}</span>
+                              {item.totalAttendance >= 20 && (
+                                <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                              )}
+                            </button>
+                          </ViewAttendeesDialog>
                           {item.description && (
                             <p className="text-xs text-muted-foreground truncate max-w-xs mt-0.5">
                               {item.description}
@@ -534,13 +545,22 @@ export function ActivityTopPerformersTable({
                         )}
 
                         <div>
-                          <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
-                            {item.name}
-                            {item.totalAttendance >= 20 && (
-                              <Sparkles className="h-3 w-3 text-amber-400" />
-                            )}
-                          </h4>
-                          <span className="text-xs text-muted-foreground block">
+                          <ViewAttendeesDialog
+                            activity={item.rawActivity}
+                            onAttendanceUpdated={data.refresh}
+                          >
+                            <button
+                              type="button"
+                              className="font-semibold text-sm text-foreground hover:text-primary hover:underline cursor-pointer flex items-center gap-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+                              title="Click to view activity details & attendees"
+                            >
+                              <span>{item.name}</span>
+                              {item.totalAttendance >= 20 && (
+                                <Sparkles className="h-3 w-3 text-amber-400" />
+                              )}
+                            </button>
+                          </ViewAttendeesDialog>
+                          <span className="text-xs text-muted-foreground block mt-0.5">
                             By: {item.creatorName}
                           </span>
                         </div>

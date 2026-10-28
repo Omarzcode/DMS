@@ -766,9 +766,18 @@ export function AllActivities() {
                           <div className="p-1.5 rounded-md bg-muted flex-shrink-0">
                             <IconComponent className="h-4 w-4" aria-hidden="true" />
                           </div>
-                          <span className="truncate">
-                            <SafeHighlightText text={activity.name} highlight={searchTerm} />
-                          </span>
+                          <ViewAttendeesDialog
+                            activity={activity}
+                            onAttendanceUpdated={handleAttendanceChange}
+                          >
+                            <button
+                              type="button"
+                              className="truncate font-semibold text-left text-foreground hover:text-primary hover:underline cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+                              title="Click to view activity details & attendees"
+                            >
+                              <SafeHighlightText text={activity.name} highlight={searchTerm} />
+                            </button>
+                          </ViewAttendeesDialog>
                         </CardTitle>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           {/* Upcoming / Today indicator */}
