@@ -35,6 +35,7 @@ import {
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
 import { formatDistanceToNow, format } from "date-fns"
+import { BeneficiaryDetailsDialog } from "@/components/beneficiaries/beneficiary-details-dialog"
 
 interface BeneficiaryTopAttendanceTableProps {
   data: DashboardData
@@ -441,12 +442,21 @@ export function BeneficiaryTopAttendanceTable({
 
                         {/* Name & Phone */}
                         <td className="py-3.5 px-4">
-                          <div className="font-semibold text-foreground flex items-center gap-1.5">
-                            {item.name}
-                            {item.totalCount >= 10 && (
-                              <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                            )}
-                          </div>
+                          <BeneficiaryDetailsDialog
+                            beneficiaryId={item.id}
+                            onUpdate={data.refresh}
+                          >
+                            <button
+                              type="button"
+                              className="font-semibold text-foreground hover:text-primary hover:underline cursor-pointer flex items-center gap-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm group/btn"
+                              title="Click to view full beneficiary profile"
+                            >
+                              <span>{item.name}</span>
+                              {item.totalCount >= 10 && (
+                                <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                              )}
+                            </button>
+                          </BeneficiaryDetailsDialog>
                           {item.phone && (
                             <div className="text-xs text-muted-foreground font-mono flex items-center gap-1 mt-0.5">
                               <Phone className="h-3 w-3 text-muted-foreground/70" />
@@ -582,13 +592,22 @@ export function BeneficiaryTopAttendanceTable({
                         )}
 
                         <div>
-                          <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
-                            {item.name}
-                            {item.totalCount >= 10 && (
-                              <Sparkles className="h-3 w-3 text-amber-400" />
-                            )}
-                          </h4>
-                          <span className="text-xs text-muted-foreground">
+                          <BeneficiaryDetailsDialog
+                            beneficiaryId={item.id}
+                            onUpdate={data.refresh}
+                          >
+                            <button
+                              type="button"
+                              className="font-semibold text-sm text-foreground hover:text-primary hover:underline cursor-pointer flex items-center gap-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+                              title="Click to view full beneficiary profile"
+                            >
+                              <span>{item.name}</span>
+                              {item.totalCount >= 10 && (
+                                <Sparkles className="h-3 w-3 text-amber-400" />
+                              )}
+                            </button>
+                          </BeneficiaryDetailsDialog>
+                          <span className="text-xs text-muted-foreground block mt-0.5">
                             Da&apos;i: {item.assignedPreacher}
                           </span>
                         </div>

@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
+import { BeneficiaryDetailsDialog } from "@/components/beneficiaries/beneficiary-details-dialog"
 
 interface BeneficiaryEngagementDistributionProps {
   data: DashboardData
@@ -236,8 +237,19 @@ export function BeneficiaryEngagementDistribution({
                   key={m.id}
                   className="p-2.5 rounded-lg border border-border/40 bg-card/40 flex items-center justify-between text-xs"
                 >
-                  <div className="truncate pr-2">
-                    <p className="font-medium text-foreground truncate">{m.name}</p>
+                  <div className="truncate pr-2 min-w-0">
+                    <BeneficiaryDetailsDialog
+                      beneficiaryId={m.id}
+                      onUpdate={data.refresh}
+                    >
+                      <button
+                        type="button"
+                        className="font-medium text-foreground truncate hover:text-primary hover:underline cursor-pointer text-left block max-w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+                        title="Click to view profile"
+                      >
+                        {m.name}
+                      </button>
+                    </BeneficiaryDetailsDialog>
                     <p className="text-[10px] text-muted-foreground">
                       {m.phone || "No phone"} • {m.da_wa_stage}
                     </p>
