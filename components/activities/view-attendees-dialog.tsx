@@ -48,10 +48,12 @@ import {
   ArrowUp,
   ArrowDown,
   User,
+  ExternalLink,
 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
 import type { Activity, AttendanceRecord, FirestoreDate } from "@/lib/firestore-collections"
+import { BeneficiaryDetailsDialog } from "@/components/beneficiaries/beneficiary-details-dialog"
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -212,6 +214,7 @@ export function ViewAttendeesDialog({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkRemoveConfirmOpen, setBulkRemoveConfirmOpen] = useState(false)
   const [removingIds, setRemovingIds] = useState<string[]>([])
+  const [profileModalBeneficiaryId, setProfileModalBeneficiaryId] = useState<string | null>(null)
 
   const FIRESTORE_BATCH_LIMIT = 500
   const onAttendanceUpdatedRef = useRef(onAttendanceUpdated)
@@ -708,19 +711,34 @@ export function ViewAttendeesDialog({
                           )} />
                         </Button>
 
-                        <AttendeeAvatar name={record.beneficiary_name} />
-                        <div className="min-w-0">
-                          <div className="font-medium text-sm truncate">
-                            <SafeHighlightText
-                              text={record.beneficiary_name}
-                              highlight={searchTerm}
-                            />
-                          </div>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <User className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
-                            <span className="text-[11px] text-muted-foreground truncate">
-                              {record.logged_by_name || "Unknown preacher"}
-                            </span>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setProfileModalBeneficiaryId(record.beneficiary_id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault()
+                              setProfileModalBeneficiaryId(record.beneficiary_id)
+                            }
+                          }}
+                          className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group hover:opacity-85 transition-opacity"
+                          title="Click to view full profile"
+                        >
+                          <AttendeeAvatar name={record.beneficiary_name} />
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm truncate group-hover:text-primary group-hover:underline flex items-center gap-1.5 transition-colors">
+                              <SafeHighlightText
+                                text={record.beneficiary_name}
+                                highlight={searchTerm}
+                              />
+                              <ExternalLink className="h-3 w-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <User className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
+                              <span className="text-[11px] text-muted-foreground truncate">
+                                {record.logged_by_name || "Unknown preacher"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -836,6 +854,17 @@ export function ViewAttendeesDialog({
             confirmText="Yes, Remove All"
             cancelText="Cancel"
           />
+          {/* Beneficiary Profile Modal Popup */}
+          {profileModalBeneficiaryId && (
+            <BeneficiaryDetailsDialog
+              beneficiaryId={profileModalBeneficiaryId}
+              open={!!profileModalBeneficiaryId}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) setProfileModalBeneficiaryId(null)
+              }}
+              onUpdate={fetchAttendees}
+            />
+          )}
         </ResponsiveDialogContent>
       </ResponsiveDialog>
     </>

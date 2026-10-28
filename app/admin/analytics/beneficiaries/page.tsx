@@ -19,6 +19,7 @@ import { useDashboardData } from "@/hooks/use-dashboard-data"
 import { GrowthChart } from "@/components/admin/charts/growth-chart"
 import { StageDistributionChart } from "@/components/admin/charts/stage-distribution-chart"
 import { InactiveBeneficiaries } from "@/components/admin/charts/inactive-beneficiaries"
+import { CohortRetentionTable } from "@/components/admin/charts/cohort-retention-table"
 
 export default function BeneficiaryAnalyticsPage() {
   const data = useDashboardData()
@@ -104,6 +105,7 @@ export default function BeneficiaryAnalyticsPage() {
             </div>
 
             <InactiveBeneficiaries data={data} />
+            <CohortRetentionTable data={data} />
           </div>
         </SidebarInset>
       </SidebarProvider>

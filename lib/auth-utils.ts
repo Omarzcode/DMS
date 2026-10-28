@@ -4,11 +4,19 @@ import { db } from "./firebase"
 import type { Preacher, UserRole } from "./firestore-collections"
 
 export async function createUserProfile(user: User): Promise<Preacher> {
+  const userEmail = (user.email || "").toLowerCase().trim()
+  const adminList = [
+    "omar.mo3031@gmail.com",
+    "mos.20122003@gmail.com",
+    (process.env.NEXT_PUBLIC_INITIAL_ADMIN_EMAIL || "").toLowerCase().trim(),
+  ].filter(Boolean)
+  const isInitialAdmin = adminList.includes(userEmail)
+
   const userProfile: Preacher = {
     id: user.uid,
     name: user.displayName || user.email || "Unknown User",
     email: user.email || "",
-    role: "da'i", // Default role for new users
+    role: isInitialAdmin ? "admin" : "da'i",
     created_at: new Date(),
   }
 

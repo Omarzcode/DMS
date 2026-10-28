@@ -36,6 +36,10 @@ import { toast } from "sonner"
 interface AddBeneficiaryDialogProps {
   onBeneficiaryAdded?: (beneficiary: Beneficiary) => void
   assignedPreacherId?: string
+  initialName?: string
+  children?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // ─── Phone Normalization ──────────────────────────────────────────
@@ -61,7 +65,8 @@ function isValidEgyptianPhone(phone: string): boolean {
 
 const makeDefaultForm = (
   assignedPreacherId?: string,
-  uid?: string
+  uid?: string,
+  initialName?: string
 ): {
   name: string
   phone: string
@@ -70,7 +75,7 @@ const makeDefaultForm = (
   notes: string
   da_i_id: string
 } => ({
-  name:         "",
+  name:         initialName?.trim() || "",
   phone:        "",
   batch:        "",
   da_wa_stage:  DAWA_STAGES[0],
@@ -83,30 +88,37 @@ const makeDefaultForm = (
 export function AddBeneficiaryDialog({
   onBeneficiaryAdded,
   assignedPreacherId,
+  initialName = "",
+  children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: AddBeneficiaryDialogProps) {
   const { user, userRole } = useAuth()
-  const [open, setOpen]                     = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = typeof controlledOpen === "boolean"
+  const open = isControlled ? controlledOpen : internalOpen
+
   const [loading, setLoading]               = useState(false)
   const [error, setError]                   = useState<string | null>(null)
   const [preachers, setPreachers]           = useState<Preacher[]>([])
   const [loadingPreachers, setLoadingPreachers] = useState(false)
 
   const [formData, setFormData] = useState(() =>
-    makeDefaultForm(assignedPreacherId, user?.uid)
+    makeDefaultForm(assignedPreacherId, user?.uid, initialName)
   )
 
-  // Fix 1: Sync da_i_id when assignedPreacherId or user changes
+  // Sync da_i_id and initialName when dialog opens or inputs change
   useEffect(() => {
     if (open) {
       setFormData((prev) => ({
         ...prev,
+        name: initialName ? initialName.trim() : prev.name,
         da_i_id: assignedPreacherId || user?.uid || "",
       }))
     }
-  // Fix 8: user?.uid is now properly tracked
-  }, [open, assignedPreacherId, user?.uid])
+  }, [open, initialName, assignedPreacherId, user?.uid])
 
-  // Fix 10: Wrapped in useCallback so it's stable across renders
+  // Wrapped in useCallback so it's stable across renders
   const loadPreachers = useCallback(async () => {
     if (!open || userRole !== "admin" || assignedPreacherId) return
     setLoadingPreachers(true)
@@ -131,12 +143,15 @@ export function AddBeneficiaryDialog({
   }, [loadPreachers])
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen)
+    if (!isControlled) setInternalOpen(newOpen)
+    controlledOnOpenChange?.(newOpen)
     if (!newOpen) {
-      setFormData(makeDefaultForm(assignedPreacherId, user?.uid))
+      setFormData(makeDefaultForm(assignedPreacherId, user?.uid, initialName))
       setError(null)
     }
   }
+
+  const setOpen = (val: boolean) => handleOpenChange(val)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -211,7 +226,7 @@ export function AddBeneficiaryDialog({
         description: `${formData.name} has been added to the system`,
       })
 
-      setOpen(false)
+      handleOpenChange(false)
     } catch (err) {
       console.error("Error adding beneficiary:", err)
       toast.error("Operation Failed", {
@@ -228,13 +243,19 @@ export function AddBeneficiaryDialog({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
-      <ResponsiveDialogTrigger asChild>
-        <Button>
-          {/* Fix 5: mr-2 so margin is between icon and text */}
-          <Plus className="h-4 w-4 mr-2" />
-          Add Beneficiary
-        </Button>
-      </ResponsiveDialogTrigger>
+      {children ? (
+        <ResponsiveDialogTrigger asChild>
+          {children}
+        </ResponsiveDialogTrigger>
+      ) : !isControlled ? (
+        <ResponsiveDialogTrigger asChild>
+          <Button>
+            {/* Fix 5: mr-2 so margin is between icon and text */}
+            <Plus className="h-4 w-4 mr-2" />
+            Add Beneficiary
+          </Button>
+        </ResponsiveDialogTrigger>
+      ) : null}
 
       <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
@@ -365,7 +386,7 @@ export function AddBeneficiaryDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={loading}
             >
               Cancel

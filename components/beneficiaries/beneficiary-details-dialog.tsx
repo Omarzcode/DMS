@@ -75,7 +75,9 @@ interface GroupedAttendance {
 
 interface BeneficiaryDetailsDialogProps {
   beneficiaryId: string
-  children: React.ReactNode
+  children?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   onUpdate?: () => void
 }
 
@@ -159,11 +161,22 @@ const AttendanceCategory = ({
 export function BeneficiaryDetailsDialog({
   beneficiaryId,
   children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   onUpdate,
 }: BeneficiaryDetailsDialogProps) {
   const { userRole } = useAuth()
 
-  const [open, setOpen]                             = useState(false)
+  const [internalOpen, setInternalOpen]             = useState(false)
+  const isControlled                                = controlledOpen !== undefined
+  const open                                        = isControlled ? controlledOpen : internalOpen
+
+  const setOpen = useCallback((val: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(val)
+    }
+    controlledOnOpenChange?.(val)
+  }, [isControlled, controlledOnOpenChange])
   const [loading, setLoading]                       = useState(false)
   const [busy, setBusy]                             = useState(false)
   const [busyLabel, setBusyLabel]                   = useState("")
@@ -385,7 +398,9 @@ export function BeneficiaryDetailsDialog({
         setOpen(next)
       }}
     >
-      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      {children ? (
+        <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      ) : null}
 
       <ResponsiveDialogContent>
         <ResponsiveDialogHeader>

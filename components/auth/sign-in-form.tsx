@@ -17,9 +17,14 @@ export function SignInForm() {
       setError(null)
       setIsSigningIn(true)
       await signInWithGoogle()
-    } catch (error) {
-      console.error("Sign-in error:", error)
-      setError("Sign in failed. Please try again.")
+    } catch (error: any) {
+      if (
+        error?.code !== "auth/popup-closed-by-user" &&
+        error?.code !== "auth/cancelled-popup-request"
+      ) {
+        console.warn("Sign-in notice:", error?.message || error)
+        setError("Sign in failed. Please try again.")
+      }
     } finally {
       setIsSigningIn(false)
     }

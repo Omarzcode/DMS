@@ -39,6 +39,37 @@ const ResponsiveDialogContext = React.createContext<{ isMobile: boolean }>({
 function ResponsiveDialog({ open, onOpenChange, children }: ResponsiveDialogProps) {
   const isMobile = useIsMobile()
 
+  React.useEffect(() => {
+    if (open === false) {
+      const reset = () => {
+        if (typeof document !== "undefined" && document.body) {
+          const hasOpen = document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')
+          if (!hasOpen && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = ""
+          }
+        }
+      }
+      reset()
+      const t1 = setTimeout(reset, 50)
+      const t2 = setTimeout(reset, 150)
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
+      }
+    }
+
+    return () => {
+      if (typeof document !== "undefined" && document.body) {
+        setTimeout(() => {
+          const hasOpen = document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')
+          if (!hasOpen && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = ""
+          }
+        }, 50)
+      }
+    }
+  }, [open])
+
   if (isMobile) {
     return (
       <ResponsiveDialogContext.Provider value={{ isMobile: true }}>

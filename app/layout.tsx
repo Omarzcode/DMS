@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/use-auth"  // ← Real Firebase auth
 import { Toaster } from "sonner"
 import { ThemeProvider } from "next-themes"
 import ServiceWorkerRegister from "@/components/service-worker-register" // ← Add
+import { PointerLockFix } from "@/components/ui/pointer-lock-fix"
 
 export const metadata: Metadata = {
   title: "Engineering Management System",
@@ -51,6 +52,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <PointerLockFix />
           <AuthProvider>
             <ServiceWorkerRegister />
             {children}

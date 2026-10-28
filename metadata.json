@@ -1,0 +1,6 @@
+{
+  "name": "Web Application Studio",
+  "description": "Full-stack web applications, interactive sites, and Progressive Web Apps built with React, TypeScript, and modern web technologies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

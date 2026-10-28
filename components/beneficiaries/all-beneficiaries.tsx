@@ -17,6 +17,7 @@ import {
   deleteField,
   query,
   where,
+  limit,
 } from "firebase/firestore"
 import { Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -198,8 +199,10 @@ export function AllBeneficiaries() {
     isRefresh ? setRefreshing(true) : setLoading(true)
     setFetchError(null)
     try {
+      // Optimized query: limit initial batch to save read quotas while supporting directory pagination
+      const benefQuery = query(collection(db, "beneficiaries"), limit(500))
       const [benefSnap, preachSnap] = await Promise.all([
-        getDocs(collection(db, "beneficiaries")),
+        getDocs(benefQuery),
         getDocs(collection(db, "preachers")),
       ])
       setBeneficiaries(

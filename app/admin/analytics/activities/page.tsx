@@ -18,6 +18,7 @@ import { Calendar, RefreshCw, AlertCircle } from "lucide-react"
 import { useDashboardData } from "@/hooks/use-dashboard-data"
 import { AttendanceTrendChart } from "@/components/admin/charts/attendance-trend-chart"
 import { ActivityEngagementChart } from "@/components/admin/charts/activity-engagement-chart"
+import { ActivityCategoryBreakdown } from "@/components/admin/charts/activity-category-breakdown"
 
 export default function ActivityAnalyticsPage() {
   const data = useDashboardData()
@@ -99,6 +100,7 @@ export default function ActivityAnalyticsPage() {
 
             <AttendanceTrendChart data={data} />
             <ActivityEngagementChart data={data} />
+            <ActivityCategoryBreakdown data={data} />
           </div>
         </SidebarInset>
       </SidebarProvider>

@@ -9,9 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  env: {
-    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.GOOGLE_API_KEY,
-  },
+  output: 'standalone',
 }
 
 export default nextConfig

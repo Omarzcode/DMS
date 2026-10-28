@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { collection, getDocs, query, where } from "firebase/firestore"
+import { collection, getDocs, query, where, limit } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 import type {
@@ -80,32 +80,11 @@ export function useDashboardData(): DashboardData {
         attendanceSnap,
         ...activitySnaps
       ] = await Promise.all([
-        getDocs(
-          isAdmin
-            ? collection(db, "beneficiaries")
-            : query(
-                collection(db, "beneficiaries"),
-                where("da_i_id", "==", user.uid)
-              )
-        ),
+        getDocs(query(collection(db, "beneficiaries"), limit(1000))),
         getDocs(collection(db, "preachers")),
-        getDocs(
-          isAdmin
-            ? collection(db, "attendance")
-            : query(
-                collection(db, "attendance"),
-                where("logged_by_id", "==", user.uid)
-              )
-        ),
+        getDocs(query(collection(db, "attendance"), limit(2000))),
         ...activityTypes.map((type) =>
-          getDocs(
-            isAdmin
-              ? collection(db, type)
-              : query(
-                  collection(db, type),
-                  where("creator_id", "==", user.uid)
-                )
-          )
+          getDocs(query(collection(db, type), limit(500)))
         ),
       ])
 
@@ -124,7 +103,6 @@ export function useDashboardData(): DashboardData {
         id: d.id,
         ...d.data(),
         logged_at: getDateFromTimestamp(d.data().logged_at),
-        attended_at: getDateFromTimestamp(d.data().attended_at),
       })) as AttendanceRecord[]
 
       const actData = activitySnaps.flatMap((snap, i) =>

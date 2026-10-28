@@ -44,10 +44,15 @@ import {
   AlertCircle,
   Download,
   Clock,
+  Folder,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
-import type { Activity as BaseActivity, FirestoreDate } from "@/lib/firestore-collections"
+import type {
+  Activity as BaseActivity,
+  ActivityFolder,
+  FirestoreDate,
+} from "@/lib/firestore-collections"
 import { CreateActivityDialog } from "./create-activity-dialog"
 import { AttendanceDialog } from "./attendance-dialog"
 import { ViewAttendeesDialog } from "./view-attendees-dialog"
@@ -247,9 +252,10 @@ export function AllActivities() {
   const [error, setError]                     = useState<string | null>(null)
   const [searchTerm, setSearchTerm]           = useState("")
   const [typeFilter, setTypeFilter]           = useState<string>("all")
-  const [sortOption, setSortOption]           = useState<SortOption>("event-date-asc")
+  const [sortOption, setSortOption]           = useState<SortOption>("event-date-desc")
   const [currentPage, setCurrentPage]         = useState(1)
   const [lastRefreshed, setLastRefreshed]     = useState<Date | null>(null)
+  const [folders, setFolders]                 = useState<ActivityFolder[]>([])
 
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -326,6 +332,19 @@ export function AllActivities() {
       setLastRefreshed(new Date())
       await fetchAttendanceCounts(allActivities)
 
+      // Also fetch folders
+      try {
+        const folderSnap = await getDocs(collection(db, "folders"))
+        setFolders(
+          folderSnap.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<ActivityFolder, "id">),
+          }))
+        )
+      } catch (fErr) {
+        console.error("Error fetching folders:", fErr)
+      }
+
       if (isRefresh) toast.success("Activities refreshed")
     } catch (err) {
       console.error("Error fetching activities:", err)
@@ -346,7 +365,7 @@ export function AllActivities() {
 
   // Fix 5: Memoize hasActiveFilters
   const hasActiveFilters = useMemo(
-    () => searchTerm !== "" || typeFilter !== "all" || sortOption !== "event-date-asc",
+    () => searchTerm !== "" || typeFilter !== "all" || sortOption !== "event-date-desc",
     [searchTerm, typeFilter, sortOption]
   )
 
@@ -432,7 +451,7 @@ export function AllActivities() {
   const clearFilters = useCallback(() => {
     setSearchTerm("")
     setTypeFilter("all")
-    setSortOption("event-date-asc")
+    setSortOption("event-date-desc")
   }, [])
 
   // ─── Render ──────────────────────────────────────────────────
@@ -608,8 +627,8 @@ export function AllActivities() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="event-date-asc">Event Date (Soonest)</SelectItem>
               <SelectItem value="event-date-desc">Event Date (Latest)</SelectItem>
+              <SelectItem value="event-date-asc">Event Date (Soonest)</SelectItem>
               <SelectItem value="newest">Created: Newest</SelectItem>
               <SelectItem value="oldest">Created: Oldest</SelectItem>
               <SelectItem value="name-asc">Name (A → Z)</SelectItem>
@@ -653,14 +672,14 @@ export function AllActivities() {
                 />
               </Badge>
             )}
-            {sortOption !== "event-date-asc" && (
+            {sortOption !== "event-date-desc" && (
               <Badge variant="secondary" className="gap-2">
                 Sort: {sortOption.replace(/-/g, " ")}
                 <X
                   className="h-3 w-3 cursor-pointer hover:text-destructive"
                   role="button"
                   aria-label="Reset sort"
-                  onClick={() => setSortOption("event-date-asc")}
+                  onClick={() => setSortOption("event-date-desc")}
                 />
               </Badge>
             )}
@@ -728,6 +747,10 @@ export function AllActivities() {
                   ? eventDate.toDateString() === new Date().toDateString()
                   : false
 
+                const assignedFolder = activity.folder_id
+                  ? folders.find((f) => f.id === activity.folder_id)
+                  : null
+
                 return (
                   <Card
                     key={`${activity.type}-${activity.id}`}
@@ -757,6 +780,12 @@ export function AllActivities() {
                           {isUpcoming && !isToday && (
                             <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
                               Upcoming
+                            </Badge>
+                          )}
+                          {assignedFolder && (
+                            <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                              <Folder className="h-2.5 w-2.5 mr-1 inline" />
+                              {assignedFolder.name}
                             </Badge>
                           )}
                           <Badge variant="outline" className={`text-xs ${colorClass}`}>
