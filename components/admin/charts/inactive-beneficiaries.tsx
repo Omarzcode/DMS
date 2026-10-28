@@ -16,6 +16,7 @@ import { UserX, Search, X, Phone, Clock, ChevronDown, ChevronUp } from "lucide-r
 import { formatDistanceToNow } from "date-fns"
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
+import { BeneficiaryDetailsDialog } from "@/components/beneficiaries/beneficiary-details-dialog"
 
 interface InactiveBeneficiariesProps {
   data: DashboardData
@@ -168,9 +169,18 @@ export function InactiveBeneficiaries({ data }: InactiveBeneficiariesProps) {
                   className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium text-sm truncate">
-                      {b.name}
-                    </div>
+                    <BeneficiaryDetailsDialog
+                      beneficiaryId={b.id}
+                      onUpdate={data.refresh}
+                    >
+                      <button
+                        type="button"
+                        className="font-medium text-sm truncate hover:text-primary hover:underline cursor-pointer text-left block max-w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+                        title="Click to view profile"
+                      >
+                        {b.name}
+                      </button>
+                    </BeneficiaryDetailsDialog>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                       <span className="flex items-center gap-1">
                         <Phone className="h-3 w-3" />

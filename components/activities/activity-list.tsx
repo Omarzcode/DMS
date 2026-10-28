@@ -1501,9 +1501,18 @@ function ActivityCard({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base flex items-center gap-2 min-w-0">
-            <span className="truncate">
-              <SafeHighlightText text={activity.name} highlight={searchTerm} />
-            </span>
+            <ViewAttendeesDialog
+              activity={activity}
+              onAttendanceUpdated={onAttendanceChange}
+            >
+              <button
+                type="button"
+                className="truncate font-semibold text-left text-foreground hover:text-primary hover:underline cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+                title="Click to view activity details & attendees"
+              >
+                <SafeHighlightText text={activity.name} highlight={searchTerm} />
+              </button>
+            </ViewAttendeesDialog>
           </CardTitle>
 
           {/* Badges */}
