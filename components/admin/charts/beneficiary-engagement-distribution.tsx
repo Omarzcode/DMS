@@ -8,22 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   ShieldAlert,
   Flame,
-  UserCheck,
-  UserMinus,
+  BookOpen,
+  Calendar,
   Sparkles,
-  ArrowRight,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
+  Phone,
+  UserCheck,
 } from "lucide-react"
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
-import { formatDistanceToNow } from "date-fns"
 
 interface BeneficiaryEngagementDistributionProps {
   data: DashboardData
@@ -38,92 +34,99 @@ export function BeneficiaryEngagementDistribution({
     const activeBeneficiaries = data.beneficiaries.filter((b) => !b.deleted)
     const total = activeBeneficiaries.length
 
-    // Compute attendance rates
-    const attendanceCountMap = new Map<string, { total: number; attended: number; lastDate: Date | null }>()
+    // Track maqari & events count for each beneficiary
+    const activityMap = new Map<
+      string,
+      { maqari: number; events: number; total: number }
+    >()
 
     data.attendance.forEach((rec) => {
       const bId = rec.beneficiary_id
       if (!bId) return
-      const cur = attendanceCountMap.get(bId) || { total: 0, attended: 0, lastDate: null }
-      cur.total += 1
-      if (rec.present) {
-        cur.attended += 1
-        const logDate = getDateFromTimestamp(rec.logged_at)
-        if (!cur.lastDate || logDate > cur.lastDate) {
-          cur.lastDate = logDate
-        }
+
+      const isPresent =
+        rec.present === true ||
+        (rec.present === undefined &&
+          (rec as unknown as { attended?: boolean }).attended !== false)
+
+      if (!isPresent) return
+
+      const cur = activityMap.get(bId) || { maqari: 0, events: 0, total: 0 }
+      const type = (rec.activity_type || "").toLowerCase()
+      if (type === "maqari" || type === "maqraa" || type.includes("maqr")) {
+        cur.maqari += 1
+      } else if (type === "events" || type === "event") {
+        cur.events += 1
       }
-      attendanceCountMap.set(bId, cur)
+      cur.total += 1
+      activityMap.set(bId, cur)
     })
 
-    const high: typeof activeBeneficiaries = [] // >= 80% with >= 1 session
-    const regular: typeof activeBeneficiaries = [] // 50% - 79%
-    const occasional: typeof activeBeneficiaries = [] // 1% - 49%
-    const unengaged: typeof activeBeneficiaries = [] // 0 attendance or 0 sessions logged
+    const both: typeof activeBeneficiaries = []
+    const maqariOnly: typeof activeBeneficiaries = []
+    const eventsOnly: typeof activeBeneficiaries = []
+    const unengaged: typeof activeBeneficiaries = []
 
     activeBeneficiaries.forEach((b) => {
-      const att = attendanceCountMap.get(b.id)
-      if (!att || att.attended === 0) {
+      const act = activityMap.get(b.id)
+      if (!act || act.total === 0) {
         unengaged.push(b)
+      } else if (act.maqari > 0 && act.events > 0) {
+        both.push(b)
+      } else if (act.maqari > 0) {
+        maqariOnly.push(b)
       } else {
-        const rate = (att.attended / att.total) * 100
-        if (rate >= 80) high.push(b)
-        else if (rate >= 50) regular.push(b)
-        else occasional.push(b)
+        eventsOnly.push(b)
       }
     })
 
     return [
       {
-        id: "high",
-        name: "Champions",
-        range: "≥ 80% Attendance",
-        count: high.length,
-        pct: total > 0 ? Math.round((high.length / total) * 100) : 0,
-        color: "text-emerald-400",
-        bg: "bg-emerald-500/10 border-emerald-500/20",
-        barColor: "bg-emerald-500",
-        icon: Flame,
-        description: "Consistent core learners",
-        members: high,
-      },
-      {
-        id: "regular",
-        name: "Regulars",
-        range: "50% - 79% Attendance",
-        count: regular.length,
-        pct: total > 0 ? Math.round((regular.length / total) * 100) : 0,
-        color: "text-blue-400",
-        bg: "bg-blue-500/10 border-blue-500/20",
-        barColor: "bg-blue-500",
-        icon: UserCheck,
-        description: "Attending regularly",
-        members: regular,
-      },
-      {
-        id: "occasional",
-        name: "Occasional",
-        range: "< 50% Attendance",
-        count: occasional.length,
-        pct: total > 0 ? Math.round((occasional.length / total) * 100) : 0,
+        id: "both",
+        name: "Both Activities",
+        count: both.length,
+        pct: total > 0 ? Math.round((both.length / total) * 100) : 0,
         color: "text-amber-400",
         bg: "bg-amber-500/10 border-amber-500/20",
         barColor: "bg-amber-500",
-        icon: UserMinus,
-        description: "Low consistency, needs encouragement",
-        members: occasional,
+        icon: Flame,
+        description: "Attended both Maqra'as & Events",
+        members: both,
+      },
+      {
+        id: "maqari",
+        name: "Maqra'a Only",
+        count: maqariOnly.length,
+        pct: total > 0 ? Math.round((maqariOnly.length / total) * 100) : 0,
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/10 border-emerald-500/20",
+        barColor: "bg-emerald-500",
+        icon: BookOpen,
+        description: "Active in Maqra'a sessions only",
+        members: maqariOnly,
+      },
+      {
+        id: "events",
+        name: "Events Only",
+        count: eventsOnly.length,
+        pct: total > 0 ? Math.round((eventsOnly.length / total) * 100) : 0,
+        color: "text-blue-400",
+        bg: "bg-blue-500/10 border-blue-500/20",
+        barColor: "bg-blue-500",
+        icon: Calendar,
+        description: "Attended general events only",
+        members: eventsOnly,
       },
       {
         id: "unengaged",
         name: "Needs Follow-up",
-        range: "0 Recorded Attendance",
         count: unengaged.length,
         pct: total > 0 ? Math.round((unengaged.length / total) * 100) : 0,
         color: "text-rose-400",
         bg: "bg-rose-500/10 border-rose-500/20",
         barColor: "bg-rose-500",
         icon: ShieldAlert,
-        description: "Zero sessions attended or new contact",
+        description: "No sessions attended yet",
         members: unengaged,
       },
     ]
@@ -139,11 +142,11 @@ export function BeneficiaryEngagementDistribution({
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-emerald-400" />
               <CardTitle className="text-lg font-bold tracking-tight">
-                Engagement Health Distribution
+                Activity Distribution
               </CardTitle>
             </div>
             <CardDescription className="text-xs text-muted-foreground mt-1">
-              Beneficiaries segmented into attendance tiers to identify strong learners and at-risk members.
+              Beneficiaries categorized by participation in Maqra&apos;as and Events.
             </CardDescription>
           </div>
           <span className="text-xs font-mono text-muted-foreground">
@@ -162,9 +165,7 @@ export function BeneficiaryEngagementDistribution({
             return (
               <div
                 key={tier.id}
-                onClick={() =>
-                  setSelectedTier(isSelected ? null : tier.id)
-                }
+                onClick={() => setSelectedTier(isSelected ? null : tier.id)}
                 className={`p-4 rounded-xl border transition-all cursor-pointer ${tier.bg} ${
                   isSelected
                     ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-md"
@@ -187,7 +188,6 @@ export function BeneficiaryEngagementDistribution({
                   </span>
                 </div>
 
-                {/* Progress bar */}
                 <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden mb-2">
                   <div
                     className={`h-full rounded-full ${tier.barColor}`}
@@ -196,8 +196,8 @@ export function BeneficiaryEngagementDistribution({
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>{tier.range}</span>
-                  <span className="underline hover:text-foreground text-[10px]">
+                  <span className="truncate pr-1">{tier.description}</span>
+                  <span className="underline hover:text-foreground text-[10px] shrink-0">
                     {isSelected ? "Hide" : "View"}
                   </span>
                 </div>
@@ -206,12 +206,14 @@ export function BeneficiaryEngagementDistribution({
           })}
         </div>
 
-        {/* Selected Tier Member List preview */}
+        {/* Selected Tier List */}
         {activeSelectedTier && (
           <div className="p-4 rounded-xl border border-border/60 bg-background/50 space-y-3 animate-in fade-in-50 duration-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold uppercase tracking-wider ${activeSelectedTier.color}`}>
+                <span
+                  className={`text-xs font-bold uppercase tracking-wider ${activeSelectedTier.color}`}
+                >
                   {activeSelectedTier.name} ({activeSelectedTier.count} Members)
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -235,9 +237,7 @@ export function BeneficiaryEngagementDistribution({
                   className="p-2.5 rounded-lg border border-border/40 bg-card/40 flex items-center justify-between text-xs"
                 >
                   <div className="truncate pr-2">
-                    <p className="font-medium text-foreground truncate">
-                      {m.name}
-                    </p>
+                    <p className="font-medium text-foreground truncate">{m.name}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {m.phone || "No phone"} • {m.da_wa_stage}
                     </p>

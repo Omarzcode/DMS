@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Users, UserCheck, UserPlus, Award, ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react"
+import { Users, UserCheck, UserPlus, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
 
@@ -55,20 +55,6 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
     }).length
 
     const monthDiff = addedThisMonth - addedLastMonth
-    const monthDiffPct =
-      addedLastMonth > 0
-        ? Math.round((monthDiff / addedLastMonth) * 100)
-        : addedThisMonth > 0
-        ? 100
-        : 0
-
-    // 4. Overall Attendance Rate
-    const totalAttendanceLogged = data.attendance.length
-    const totalPresent = data.attendance.filter((a) => a.present).length
-    const overallAttendanceRate =
-      totalAttendanceLogged > 0
-        ? Math.round((totalPresent / totalAttendanceLogged) * 100)
-        : 0
 
     // Committed Learner count (Top stage)
     const committedCount = allBeneficiaries.filter(
@@ -82,10 +68,6 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
       addedThisMonth,
       addedLastMonth,
       monthDiff,
-      monthDiffPct,
-      overallAttendanceRate,
-      totalAttendanceLogged,
-      totalPresent,
       committedCount,
     }
   }, [data.beneficiaries, data.attendance])
@@ -96,7 +78,7 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
       value: stats.totalCount.toLocaleString(),
       badge: `${stats.committedCount} Committed`,
       badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-      description: "Registered members in database",
+      description: "Total registered members in database",
       icon: Users,
       iconColor: "text-blue-400",
       iconBg: "bg-blue-500/10 border-blue-500/20",
@@ -107,7 +89,7 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
       value: stats.activeCount.toLocaleString(),
       badge: `${stats.activeRate}% Active`,
       badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-      description: "Attended session in past 30 days",
+      description: "Attended at least 1 session in last 30 days",
       icon: UserCheck,
       iconColor: "text-emerald-400",
       iconBg: "bg-emerald-500/10 border-emerald-500/20",
@@ -118,34 +100,23 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
       value: stats.addedThisMonth.toLocaleString(),
       badge:
         stats.monthDiff >= 0
-          ? `+${stats.monthDiff} vs last mo.`
-          : `${stats.monthDiff} vs last mo.`,
+          ? `+${stats.monthDiff} vs last month`
+          : `${stats.monthDiff} vs last month`,
       badgeColor:
         stats.monthDiff >= 0
           ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
           : "bg-amber-500/10 text-amber-400 border-amber-500/20",
       trendIcon: stats.monthDiff >= 0 ? ArrowUpRight : ArrowDownRight,
-      description: `vs ${stats.addedLastMonth} joined last month`,
+      description: `Compared to ${stats.addedLastMonth} new members last month`,
       icon: UserPlus,
       iconColor: "text-violet-400",
       iconBg: "bg-violet-500/10 border-violet-500/20",
       gradient: "from-violet-500/10 via-transparent to-transparent",
     },
-    {
-      title: "Avg Attendance Rate",
-      value: `${stats.overallAttendanceRate}%`,
-      badge: `${stats.totalPresent} / ${stats.totalAttendanceLogged}`,
-      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-      description: "Present check-ins across all events",
-      icon: Award,
-      iconColor: "text-amber-400",
-      iconBg: "bg-amber-500/10 border-amber-500/20",
-      gradient: "from-amber-500/10 via-transparent to-transparent",
-    },
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {kpis.map((kpi, idx) => {
         const Icon = kpi.icon
         const TrendIcon = kpi.trendIcon
@@ -154,7 +125,6 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
             key={idx}
             className="relative overflow-hidden border border-border/60 bg-card/60 backdrop-blur-sm transition-all hover:border-border hover:shadow-lg hover:shadow-primary/5"
           >
-            {/* Top subtle highlight */}
             <div
               className={`absolute inset-0 bg-gradient-to-br ${kpi.gradient} pointer-events-none opacity-40`}
             />
@@ -185,7 +155,7 @@ export function BeneficiaryKpiSummary({ data }: BeneficiaryKpiSummaryProps) {
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-muted-foreground">
                 {kpi.description}
               </p>
             </CardContent>

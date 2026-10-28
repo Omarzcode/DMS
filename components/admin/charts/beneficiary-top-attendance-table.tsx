@@ -20,19 +20,17 @@ import {
 } from "@/components/ui/select"
 import {
   Trophy,
-  Medal,
   Search,
   Phone,
   MessageCircle,
+  BookOpen,
   Calendar,
-  User,
-  SlidersHorizontal,
-  Download,
-  Flame,
-  CheckCircle2,
-  Clock,
+  Layers,
   Sparkles,
-  ExternalLink,
+  Download,
+  Clock,
+  User,
+  ArrowUpDown,
 } from "lucide-react"
 import type { DashboardData } from "@/hooks/use-dashboard-data"
 import { getDateFromTimestamp } from "@/hooks/use-dashboard-data"
@@ -46,12 +44,11 @@ export function BeneficiaryTopAttendanceTable({
   data,
 }: BeneficiaryTopAttendanceTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [minSessions, setMinSessions] = useState<string>("1")
-  const [sortBy, setSortBy] = useState<"rate" | "count">("rate")
+  const [sortBy, setSortBy] = useState<"total" | "maqari" | "events">("total")
   const [stageFilter, setStageFilter] = useState<string>("all")
   const [viewLimit, setViewLimit] = useState<number>(20)
 
-  // Map preachers by ID for fast lookup
+  // Fast preacher lookup map
   const preacherMap = useMemo(() => {
     const map = new Map<string, string>()
     data.preachers.forEach((p) => {
@@ -60,46 +57,69 @@ export function BeneficiaryTopAttendanceTable({
     return map
   }, [data.preachers])
 
-  // Compute beneficiary metrics
+  // Compute exact session counts for each beneficiary
   const computedBeneficiaries = useMemo(() => {
     const activeBeneficiaries = data.beneficiaries.filter((b) => !b.deleted)
 
-    // Group attendance records by beneficiary
-    const attendanceByBeneficiary = new Map<
+    // Map beneficiary ID -> count of Maqari, Events, and Total attended
+    const statsMap = new Map<
       string,
-      { total: number; attended: number; lastDate: Date | null }
+      {
+        maqariCount: number
+        eventsCount: number
+        otherCount: number
+        totalCount: number
+        lastDate: Date | null
+      }
     >()
 
     data.attendance.forEach((rec) => {
       const bId = rec.beneficiary_id
       if (!bId) return
 
-      const existing = attendanceByBeneficiary.get(bId) || {
-        total: 0,
-        attended: 0,
+      // Only count if beneficiary actually attended
+      const isPresent =
+        rec.present === true ||
+        (rec.present === undefined && (rec as unknown as { attended?: boolean }).attended !== false)
+
+      if (!isPresent) return
+
+      const cur = statsMap.get(bId) || {
+        maqariCount: 0,
+        eventsCount: 0,
+        otherCount: 0,
+        totalCount: 0,
         lastDate: null,
       }
 
-      existing.total += 1
-      if (rec.present) {
-        existing.attended += 1
-        const logDate = getDateFromTimestamp(rec.logged_at)
-        if (!existing.lastDate || logDate > existing.lastDate) {
-          existing.lastDate = logDate
-        }
+      const type = (rec.activity_type || "").toLowerCase()
+      if (type === "maqari" || type === "maqraa" || type.includes("maqr")) {
+        cur.maqariCount += 1
+      } else if (type === "events" || type === "event") {
+        cur.eventsCount += 1
+      } else {
+        cur.otherCount += 1
       }
 
-      attendanceByBeneficiary.set(bId, existing)
+      cur.totalCount += 1
+
+      const logDate = getDateFromTimestamp(rec.logged_at)
+      if (!cur.lastDate || logDate > cur.lastDate) {
+        cur.lastDate = logDate
+      }
+
+      statsMap.set(bId, cur)
     })
 
     return activeBeneficiaries.map((b) => {
-      const att = attendanceByBeneficiary.get(b.id) || {
-        total: 0,
-        attended: 0,
+      const stats = statsMap.get(b.id) || {
+        maqariCount: 0,
+        eventsCount: 0,
+        otherCount: 0,
+        totalCount: 0,
         lastDate: null,
       }
 
-      const rate = att.total > 0 ? (att.attended / att.total) * 100 : 0
       const assignedPreacher = b.da_i_id
         ? preacherMap.get(b.da_i_id) || "Assigned Da'i"
         : "Unassigned"
@@ -110,10 +130,11 @@ export function BeneficiaryTopAttendanceTable({
         phone: b.phone || "",
         stage: b.da_wa_stage || "New Contact",
         assignedPreacher,
-        totalSessions: att.total,
-        attendedSessions: att.attended,
-        attendanceRate: Math.round(rate),
-        lastAttended: att.lastDate,
+        maqariCount: stats.maqariCount,
+        eventsCount: stats.eventsCount,
+        otherCount: stats.otherCount,
+        totalCount: stats.totalCount,
+        lastAttended: stats.lastDate,
         createdAt: getDateFromTimestamp(b.created_at),
       }
     })
@@ -121,20 +142,15 @@ export function BeneficiaryTopAttendanceTable({
 
   // Filter and sort for the Top 20
   const filteredAndSorted = useMemo(() => {
-    const minSessCount = parseInt(minSessions, 10) || 1
-
     return computedBeneficiaries
       .filter((item) => {
-        // Minimum sessions logged requirement
-        if (item.totalSessions < minSessCount) return false
-
-        // Must have attended at least 1 session
-        if (item.attendedSessions === 0) return false
+        // Exclude members with 0 total sessions attended
+        if (item.totalCount === 0) return false
 
         // Stage filter
         if (stageFilter !== "all" && item.stage !== stageFilter) return false
 
-        // Search term
+        // Search filter
         if (searchTerm.trim()) {
           const q = searchTerm.toLowerCase()
           const matchName = item.name.toLowerCase().includes(q)
@@ -146,22 +162,29 @@ export function BeneficiaryTopAttendanceTable({
         return true
       })
       .sort((a, b) => {
-        if (sortBy === "rate") {
-          // Primary: Rate descending, Secondary: Total attended descending
-          if (b.attendanceRate !== a.attendanceRate) {
-            return b.attendanceRate - a.attendanceRate
+        if (sortBy === "maqari") {
+          if (b.maqariCount !== a.maqariCount) {
+            return b.maqariCount - a.maqariCount
           }
-          return b.attendedSessions - a.attendedSessions
+          return b.totalCount - a.totalCount
+        } else if (sortBy === "events") {
+          if (b.eventsCount !== a.eventsCount) {
+            return b.eventsCount - a.eventsCount
+          }
+          return b.totalCount - a.totalCount
         } else {
-          // Primary: Total attended descending, Secondary: Rate descending
-          if (b.attendedSessions !== a.attendedSessions) {
-            return b.attendedSessions - a.attendedSessions
+          // Default: Total sessions attended descending
+          if (b.totalCount !== a.totalCount) {
+            return b.totalCount - a.totalCount
           }
-          return b.attendanceRate - a.attendanceRate
+          if (b.maqariCount !== a.maqariCount) {
+            return b.maqariCount - a.maqariCount
+          }
+          return b.eventsCount - a.eventsCount
         }
       })
       .slice(0, viewLimit)
-  }, [computedBeneficiaries, minSessions, stageFilter, searchTerm, sortBy, viewLimit])
+  }, [computedBeneficiaries, stageFilter, searchTerm, sortBy, viewLimit])
 
   // CSV Export handler
   const exportToCsv = () => {
@@ -171,9 +194,9 @@ export function BeneficiaryTopAttendanceTable({
       "Phone",
       "Stage",
       "Assigned Da'i",
-      "Attendance Rate (%)",
-      "Attended Sessions",
-      "Total Sessions",
+      "Maqari Attended",
+      "Events Attended",
+      "Total Sessions Attended",
       "Last Attended",
     ]
     const rows = filteredAndSorted.map((item, index) => [
@@ -182,9 +205,9 @@ export function BeneficiaryTopAttendanceTable({
       `"${item.phone}"`,
       `"${item.stage}"`,
       `"${item.assignedPreacher}"`,
-      `${item.attendanceRate}%`,
-      item.attendedSessions,
-      item.totalSessions,
+      item.maqariCount,
+      item.eventsCount,
+      item.totalCount,
       item.lastAttended ? format(item.lastAttended, "yyyy-MM-dd") : "Never",
     ])
 
@@ -195,13 +218,16 @@ export function BeneficiaryTopAttendanceTable({
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `top_beneficiaries_attendance_${format(new Date(), "yyyy-MM-dd")}.csv`)
+    link.setAttribute(
+      "download",
+      `top_beneficiaries_attendance_${format(new Date(), "yyyy-MM-dd")}.csv`
+    )
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
-  // Helper for stage colors
+  // Helper for stage styling
   const getStageBadge = (stage: string) => {
     switch (stage) {
       case "Committed Learner":
@@ -213,13 +239,6 @@ export function BeneficiaryTopAttendanceTable({
       default:
         return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
     }
-  }
-
-  // Helper for attendance rate bar colors
-  const getRateColor = (rate: number) => {
-    if (rate >= 80) return "bg-emerald-500 text-emerald-400"
-    if (rate >= 60) return "bg-amber-500 text-amber-400"
-    return "bg-rose-500 text-rose-400"
   }
 
   return (
@@ -236,7 +255,7 @@ export function BeneficiaryTopAttendanceTable({
               </CardTitle>
             </div>
             <CardDescription className="text-sm text-muted-foreground">
-              Ranked by attendance rate with total sessions attended, Da&apos;wa stages, and direct contact options.
+              Direct count of Maqra&apos;as and Events each member attended. Ranked from highest to lowest.
             </CardDescription>
           </div>
 
@@ -267,8 +286,8 @@ export function BeneficiaryTopAttendanceTable({
           </div>
         </div>
 
-        {/* Filter controls row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-4 mt-2 border-t border-border/40">
+        {/* Filter & Sort Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 mt-2 border-t border-border/40">
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -280,44 +299,27 @@ export function BeneficiaryTopAttendanceTable({
             />
           </div>
 
-          {/* Min Sessions Filter */}
-          <Select value={minSessions} onValueChange={setMinSessions}>
-            <SelectTrigger className="h-9 text-xs bg-background/50 border-border/60">
-              <div className="flex items-center gap-1.5 truncate">
-                <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>
-                  {minSessions === "1"
-                    ? "Min 1 Session (All)"
-                    : `Min ${minSessions} Sessions`}
-                </span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">Min 1 Session (All)</SelectItem>
-              <SelectItem value="3">Min 3 Sessions (Regular)</SelectItem>
-              <SelectItem value="5">Min 5 Sessions (Committed)</SelectItem>
-              <SelectItem value="8">Min 8 Sessions (Core)</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Sort By Toggle */}
+          {/* Sort By Mode */}
           <Select
             value={sortBy}
-            onValueChange={(v) => setSortBy(v as "rate" | "count")}
+            onValueChange={(v) => setSortBy(v as "total" | "maqari" | "events")}
           >
             <SelectTrigger className="h-9 text-xs bg-background/50 border-border/60">
               <div className="flex items-center gap-1.5 truncate">
-                <Flame className="h-3.5 w-3.5 text-amber-400" />
+                <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>
-                  {sortBy === "rate"
-                    ? "Sort: Highest Rate %"
-                    : "Sort: Most Sessions"}
+                  {sortBy === "total"
+                    ? "Sort: Total Sessions (Maqari + Events)"
+                    : sortBy === "maqari"
+                    ? "Sort: Most Maqra'as Attended"
+                    : "Sort: Most Events Attended"}
                 </span>
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="rate">Highest Rate %</SelectItem>
-              <SelectItem value="count">Most Attended Sessions</SelectItem>
+              <SelectItem value="total">Total Sessions Attended</SelectItem>
+              <SelectItem value="maqari">Most Maqra&apos;as Attended</SelectItem>
+              <SelectItem value="events">Most Events Attended</SelectItem>
             </SelectContent>
           </Select>
 
@@ -326,7 +328,7 @@ export function BeneficiaryTopAttendanceTable({
             <SelectTrigger className="h-9 text-xs bg-background/50 border-border/60">
               <div className="flex items-center gap-1.5 truncate">
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>{stageFilter === "all" ? "All Stages" : stageFilter}</span>
+                <span>{stageFilter === "all" ? "All Da'wa Stages" : stageFilter}</span>
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -346,17 +348,19 @@ export function BeneficiaryTopAttendanceTable({
             <div className="p-3 rounded-full bg-muted/40 mb-3 text-muted-foreground">
               <Search className="h-6 w-6" />
             </div>
-            <h3 className="font-semibold text-foreground text-sm">No beneficiaries match filters</h3>
+            <h3 className="font-semibold text-foreground text-sm">
+              No beneficiaries found
+            </h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              Try adjusting the minimum sessions filter or clearing your search criteria.
+              Either no attendance records are logged yet or current filters returned no matches.
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
                 setSearchTerm("")
-                setMinSessions("1")
                 setStageFilter("all")
+                setSortBy("total")
               }}
               className="mt-4 text-xs"
             >
@@ -374,8 +378,24 @@ export function BeneficiaryTopAttendanceTable({
                     <th className="py-3 px-4">Beneficiary</th>
                     <th className="py-3 px-4">Da&apos;wa Stage</th>
                     <th className="py-3 px-4">Assigned Da&apos;i</th>
-                    <th className="py-3 px-4 text-center">Sessions</th>
-                    <th className="py-3 px-4 w-48">Attendance Rate</th>
+                    <th className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-emerald-400">
+                        <BookOpen className="h-3.5 w-3.5" />
+                        <span>Maqra&apos;as</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-blue-400">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>Events</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-foreground font-bold">
+                        <Layers className="h-3.5 w-3.5 text-amber-400" />
+                        <span>Total Attended</span>
+                      </div>
+                    </th>
                     <th className="py-3 px-4 text-right">Last Seen</th>
                     <th className="py-3 px-4 text-center w-24">Contact</th>
                   </tr>
@@ -388,7 +408,9 @@ export function BeneficiaryTopAttendanceTable({
 
                     const cleanPhone = item.phone.replace(/[^0-9]/g, "")
                     const waUrl = cleanPhone
-                      ? `https://wa.me/${cleanPhone.startsWith("0") ? "2" + cleanPhone : cleanPhone}`
+                      ? `https://wa.me/${
+                          cleanPhone.startsWith("0") ? "2" + cleanPhone : cleanPhone
+                        }`
                       : null
 
                     return (
@@ -397,7 +419,7 @@ export function BeneficiaryTopAttendanceTable({
                         className="hover:bg-muted/30 transition-colors group"
                       >
                         {/* Rank Badge */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           {isTop1 ? (
                             <div className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold text-xs shadow-md shadow-amber-500/20">
                               1
@@ -417,11 +439,11 @@ export function BeneficiaryTopAttendanceTable({
                           )}
                         </td>
 
-                        {/* Beneficiary Name & Phone */}
-                        <td className="py-3 px-4">
+                        {/* Name & Phone */}
+                        <td className="py-3.5 px-4">
                           <div className="font-semibold text-foreground flex items-center gap-1.5">
                             {item.name}
-                            {item.attendanceRate >= 90 && item.totalSessions >= 3 && (
+                            {item.totalCount >= 10 && (
                               <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                             )}
                           </div>
@@ -433,59 +455,46 @@ export function BeneficiaryTopAttendanceTable({
                           )}
                         </td>
 
-                        {/* Da'wa Stage */}
-                        <td className="py-3 px-4">
+                        {/* Stage */}
+                        <td className="py-3.5 px-4">
                           <Badge
                             variant="outline"
-                            className={`text-[11px] font-medium border ${getStageBadge(item.stage)}`}
+                            className={`text-[11px] font-medium border ${getStageBadge(
+                              item.stage
+                            )}`}
                           >
                             {item.stage}
                           </Badge>
                         </td>
 
                         {/* Assigned Preacher */}
-                        <td className="py-3 px-4 text-xs text-muted-foreground">
+                        <td className="py-3.5 px-4 text-xs text-muted-foreground">
                           {item.assignedPreacher}
                         </td>
 
-                        {/* Sessions Count */}
-                        <td className="py-3 px-4 text-center">
-                          <div className="font-mono text-sm font-semibold text-foreground">
-                            {item.attendedSessions}
-                            <span className="text-xs text-muted-foreground font-normal">
-                              {" "}/ {item.totalSessions}
-                            </span>
-                          </div>
+                        {/* Maqari Attended */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/20">
+                            {item.maqariCount}
+                          </span>
                         </td>
 
-                        {/* Rate Progress Bar */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-between text-xs font-mono mb-1">
-                            <span className="font-bold text-foreground">
-                              {item.attendanceRate}%
-                            </span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {item.attendedSessions === item.totalSessions
-                                ? "Perfect"
-                                : `${item.attendedSessions} attended`}
-                            </span>
-                          </div>
-                          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                item.attendanceRate >= 80
-                                  ? "bg-emerald-500"
-                                  : item.attendanceRate >= 60
-                                  ? "bg-amber-500"
-                                  : "bg-rose-500"
-                              }`}
-                              style={{ width: `${Math.min(item.attendanceRate, 100)}%` }}
-                            />
-                          </div>
+                        {/* Events Attended */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 font-mono font-bold text-xs border border-blue-500/20">
+                            {item.eventsCount}
+                          </span>
                         </td>
 
-                        {/* Last Attended */}
-                        <td className="py-3 px-4 text-right">
+                        {/* Total Attended */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-card border border-border/80 text-foreground font-mono font-extrabold text-sm shadow-sm">
+                            {item.totalCount}
+                          </span>
+                        </td>
+
+                        {/* Last Seen */}
+                        <td className="py-3.5 px-4 text-right">
                           {item.lastAttended ? (
                             <div className="text-xs font-medium text-foreground">
                               {format(item.lastAttended, "MMM d, yyyy")}
@@ -503,7 +512,7 @@ export function BeneficiaryTopAttendanceTable({
                         </td>
 
                         {/* Contact Action */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           {waUrl ? (
                             <a
                               href={waUrl}
@@ -542,11 +551,16 @@ export function BeneficiaryTopAttendanceTable({
 
                 const cleanPhone = item.phone.replace(/[^0-9]/g, "")
                 const waUrl = cleanPhone
-                  ? `https://wa.me/${cleanPhone.startsWith("0") ? "2" + cleanPhone : cleanPhone}`
+                  ? `https://wa.me/${
+                      cleanPhone.startsWith("0") ? "2" + cleanPhone : cleanPhone
+                    }`
                   : null
 
                 return (
-                  <div key={item.id} className="p-4 space-y-3 hover:bg-muted/20 transition-colors">
+                  <div
+                    key={item.id}
+                    className="p-4 space-y-3 hover:bg-muted/20 transition-colors"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2.5">
                         {isTop1 ? (
@@ -570,7 +584,7 @@ export function BeneficiaryTopAttendanceTable({
                         <div>
                           <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
                             {item.name}
-                            {item.attendanceRate >= 90 && item.totalSessions >= 3 && (
+                            {item.totalCount >= 10 && (
                               <Sparkles className="h-3 w-3 text-amber-400" />
                             )}
                           </h4>
@@ -582,51 +596,51 @@ export function BeneficiaryTopAttendanceTable({
 
                       <Badge
                         variant="outline"
-                        className={`text-[10px] font-medium border ${getStageBadge(item.stage)}`}
+                        className={`text-[10px] font-medium border ${getStageBadge(
+                          item.stage
+                        )}`}
                       >
                         {item.stage}
                       </Badge>
                     </div>
 
-                    {/* Progress Bar & Rate */}
-                    <div className="space-y-1.5 bg-background/50 p-2.5 rounded-lg border border-border/40">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-mono text-muted-foreground">
-                          {item.attendedSessions} of {item.totalSessions} sessions attended
+                    {/* Counts Row */}
+                    <div className="grid grid-cols-3 gap-2 bg-background/50 p-2.5 rounded-lg border border-border/40 text-center">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground block">
+                          Maqra&apos;as
                         </span>
-                        <span
-                          className={`font-mono font-bold text-sm ${
-                            item.attendanceRate >= 80
-                              ? "text-emerald-400"
-                              : item.attendanceRate >= 60
-                              ? "text-amber-400"
-                              : "text-rose-400"
-                          }`}
-                        >
-                          {item.attendanceRate}%
+                        <span className="font-mono font-bold text-emerald-400 text-sm">
+                          {item.maqariCount}
                         </span>
                       </div>
-                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            item.attendanceRate >= 80
-                              ? "bg-emerald-500"
-                              : item.attendanceRate >= 60
-                              ? "bg-amber-500"
-                              : "bg-rose-500"
-                          }`}
-                          style={{ width: `${Math.min(item.attendanceRate, 100)}%` }}
-                        />
+                      <div className="space-y-0.5 border-x border-border/40">
+                        <span className="text-[10px] text-muted-foreground block">
+                          Events
+                        </span>
+                        <span className="font-mono font-bold text-blue-400 text-sm">
+                          {item.eventsCount}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground block">
+                          Total
+                        </span>
+                        <span className="font-mono font-extrabold text-foreground text-sm">
+                          {item.totalCount}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Mobile Footer with Last Seen & Contact Action */}
+                    {/* Mobile Footer */}
                     <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />
                         <span>
                           {item.lastAttended
-                            ? `Last seen ${formatDistanceToNow(item.lastAttended, { addSuffix: true })}`
+                            ? `Last seen ${formatDistanceToNow(item.lastAttended, {
+                                addSuffix: true,
+                              })}`
                             : "Never attended"}
                         </span>
                       </div>
