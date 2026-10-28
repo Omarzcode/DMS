@@ -22,9 +22,6 @@ import {
   Users,
   Activity,
   UserCheck,
-  UserX,
-  Layers,
-  Trophy,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useDashboardData } from "@/hooks/use-dashboard-data"
@@ -36,9 +33,6 @@ import { PreacherLeaderboardTable } from "@/components/admin/charts/preacher-lea
 import { BeneficiaryKpiSummary } from "@/components/admin/charts/beneficiary-kpi-summary"
 import { ActivityKpiSummary } from "@/components/admin/charts/activity-kpi-summary"
 import { ActivityCategoryBreakdown } from "@/components/admin/charts/activity-category-breakdown"
-import { GrowthChart } from "@/components/admin/charts/growth-chart"
-import { StageDistributionChart } from "@/components/admin/charts/stage-distribution-chart"
-import { InactiveBeneficiaries } from "@/components/admin/charts/inactive-beneficiaries"
 import { useAuth } from "@/hooks/use-auth"
 
 export default function AdminDashboard() {
@@ -175,26 +169,12 @@ export default function AdminDashboard() {
 
                 {/* Preachers Leaderboard */}
                 {isAdmin && <PreacherLeaderboardTable data={data} />}
-
-                {/* Growth and Stage Distribution */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <GrowthChart data={data} />
-                  <StageDistributionChart data={data} />
-                </div>
-
-                {/* Inactive Beneficiaries Follow-Up */}
-                <InactiveBeneficiaries data={data} />
               </TabsContent>
 
               {/* ── Tab 2: Beneficiaries Analytics Summary ── */}
               <TabsContent value="beneficiaries" className="space-y-6 m-0">
                 <BeneficiaryKpiSummary data={data} />
                 <BeneficiaryTopAttendanceTable data={data} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <GrowthChart data={data} />
-                  <StageDistributionChart data={data} />
-                </div>
-                <InactiveBeneficiaries data={data} />
               </TabsContent>
 
               {/* ── Tab 3: Activities Analytics Summary ── */}
