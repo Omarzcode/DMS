@@ -12,6 +12,7 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   BarChart3,
   Sparkles,
@@ -20,40 +21,25 @@ import {
   TrendingUp,
   Users,
   Activity,
+  UserCheck,
   UserX,
+  Layers,
+  Trophy,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { useDashboardData } from "@/hooks/use-dashboard-data"
-import { DashboardStats } from "@/components/admin/dashboard-stats"
+import { AnalyticsThreeSummaryGrid } from "@/components/admin/analytics-three-summary-grid"
+import { AttendanceTrendChart } from "@/components/admin/charts/attendance-trend-chart"
+import { BeneficiaryTopAttendanceTable } from "@/components/admin/charts/beneficiary-top-attendance-table"
+import { ActivityTopPerformersTable } from "@/components/admin/charts/activity-top-performers-table"
+import { PreacherLeaderboardTable } from "@/components/admin/charts/preacher-leaderboard-table"
+import { BeneficiaryKpiSummary } from "@/components/admin/charts/beneficiary-kpi-summary"
+import { ActivityKpiSummary } from "@/components/admin/charts/activity-kpi-summary"
+import { ActivityCategoryBreakdown } from "@/components/admin/charts/activity-category-breakdown"
 import { GrowthChart } from "@/components/admin/charts/growth-chart"
 import { StageDistributionChart } from "@/components/admin/charts/stage-distribution-chart"
-import { PreacherPerformanceChart } from "@/components/admin/charts/preacher-performance-chart"
-import { AttendanceTrendChart } from "@/components/admin/charts/attendance-trend-chart"
-import { ActivityEngagementChart } from "@/components/admin/charts/activity-engagement-chart"
 import { InactiveBeneficiaries } from "@/components/admin/charts/inactive-beneficiaries"
 import { useAuth } from "@/hooks/use-auth"
-
-function SectionHeader({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType
-  title: string
-  description: string
-}) {
-  return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-        <Icon className="h-5 w-5 text-primary" />
-      </div>
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  )
-}
 
 export default function AdminDashboard() {
   const data = useDashboardData()
@@ -68,10 +54,7 @@ export default function AdminDashboard() {
           {/* Header */}
           <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6">
             <SidebarTrigger className="-mr-1 text-primary hover:bg-muted" />
-            <Separator
-              orientation="vertical"
-              className="ml-2 h-4 bg-muted"
-            />
+            <Separator orientation="vertical" className="ml-2 h-4 bg-muted" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -84,14 +67,14 @@ export default function AdminDashboard() {
 
             <div className="mr-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                {data.loading ? "Updating..." : "Last updated just now"}
+                {data.loading ? "Updating..." : "Real-time sync"}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={data.refresh}
                 disabled={data.loading}
-                className="gap-2"
+                className="gap-2 text-xs"
               >
                 <RefreshCw
                   className={`h-3.5 w-3.5 ${data.loading ? "animate-spin" : ""}`}
@@ -102,20 +85,20 @@ export default function AdminDashboard() {
           </header>
 
           {/* Main Content */}
-          <div className="flex flex-1 flex-col gap-4 sm:gap-8 p-4 sm:p-6 max-w-[1600px] mx-auto w-full">
-            {/* Page Title */}
-            <div className="space-y-1 animate-fade-in">
+          <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
+            {/* Page Title Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 sm:p-2.5 gradient-bg-primary rounded-xl shadow-lg shrink-0">
                   <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold gradient-text-primary leading-tight">
-                    Main Dashboard!
+                    Admin Executive Dashboard
                   </h1>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
                     <Sparkles className="h-3.5 w-3.5 text-secondary shrink-0" />
-                    Overview of system performance and key metrics
+                    Consolidated intelligence across Employees, Beneficiaries, and Activities.
                   </p>
                 </div>
               </div>
@@ -135,7 +118,7 @@ export default function AdminDashboard() {
                     variant="outline"
                     size="sm"
                     onClick={data.refresh}
-                    className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                    className="border-destructive/30 text-destructive hover:bg-destructive/10 text-xs"
                   >
                     Retry
                   </Button>
@@ -143,76 +126,90 @@ export default function AdminDashboard() {
               </Card>
             )}
 
-            {/* ── Section 1: Key Metrics ── */}
-            <section>
-              <SectionHeader
-                icon={TrendingUp}
-                title="Key Metrics"
-                description="High-level summary of important numbers"
-              />
-              <div className="animate-slide-up">
-                <DashboardStats data={data} />
-              </div>
-            </section>
+            {/* ── Top Central Summary: 3 Pillars Grid ── */}
+            <AnalyticsThreeSummaryGrid data={data} />
 
-            <Separator className="bg-border/60" />
+            {/* ── Exploration Tabs ── */}
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="bg-muted/40 p-1 border border-border/50 rounded-xl">
+                <TabsTrigger
+                  value="overview"
+                  className="gap-1.5 text-xs data-[state=active]:bg-card"
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Executive Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="beneficiaries"
+                  className="gap-1.5 text-xs data-[state=active]:bg-card"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Beneficiaries Summary
+                </TabsTrigger>
+                <TabsTrigger
+                  value="activities"
+                  className="gap-1.5 text-xs data-[state=active]:bg-card"
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  Activities Summary
+                </TabsTrigger>
+                <TabsTrigger
+                  value="employees"
+                  className="gap-1.5 text-xs data-[state=active]:bg-card"
+                >
+                  <UserCheck className="h-3.5 w-3.5" />
+                  Employees Summary
+                </TabsTrigger>
+              </TabsList>
 
-            {/* ── Section 2: Growth & Distribution ── */}
-            <section>
-              <SectionHeader
-                icon={Users}
-                title="Growth & Distribution"
-                description="Beneficiary growth trends and stage breakdown"
-              />
-              <div className="flex flex-col gap-6">
-                <GrowthChart data={data} />
-                <StageDistributionChart data={data} />
-              </div>
-            </section>
-
-            <Separator className="bg-border/60" />
-
-            {/* ── Section 3: Attendance ── */}
-            <section>
-              <SectionHeader
-                icon={Activity}
-                title="Attendance Tracking"
-                description="Weekly and monthly attendance patterns"
-              />
-              <div className="w-full">
+              {/* ── Tab 1: Executive Overview ── */}
+              <TabsContent value="overview" className="space-y-6 m-0">
+                {/* Attendance Trends */}
                 <AttendanceTrendChart data={data} />
-              </div>
-            </section>
 
-            {/* ── Section 4: Performance & Engagement (Admin Only) ── */}
-            {isAdmin && (
-              <>
-                <Separator className="bg-border/60" />
-                <section>
-                  <SectionHeader
-                    icon={BarChart3}
-                    title="Performance & Engagement"
-                    description="Preacher performance and activity participation metrics"
-                  />
-                  <div className="flex flex-col gap-6">
-                    <PreacherPerformanceChart data={data} />
-                    <ActivityEngagementChart data={data} />
-                  </div>
-                </section>
-              </>
-            )}
+                {/* 2-Column Leaderboards Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <BeneficiaryTopAttendanceTable data={data} />
+                  <ActivityTopPerformersTable data={data} />
+                </div>
 
-            <Separator className="bg-border/60" />
+                {/* Preachers Leaderboard */}
+                {isAdmin && <PreacherLeaderboardTable data={data} />}
 
-            {/* ── Section 5: Inactive Beneficiaries ── */}
-            <section className="pb-6">
-              <SectionHeader
-                icon={UserX}
-                title="Inactive Beneficiaries"
-                description="Beneficiaries who need follow-up or re-engagement"
-              />
-              <InactiveBeneficiaries data={data} />
-            </section>
+                {/* Growth and Stage Distribution */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <GrowthChart data={data} />
+                  <StageDistributionChart data={data} />
+                </div>
+
+                {/* Inactive Beneficiaries Follow-Up */}
+                <InactiveBeneficiaries data={data} />
+              </TabsContent>
+
+              {/* ── Tab 2: Beneficiaries Analytics Summary ── */}
+              <TabsContent value="beneficiaries" className="space-y-6 m-0">
+                <BeneficiaryKpiSummary data={data} />
+                <BeneficiaryTopAttendanceTable data={data} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <GrowthChart data={data} />
+                  <StageDistributionChart data={data} />
+                </div>
+                <InactiveBeneficiaries data={data} />
+              </TabsContent>
+
+              {/* ── Tab 3: Activities Analytics Summary ── */}
+              <TabsContent value="activities" className="space-y-6 m-0">
+                <ActivityKpiSummary data={data} />
+                <AttendanceTrendChart data={data} />
+                <ActivityTopPerformersTable data={data} />
+                <ActivityCategoryBreakdown data={data} />
+              </TabsContent>
+
+              {/* ── Tab 4: Employees Analytics Summary ── */}
+              <TabsContent value="employees" className="space-y-6 m-0">
+                {isAdmin && <PreacherLeaderboardTable data={data} />}
+              </TabsContent>
+            </Tabs>
           </div>
         </SidebarInset>
       </SidebarProvider>
