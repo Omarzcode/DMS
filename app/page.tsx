@@ -153,9 +153,18 @@ export default function HomePage() {
 
   const handleSignIn = async () => {
     setIsSigningIn(true)
-    try { await signInWithGoogle() }
-    catch (e) { console.error(e) }
-    finally { setIsSigningIn(false) }
+    try {
+      await signInWithGoogle()
+    } catch (e: any) {
+      if (
+        e?.code !== "auth/popup-closed-by-user" &&
+        e?.code !== "auth/cancelled-popup-request"
+      ) {
+        console.warn("Sign-in notice:", e?.message || e)
+      }
+    } finally {
+      setIsSigningIn(false)
+    }
   }
 
     if (loading) {

@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Preacher": {
+      "title": "Preacher",
+      "description": "User profile with role authorization",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "da'i", "pending"] },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Beneficiary": {
+      "title": "Beneficiary",
+      "description": "Student or community member attending faculty activities",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "da_i_id": { "type": "string" },
+        "da_wa_stage": { "type": "string" },
+        "batch": { "type": "string" },
+        "notes": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "name", "da_i_id"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Log of beneficiary attendance in an activity session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "activity_id": { "type": "string" },
+        "activity_name": { "type": "string" },
+        "activity_type": { "type": "string" },
+        "beneficiary_id": { "type": "string" },
+        "beneficiary_name": { "type": "string" },
+        "present": { "type": "boolean" },
+        "logged_by_id": { "type": "string" },
+        "logged_by_name": { "type": "string" },
+        "logged_at": { "type": "string" }
+      },
+      "required": ["id", "activity_id", "beneficiary_id", "present"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Faculty activity or session (Maqra'a, Event, Lesson, Section)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "creator_id": { "type": "string" },
+        "creator_name": { "type": "string" },
+        "created_at": { "type": "string" },
+        "event_date": { "type": "string" },
+        "description": { "type": "string" },
+        "folder_id": { "type": "string" }
+      },
+      "required": ["id", "name", "creator_id"]
+    },
+    "ActivityFolder": {
+      "title": "ActivityFolder",
+      "description": "1-level semester or category folder (e.g., Fall 25, Spring 26)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "creator_id": { "type": "string" },
+        "creator_name": { "type": "string" },
+        "created_at": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "creator_id"]
+    }
+  },
+  "firestore": {
+    "/preachers/{userId}": {
+      "schema": "Preacher",
+      "description": "Collection of preacher and admin user profiles"
+    },
+    "/beneficiaries/{beneficiaryId}": {
+      "schema": "Beneficiary",
+      "description": "Collection of beneficiaries and students"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "AttendanceRecord",
+      "description": "Collection of session attendance logs"
+    },
+    "/maqari/{id}": {
+      "schema": "Activity",
+      "description": "Collection of Quran recitation circles"
+    },
+    "/events/{id}": {
+      "schema": "Activity",
+      "description": "Collection of central events"
+    },
+    "/lessons/{id}": {
+      "schema": "Activity",
+      "description": "Collection of lessons and lectures"
+    },
+    "/sections/{id}": {
+      "schema": "Activity",
+      "description": "Collection of study sections"
+    },
+    "/folders/{folderId}": {
+      "schema": "ActivityFolder",
+      "description": "Collection of 1-level semester and term folders"
+    }
+  }
+}

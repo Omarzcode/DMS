@@ -39,6 +39,7 @@ import {
   BookOpen,
   Users,
   Activity as ActivityIcon,
+  Folder,
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -52,7 +53,11 @@ type ActivityType = "maqari" | "events" | "lessons" | "sections"
 interface CreateActivityDialogProps {
   onActivityCreated?: (activity: Activity) => void
   activityType?: ActivityType
+  folderId?: string | null
+  folderName?: string
   children?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 interface FormData {
@@ -112,10 +117,17 @@ const DESCRIPTION_MAX_LENGTH = 500
 export function CreateActivityDialog({
   onActivityCreated,
   activityType,
+  folderId = null,
+  folderName,
   children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: CreateActivityDialogProps) {
   const { user, userRole } = useAuth()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = typeof controlledOpen === "boolean"
+  const open = isControlled ? controlledOpen : internalOpen
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({})
@@ -146,11 +158,14 @@ export function CreateActivityDialog({
   }, [activityType])
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen)
+    if (!isControlled) setInternalOpen(newOpen)
+    controlledOnOpenChange?.(newOpen)
     if (!newOpen) {
       resetForm()
     }
   }
+
+  const setOpen = (val: boolean) => handleOpenChange(val)
 
   const updateField = <K extends keyof FormData>(
     field: K,
@@ -209,6 +224,7 @@ export function CreateActivityDialog({
         ...(formData.description.trim() && {
           description: formData.description.trim(),
         }),
+        ...(folderId ? { folder_id: folderId } : {}),
       }
 
       const docRef = await addDoc(
@@ -222,7 +238,7 @@ export function CreateActivityDialog({
       })
 
       onActivityCreated?.(createdActivity)
-      setOpen(false)
+      handleOpenChange(false)
     } catch (err) {
       console.error("Error creating activity:", err)
       const message =
@@ -240,14 +256,18 @@ export function CreateActivityDialog({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
-      <ResponsiveDialogTrigger asChild>
-        {children || (
+      {children ? (
+        <ResponsiveDialogTrigger asChild>
+          {children}
+        </ResponsiveDialogTrigger>
+      ) : !isControlled ? (
+        <ResponsiveDialogTrigger asChild>
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             Create Activity
           </Button>
-        )}
-      </ResponsiveDialogTrigger>
+        </ResponsiveDialogTrigger>
+      ) : null}
       <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle className="flex items-center gap-2">
@@ -304,6 +324,47 @@ export function CreateActivityDialog({
               </Select>
             </div>
           )}
+
+          {/* Folder Location Banner */}
+          {folderName && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
+              <Folder className="h-4 w-4 shrink-0 text-primary" />
+              <span>Inside Folder: <strong>{folderName}</strong></span>
+            </div>
+          )}
+
+          {/* Quick Presets for Activity Title */}
+          <div className="space-y-1.5">
+            <span className="text-xs text-muted-foreground">Quick Title Suggestions (اقتراحات سريعة):</span>
+            <div className="flex flex-wrap gap-1.5">
+              {(folderName?.toLowerCase().includes("monday") || folderName?.toLowerCase().includes("thursday") || folderName?.includes("الاثنين") || folderName?.includes("الخميس")
+                ? [
+                    "مقرأة الأسبوع (Weekly Maqra'a)",
+                    "حلقة استغفار (Istighfar Circle)",
+                    "تلاوة وتجويد (Tajweed Recitation)",
+                    "تدبر القرآن (Quran Tadabbur)",
+                    "الأسبوع 1 (Week 1)",
+                    "الأسبوع 2 (Week 2)",
+                  ]
+                : [
+                    "جلسة الاثنين (Monday Session)",
+                    "جلسة الخميس (Thursday Session)",
+                    "جلسة الأحد (Sunday Session)",
+                    "جلسة الثلاثاء (Tuesday Session)",
+                    "مقرأة استغفار (Istighfar Maqra'a)",
+                  ]
+              ).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => updateField("name", preset)}
+                  className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 cursor-pointer"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Activity Name */}
           <div className="space-y-2">
@@ -418,7 +479,7 @@ export function CreateActivityDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={loading}
             >
               Cancel

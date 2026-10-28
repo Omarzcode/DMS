@@ -284,8 +284,8 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               data-sidebar="sidebar"
               data-mobile="true"
               className={cn(
-                "w-[--sidebar-width] bg-sidebar/95 backdrop-blur-md p-0 text-sidebar-foreground [&>button]:hidden",
-                "border-sidebar-border shadow-2xl"
+                "w-[--sidebar-width] bg-sidebar/85 dark:bg-sidebar/75 backdrop-blur-2xl p-0 text-sidebar-foreground [&>button]:hidden",
+                "border-sidebar-border/40 shadow-2xl"
               )}
               style={
                 {
@@ -325,13 +325,13 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+            "duration-300 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-out md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
             variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "p-2.5 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
+              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l border-sidebar-border/30",
             className
           )}
           {...props}
@@ -339,8 +339,9 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           <div
             data-sidebar="sidebar"
             className={cn(
-              "flex h-full w-full flex-col bg-sidebar/95 backdrop-blur-md",
-              "group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-lg"
+              "flex h-full w-full flex-col bg-sidebar/80 dark:bg-sidebar/70 backdrop-blur-2xl border-r border-sidebar-border/30 relative",
+              "after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-gradient-to-b after:from-transparent after:via-primary/20 after:to-transparent after:pointer-events-none",
+              "group-data-[variant=floating]:rounded-2xl group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border/50 group-data-[variant=floating]:shadow-xl"
             )}
           >
             {children}
@@ -811,17 +812,17 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
 // ============================================================================
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg p-2 text-left outline-none ring-sidebar-ring transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 tap-highlight-transparent select-none",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-xl p-2.5 text-left outline-none ring-sidebar-ring transition-all duration-200 ease-out hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground hover:translate-x-0.5 focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary/12 data-[active=true]:font-medium data-[active=true]:text-primary dark:data-[active=true]:bg-primary/20 dark:data-[active=true]:text-primary data-[state=open]:hover:bg-sidebar-accent/80 group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4.5 [&>svg]:shrink-0 tap-highlight-transparent select-none",
   {
     variants: {
       variant: {
         default:
-          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+          "bg-background/80 shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "min-h-[44px] md:min-h-[36px] text-base md:text-sm",
+        default: "min-h-[44px] md:min-h-[38px] text-base md:text-sm",
         sm: "min-h-[40px] md:min-h-[32px] text-sm md:text-xs",
         lg: "min-h-[52px] md:min-h-[44px] text-lg md:text-base group-data-[collapsible=icon]:!p-0",
       },
@@ -1109,8 +1110,8 @@ const SidebarMenuSubButton = React.forwardRef<
       data-active={isActive}
       onClick={handleClick}
       className={cn(
-        "flex min-h-[40px] md:min-h-[32px] min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium",
+        "flex min-h-[44px] md:min-h-[34px] min-w-0 -translate-x-px items-center gap-2.5 overflow-hidden rounded-lg px-2.5 text-sidebar-foreground outline-none ring-sidebar-ring transition-all duration-200 ease-out hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground hover:translate-x-0.5 focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground",
+        "data-[active=true]:bg-primary/12 data-[active=true]:text-primary data-[active=true]:font-medium dark:data-[active=true]:bg-primary/20 [&[data-active=true]>svg]:text-primary",
         "tap-highlight-transparent select-none",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",

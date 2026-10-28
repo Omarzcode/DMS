@@ -50,6 +50,20 @@ export interface Beneficiary {
   deletedAt?:  FirestoreDate
 }
 
+export interface ActivityFolder {
+  id:           string
+  name:         string
+  parent_id:    string | null // null for top-level Year folders
+  category:     string // 'maqari' | 'events' | 'lessons' | 'sections' | 'all'
+  folder_type:  "year" | "semester" | "topic" | "custom"
+  creator_id:   string
+  creator_name: string
+  created_at:   FirestoreDate
+  description?: string
+  academic_year?: string
+  semester?:    string
+}
+
 export interface Activity {
   id:           string
   name:         string
@@ -59,6 +73,9 @@ export interface Activity {
   event_date?:  FirestoreDate
   description?: string
   batch?:       string
+  folder_id?:   string | null
+  day_of_week?: string
+  session_number?: number
 }
 
 export interface AttendanceRecord {
@@ -128,3 +145,8 @@ export const sectionsCollection =
   collection(db, "sections").withConverter(
     makeConverter<Activity>()
   ) as CollectionReference<Activity>
+
+export const foldersCollection =
+  collection(db, "folders").withConverter(
+    makeConverter<ActivityFolder>()
+  ) as CollectionReference<ActivityFolder>

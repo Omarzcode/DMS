@@ -31,21 +31,44 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1rem)] max-h-[calc(100vh-2rem)] sm:w-full sm:max-h-[90vh] max-w-sm sm:max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-4 sm:p-6 shadow-sm rounded-xl overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-))
+>(({ className, children, onCloseAutoFocus, ...props }, ref) => {
+  React.useEffect(() => {
+    return () => {
+      // Release pointer-events if stuck on unmount
+      if (typeof document !== "undefined" && document.body) {
+        setTimeout(() => {
+          const hasOpen = document.querySelector('[role="dialog"][data-state="open"]')
+          if (!hasOpen && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = ""
+          }
+        }, 50)
+      }
+    }
+  }, [])
+
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        onCloseAutoFocus={(e) => {
+          if (onCloseAutoFocus) {
+            onCloseAutoFocus(e)
+          } else {
+            e.preventDefault()
+          }
+        }}
+        className={cn(
+          "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1rem)] max-h-[calc(100vh-2rem)] sm:w-full sm:max-h-[90vh] max-w-sm sm:max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-4 sm:p-6 shadow-sm rounded-xl overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+})
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({

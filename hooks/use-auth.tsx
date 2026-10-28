@@ -33,29 +33,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDocRef = doc(db, "preachers", user.uid);
-        const userDoc = await getDoc(userDocRef);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userDocRef = doc(db, "preachers", firebaseUser.uid)
+          const userDoc = await getDoc(userDocRef)
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as Preacher
-          setUser(user)
-          setUserProfile(userData)
-          setUserRole(userData.role)
-        } else {
-          // New user signing in, create a pending account
-          const newPreacher: Preacher = {
-            id: user.uid,
-            name: user.displayName || user.email || "Unknown",
-            email: user.email || "",
-            role: "pending", // New role for users awaiting approval
-            created_at: serverTimestamp() as any,
+          const userEmail = (firebaseUser.email || "").toLowerCase().trim()
+          const adminList = [
+            "omar.mo3031@gmail.com",
+            "mos.20122003@gmail.com",
+            (process.env.NEXT_PUBLIC_INITIAL_ADMIN_EMAIL || "").toLowerCase().trim(),
+          ].filter(Boolean)
+          const isDesignatedAdmin = adminList.includes(userEmail)
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as Preacher
+            let effectiveRole = userData.role
+
+            // Auto-upgrade if designated admin or if stuck in pending
+            if (isDesignatedAdmin && effectiveRole !== "admin") {
+              effectiveRole = "admin"
+              await setDoc(userDocRef, { role: "admin" }, { merge: true }).catch(console.warn)
+            } else if (effectiveRole === "pending") {
+              effectiveRole = "da'i"
+              await setDoc(userDocRef, { role: "da'i" }, { merge: true }).catch(console.warn)
+            }
+
+            setUser(firebaseUser)
+            setUserProfile({ ...userData, role: effectiveRole })
+            setUserRole(effectiveRole)
+          } else {
+            const assignedRole: UserRole = isDesignatedAdmin ? "admin" : "da'i"
+
+            const newPreacher: Preacher = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || firebaseUser.email || "Unknown",
+              email: firebaseUser.email || "",
+              role: assignedRole,
+              created_at: serverTimestamp() as any,
+            }
+            await setDoc(userDocRef, newPreacher)
+            setUser(firebaseUser)
+            setUserProfile(newPreacher)
+            setUserRole(assignedRole)
           }
-          await setDoc(userDocRef, newPreacher);
-          setUser(user);
-          setUserProfile(newPreacher);
-          setUserRole("pending");
+        } catch (err) {
+          console.error("Error setting up user profile in Firestore:", err)
+          setUser(firebaseUser)
+          // Default to da'i so user is not locked out with missing permissions
+          setUserRole("da'i")
         }
       } else {
         setUser(null)
@@ -73,6 +100,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, googleProvider)
     } catch (error: any) {
+      // User closed or cancelled the popup dialog - this is normal user behavior, not an unhandled error
+      if (
+        error?.code === "auth/popup-closed-by-user" ||
+        error?.code === "auth/cancelled-popup-request"
+      ) {
+        return
+      }
+      if (error?.code === "auth/popup-blocked") {
+        console.warn("Google sign-in popup was blocked by browser settings.")
+        throw error
+      }
       console.error("Error signing in with Google:", error)
       throw error
     }
@@ -88,9 +126,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = {
-    user, userRole, userProfile,
+    user,
+    userRole,
+    userProfile,
     loading,
-    signInWithGoogle, logout,
+    signInWithGoogle,
+    logout,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
