@@ -1,6 +1,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getAuth, GoogleAuthProvider } from "firebase/auth"
-import { getFirestore } from "firebase/firestore"
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
 const firebaseConfig = {
@@ -12,12 +17,24 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-// Initialize Firebase
+// Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 
-// Initialize Firebase services
+// Initialize Firebase services with multi-tab offline persistence
+let firestoreInstance
+try {
+  firestoreInstance = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  })
+} catch {
+  // If already initialized, fallback to getFirestore
+  firestoreInstance = getFirestore(app)
+}
+
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+export const db = firestoreInstance
 export const storage = getStorage(app)
 
 // Configure Google Auth Provider

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EMS Preacher Portal</string>
+    <string name="title_activity_main">EMS Preacher Portal</string>
+    <string name="package_name">org.ems.dms.app</string>
+    <string name="custom_url_scheme">org.ems.dms.app</string>
+</resources>

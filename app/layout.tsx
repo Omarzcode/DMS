@@ -9,6 +9,7 @@ import { Toaster } from "sonner"
 import { ThemeProvider } from "next-themes"
 import ServiceWorkerRegister from "@/components/service-worker-register" // ← Add
 import { PointerLockFix } from "@/components/ui/pointer-lock-fix"
+import { NativeMobileProvider } from "@/components/mobile/native-mobile-provider"
 
 export const metadata: Metadata = {
   title: "Engineering Management System",
@@ -54,9 +55,11 @@ export default function RootLayout({
         >
           <PointerLockFix />
           <AuthProvider>
-            <ServiceWorkerRegister />
-            {children}
-            <Toaster position="top-center" richColors />
+            <NativeMobileProvider>
+              <ServiceWorkerRegister />
+              {children}
+              <Toaster position="top-center" richColors />
+            </NativeMobileProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
