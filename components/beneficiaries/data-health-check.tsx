@@ -48,9 +48,8 @@ import {
   Wrench,
   Zap,
   ArrowRight,
-  Delete,
 } from "lucide-react"
-import { doc, deleteDoc, updateDoc, writeBatch } from "firebase/firestore"
+import { doc, updateDoc, writeBatch } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { toast } from "sonner"
 import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
@@ -67,7 +66,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { be } from "date-fns/locale"
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -83,6 +81,9 @@ interface DataHealthCheckProps {
   beneficiaries: Beneficiary[]
   preachers: Preacher[]
   onDataChanged: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  trigger?: React.ReactNode
 }
 
 type IssueType =
@@ -142,8 +143,20 @@ export function DataHealthCheck({
   beneficiaries,
   preachers,
   onDataChanged,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  trigger,
 }: DataHealthCheckProps) {
-  const [open, setOpen]               = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = useCallback((val: boolean) => {
+    if (isControlled) {
+      setControlledOpen?.(val)
+    } else {
+      setInternalOpen(val)
+    }
+  }, [isControlled, setControlledOpen])
   const [loading, setLoading]         = useState(false)
   const [filterType, setFilterType]   = useState<string>("all")
   const [filterSeverity, setFilterSeverity] = useState<string>("all")
@@ -266,8 +279,10 @@ export function DataHealthCheck({
       const preacherIds = new Set(preachers.map((p) => p.id))
 
       // Fixable phones
+      const fixableIds = new Set<string>()
       for (const b of beneficiaries) {
         if (b.phone && phoneNeedsFixing(b.phone)) {
+          fixableIds.add(b.id)
           foundIssues.push({
             id: `issue-${issueId++}`,
             beneficiaryId: b.id,
@@ -362,9 +377,7 @@ export function DataHealthCheck({
           })
         }
         if (b.phone?.trim()) {
-          const alreadyFixable = foundIssues.some(
-            (i) => i.beneficiaryId === b.id && i.type === "fixable_phone"
-          )
+          const alreadyFixable = fixableIds.has(b.id)
           if (!alreadyFixable && !isValidEgyptianPhone(b.phone)) {
             foundIssues.push({
               id: `issue-${issueId++}`, beneficiaryId: b.id,
@@ -616,6 +629,7 @@ export function DataHealthCheck({
 
     setLoading(true)
     let deleted = 0, failed = 0
+    const successfullyDeleted = new Set<string>()
 
     for (let i = 0; i < uniqueIds.length; i += BATCH_SIZE) {
       const batch        = writeBatch(db)
@@ -624,6 +638,7 @@ export function DataHealthCheck({
       try {
         await batch.commit()
         deleted += currentBatch.length
+        currentBatch.forEach((id) => successfullyDeleted.add(id))
       } catch {
         failed += currentBatch.length
       }
@@ -632,10 +647,8 @@ export function DataHealthCheck({
     setLoading(false)
 
     if (deleted > 0) {
-      // Only remove successfully deleted IDs from local state
-      const deletedSet = new Set(uniqueIds)
       toast.success(`Successfully deleted ${deleted} beneficiary(ies)`)
-      setIssues((prev) => prev.filter((i) => !deletedSet.has(i.beneficiaryId)))
+      setIssues((prev) => prev.filter((i) => !successfullyDeleted.has(i.beneficiaryId)))
       onDataChanged()
     }
     if (failed > 0) toast.error(`Failed to delete ${failed} beneficiary(ies)`)
@@ -648,8 +661,8 @@ export function DataHealthCheck({
     const headers = ["Name", "Phone", "Corrected Phone", "Preacher", "Stage", "Issue Type", "Severity", "Details"]
     const rows    = filteredIssues.map((i) => [
       i.beneficiaryName,
-      i.beneficiaryPhone,
-      i.fixedPhone || "",
+      i.beneficiaryPhone ? `\t${i.beneficiaryPhone}` : "",
+      i.fixedPhone ? `\t${i.fixedPhone}` : "",
       preachers.find((p) => p.id === i.preacherId)?.name || "Not Assigned",
       i.stage || "No Stage",
       ISSUE_CONFIG[i.type].label,
@@ -720,26 +733,30 @@ export function DataHealthCheck({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5">
-            <HeartPulse className="h-4 w-4" />
-            <span className="hidden sm:inline">Data Check</span>
-          </Button>
-        </DialogTrigger>
+        {trigger ? (
+          <DialogTrigger asChild>{trigger}</DialogTrigger>
+        ) : !isControlled ? (
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5">
+              <HeartPulse className="h-4 w-4" />
+              <span className="hidden sm:inline">Data Check</span>
+            </Button>
+          </DialogTrigger>
+        ) : null}
 
         <DialogContent className="max-w-[95vw] lg:max-w-4xl max-h-[90dvh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
-            <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
+            <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <HeartPulse className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <div>Data Health Check</div>
+                <DialogTitle className="text-lg sm:text-xl font-semibold">Data Health Check</DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm mt-1">
                   Comprehensive analysis of beneficiary data quality and issue detection
                 </DialogDescription>
               </div>
-            </DialogTitle>
+            </div>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 space-y-4 pb-4 pt-4">
@@ -1170,7 +1187,7 @@ export function DataHealthCheck({
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-                إغلاق
+                Close
               </Button>
             </div>
           </DialogFooter>
@@ -1216,48 +1233,4 @@ export function DataHealthCheck({
         )}
     </>
   )
-}
-
-function beneficiary(ies: any) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setAnalyzed(arg0: boolean) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setIssues(arg0: never[]) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setFilterType(arg0: string) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setFilterSeverity(arg0: string) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setSearchQuery(arg0: string) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setExpandedIssue(arg0: null) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setEditState(arg0: null) {
-  throw new Error("Function not implemented.")
-}
-
-
-function setOpen(newOpen: boolean) {
-  throw new Error("Function not implemented.")
 }

@@ -6,10 +6,10 @@ import { BarChart3, Users, BookOpen, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { title: "Dashboard",     url: "/dashboard",                icon: BarChart3    },
-  { title: "Beneficiaries", url: "/dashboard/beneficiaries", icon: Users        },
-  { title: "Maqari",        url: "/dashboard/maqari",        icon: BookOpen     },
-  { title: "Activities",    url: "/dashboard/activities",    icon: CalendarDays },
+  { title: "Dashboard",     url: "/dashboard",                   icon: BarChart3    },
+  { title: "Beneficiaries", url: "/dashboard/beneficiaries",     icon: Users        },
+  { title: "Maqra'a",       url: "/dashboard/activities/maqari", icon: BookOpen     },
+  { title: "Events",        url: "/dashboard/activities/events", icon: CalendarDays },
 ]
 
 export function PreacherBottomNav() {
@@ -17,6 +17,8 @@ export function PreacherBottomNav() {
 
   const isActive = (url: string) => {
     if (url === "/dashboard") return pathname === "/dashboard"
+    if (url === "/dashboard/activities/maqari") return pathname.startsWith("/dashboard/activities/maqari")
+    if (url === "/dashboard/activities/events") return pathname.startsWith("/dashboard/activities/events")
     return pathname.startsWith(url)
   }
 

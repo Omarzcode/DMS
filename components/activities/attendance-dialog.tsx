@@ -51,7 +51,10 @@ import { AddBeneficiaryDialog } from "@/components/beneficiaries/add-beneficiary
 // ─── Types ───────────────────────────────────────────────────────
 
 interface AttendanceDialogProps {
-  activity: Activity & { type: string }
+  activity?: (Activity & { type?: string }) | null
+  activityId?: string
+  activityName?: string
+  activityType?: string
   children: React.ReactNode
   onAttendanceSaved?: (activityId: string, newCount: number) => void
 }
@@ -109,9 +112,16 @@ function SafeHighlightText({
 
 export function AttendanceDialog({
   activity,
+  activityId: propActivityId,
+  activityName: propActivityName,
+  activityType: propActivityType,
   children,
   onAttendanceSaved,
 }: AttendanceDialogProps) {
+  const activityId = activity?.id || propActivityId || ""
+  const activityName = activity?.name || propActivityName || "Activity"
+  const activityType = activity?.type || propActivityType || "activity"
+
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -146,7 +156,7 @@ export function AttendanceDialog({
   // ─── Data Fetching ───────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
-    if (!user) return
+    if (!user || !activityId) return
 
     setLoading(true)
     setError(null)
@@ -157,7 +167,7 @@ export function AttendanceDialog({
         getDocs(
           query(
             collection(db, "attendance"),
-            where("activity_id", "==", activity.id),
+            where("activity_id", "==", activityId),
             where("present", "==", true)
           )
         ),
@@ -190,7 +200,7 @@ export function AttendanceDialog({
     } finally {
       setLoading(false)
     }
-  }, [user, activity.id])
+  }, [user, activityId])
 
   // Fetch when dialog opens
   useEffect(() => {
@@ -266,9 +276,9 @@ export function AttendanceDialog({
 
           const attendanceRef = doc(attendanceCollection)
           const newRecord: Omit<AttendanceRecord, "id"> = {
-            activity_id: activity.id,
-            activity_type: activity.type,
-            activity_name: activity.name,
+            activity_id: activityId,
+            activity_type: activityType,
+            activity_name: activityName,
             beneficiary_id: beneficiaryId,
             beneficiary_name: beneficiary.name,
             present: true,
@@ -285,12 +295,14 @@ export function AttendanceDialog({
 
       // Calculate new total and notify parent
       const totalPresent = alreadyPresentIds.size + newlyPresent.length
-      onAttendanceSaved?.(activity.id, totalPresent)
+      if (activityId) {
+        onAttendanceSaved?.(activityId, totalPresent)
+      }
 
       toast.success("Attendance saved", {
         description: `${newlyPresent.length} new ${
           newlyPresent.length === 1 ? "attendee" : "attendees"
-        } recorded for "${activity.name}".`,
+        } recorded for "${activityName}".`,
       })
 
       setOpen(false)
@@ -381,7 +393,7 @@ export function AttendanceDialog({
                 <span className="truncate">Log Attendance</span>
               </ResponsiveDialogTitle>
               <ResponsiveDialogDescription className="text-xs truncate mt-0.5">
-                &ldquo;{activity.name}&rdquo; • {alreadyPresentIds.size} already present
+                &ldquo;{activityName}&rdquo; • {alreadyPresentIds.size} already present
               </ResponsiveDialogDescription>
             </div>
 
@@ -706,7 +718,7 @@ export function AttendanceDialog({
                           }
                         >
                           <Checkbox
-                            id={`att-${activity.id}-${beneficiary.id}`}
+                            id={`att-${activityId}-${beneficiary.id}`}
                             checked={isChecked}
                             onCheckedChange={(checked) =>
                               handleAttendanceChange(beneficiary.id, !!checked)

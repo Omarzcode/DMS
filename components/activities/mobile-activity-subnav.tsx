@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { CalendarDays, BookOpen, Calendar, Activity, Users } from "lucide-react"
+import { CalendarDays, BookOpen, Calendar, Activity, Users, Layers } from "lucide-react"
 
 interface SubNavItem {
   title: string
@@ -13,11 +13,11 @@ interface SubNavItem {
 
 function getSubItems(basePath: string): SubNavItem[] {
   return [
-    { title: "Overview",  url: basePath,                  icon: CalendarDays },
-    { title: "Maqra'a",   url: `${basePath}/maqari`,      icon: BookOpen     },
-    { title: "Events",    url: `${basePath}/events`,      icon: Calendar     },
-    { title: "Lessons",   url: `${basePath}/lessons`,     icon: Activity     },
-    { title: "Sections",  url: `${basePath}/sections`,    icon: Users        },
+    { title: "Activities",     url: basePath,               icon: Layers   },
+    { title: "Maqra'a",        url: `${basePath}/maqari`,   icon: BookOpen },
+    { title: "Events",         url: `${basePath}/events`,   icon: Calendar },
+    { title: "Lessons",        url: `${basePath}/lessons`,  icon: Activity },
+    { title: "Sections",       url: `${basePath}/sections`, icon: Users    },
   ]
 }
 

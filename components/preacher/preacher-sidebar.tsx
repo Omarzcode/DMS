@@ -15,6 +15,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -32,6 +33,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "../ui/logo"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle"
 import { LogoutDialog } from "@/components/ui/logout-dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Collapsible,
   CollapsibleContent,
@@ -43,12 +45,12 @@ import { cn } from "@/lib/utils"
 
 const preacherMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-  { title: "Assigned Beneficiaries", url: "/dashboard/beneficiaries", icon: Users },
-  { title: "Quranic Readings", url: "/dashboard/maqari", icon: BookOpen },
+  { title: "Beneficiaries", url: "/dashboard/beneficiaries", icon: Users },
+  { title: "Maqra'a", url: "/dashboard/activities/maqari", icon: BookOpen },
+  { title: "Events", url: "/dashboard/activities/events", icon: Calendar },
 ]
 
 const activitySubItems = [
-  { title: "Overview", url: "/dashboard/activities", icon: Calendar },
   { title: "Maqra'a", url: "/dashboard/activities/maqari", icon: BookOpen },
   { title: "Events", url: "/dashboard/activities/events", icon: Calendar },
   { title: "Lessons", url: "/dashboard/activities/lessons", icon: Activity },
@@ -61,7 +63,8 @@ export function PreacherSidebar() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar()
+  const isCollapsed = state === "collapsed"
 
   const handleLogout = async () => {
     await logout()
@@ -75,32 +78,53 @@ export function PreacherSidebar() {
   const activitiesOpen = pathname.startsWith("/dashboard/activities")
 
   return (
-    <Sidebar side="left" dir="ltr" className="border-r border-sidebar-border/30">
+    <Sidebar side="left" dir="ltr" collapsible="offcanvas" className="border-r border-sidebar-border/30">
 
       {/* ── Glass Header Card ── */}
-      <SidebarHeader className="p-3 pb-2">
-        <div className="flex items-center justify-between gap-2.5 p-2 rounded-2xl bg-card/40 dark:bg-card/25 border border-border/40 dark:border-white/[0.06] backdrop-blur-md shadow-2xs transition-all">
-          <Link
-            href="/dashboard"
-            onClick={closeOnMobile}
-            className="flex items-center gap-2.5 min-w-0 group/brand focus-visible:outline-none"
-          >
-            <div className="relative flex items-center justify-center p-1 rounded-xl bg-background/80 dark:bg-white/[0.04] border border-border/40 shadow-2xs group-hover/brand:border-primary/40 group-hover/brand:scale-105 transition-all">
-              <Logo size={26} />
-            </div>
-            <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold tracking-tight text-foreground">EMS</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" title="Online" />
+      <SidebarHeader className="p-3 pb-2 group-data-[collapsible=icon]:p-1.5 group-data-[collapsible=icon]:items-center">
+        <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center gap-2.5 p-2 group-data-[collapsible=icon]:p-0 rounded-2xl bg-card/40 dark:bg-card/25 border border-border/40 dark:border-white/[0.06] backdrop-blur-md shadow-2xs group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:shadow-none transition-all w-full">
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={toggleSidebar}
+                  aria-label="Expand sidebar"
+                  className="flex items-center justify-center size-9 rounded-xl bg-card/60 dark:bg-card/40 border border-border/60 dark:border-white/10 shadow-2xs hover:border-primary/50 hover:bg-primary/10 active:scale-95 transition-all cursor-pointer group/brand"
+                >
+                  <Logo size={22} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <span className="font-semibold">Expand Sidebar</span>
+                <span className="text-muted-foreground block text-[10px]">EMS Preacher Portal</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <Link
+                href="/dashboard"
+                onClick={closeOnMobile}
+                className="flex items-center gap-2.5 min-w-0 group/brand focus-visible:outline-none"
+              >
+                <div className="relative flex items-center justify-center p-1 rounded-xl bg-background/80 dark:bg-white/[0.04] border border-border/40 shadow-2xs group-hover/brand:border-primary/40 group-hover/brand:scale-105 transition-all">
+                  <Logo size={26} />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold tracking-tight text-foreground">EMS</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" title="Online" />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground/75 truncate">
+                    Preacher Portal
+                  </span>
+                </div>
+              </Link>
+              <div className="shrink-0">
+                <ThemeToggleButton />
               </div>
-              <span className="text-[11px] font-medium text-muted-foreground/75 truncate">
-                Preacher Portal
-              </span>
-            </div>
-          </Link>
-          <div className="group-data-[collapsible=icon]:hidden shrink-0">
-            <ThemeToggleButton />
-          </div>
+            </>
+          )}
         </div>
       </SidebarHeader>
 
@@ -149,24 +173,60 @@ export function PreacherSidebar() {
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={activitiesOpen}
-                      tooltip="All Activities"
-                      className="w-full flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Layers className={cn("transition-colors shrink-0", activitiesOpen ? "text-primary" : "text-muted-foreground")} />
-                        <span className="font-medium truncate">All Activities</span>
-                      </div>
-                      <ChevronRight
-                        className={cn(
-                          "ml-auto h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform duration-200 group-data-[collapsible=icon]:hidden",
-                          "group-data-[state=open]/collapsible:rotate-90 group-data-[state=open]/collapsible:text-primary"
-                        )}
-                      />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                  <div
+                    className={cn(
+                      "flex items-center justify-between w-full rounded-lg transition-all duration-200 h-9",
+                      activitiesOpen
+                        ? "bg-primary/12 font-medium text-primary dark:bg-primary/20 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-[2.5px] before:rounded-full before:bg-primary group-data-[collapsible=icon]:before:hidden"
+                        : "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground text-sidebar-foreground"
+                    )}
+                  >
+                    {isCollapsed ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link
+                            href="/dashboard/activities"
+                            onClick={closeOnMobile}
+                            className="flex items-center justify-center w-full h-full p-2"
+                            aria-label="Activities"
+                          >
+                            <Layers className={cn("h-4 w-4 shrink-0 transition-colors", activitiesOpen ? "text-primary" : "text-muted-foreground")} />
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          Activities
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <>
+                        <Link
+                          href="/dashboard/activities"
+                          onClick={closeOnMobile}
+                          className="flex items-center gap-2.5 min-w-0 flex-1 h-full px-2.5 py-1.5"
+                          title="Activities"
+                        >
+                          <Layers className={cn("h-4 w-4 shrink-0 transition-colors", activitiesOpen ? "text-primary" : "text-muted-foreground")} />
+                          <span className="text-sm font-medium truncate">
+                            Activities
+                          </span>
+                        </Link>
+                        <CollapsibleTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Toggle activities sub-menu"
+                            className="h-7 w-7 mr-1 flex items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground/70 hover:text-foreground transition-all duration-200 shrink-0"
+                          >
+                            <ChevronRight
+                              className={cn(
+                                "h-3.5 w-3.5 transition-transform duration-200",
+                                "group-data-[state=open]/collapsible:rotate-90 group-data-[state=open]/collapsible:text-primary"
+                              )}
+                            />
+                          </button>
+                        </CollapsibleTrigger>
+                      </>
+                    )}
+                  </div>
 
                   <CollapsibleContent className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200">
                     <SidebarMenuSub className="my-1.5 ml-3.5 border-l border-border/40 pl-2.5 space-y-1">
@@ -197,34 +257,58 @@ export function PreacherSidebar() {
       </SidebarContent>
 
       {/* ── Glass Footer Profile Card ── */}
-      <SidebarFooter className="p-3 pt-2">
-        <div className="p-2 rounded-2xl bg-card/40 dark:bg-card/25 border border-border/40 dark:border-white/[0.06] backdrop-blur-md shadow-2xs flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1.5 transition-all">
-          <div className="relative shrink-0">
-            <Avatar className="h-9 w-9 ring-1 ring-border/50">
-              <AvatarImage
-                src={user?.photoURL || ""}
-                alt={user?.displayName || ""}
-              />
-              <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
-                {user?.displayName?.charAt(0) || "P"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+      <SidebarFooter className="p-3 pt-2 group-data-[collapsible=icon]:p-1.5 group-data-[collapsible=icon]:items-center">
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="relative flex items-center justify-center size-9 rounded-xl hover:bg-sidebar-accent/80 transition-all cursor-pointer">
+                <Avatar className="h-8 w-8 ring-1 ring-border/60">
+                  <AvatarImage
+                    src={user?.photoURL || ""}
+                    alt={user?.displayName || ""}
+                  />
+                  <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
+                    {user?.displayName?.charAt(0) || "P"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1.5 ring-background" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <div className="text-xs font-semibold">{user?.displayName || "Preacher"}</div>
+              <div className="text-[10px] text-muted-foreground">{user?.email}</div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <div className="p-2 rounded-2xl bg-card/40 dark:bg-card/25 border border-border/40 dark:border-white/[0.06] backdrop-blur-md shadow-2xs flex items-center gap-2.5 transition-all">
+            <div className="relative shrink-0">
+              <Avatar className="h-9 w-9 ring-1 ring-border/50">
+                <AvatarImage
+                  src={user?.photoURL || ""}
+                  alt={user?.displayName || ""}
+                />
+                <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
+                  {user?.displayName?.charAt(0) || "P"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+            </div>
+            <div className="flex flex-1 flex-col min-w-0">
+              <span className="text-xs font-semibold text-foreground truncate">
+                {user?.displayName || "Preacher"}
+              </span>
+              <span className="text-[11px] text-muted-foreground/75 truncate">
+                {user?.email}
+              </span>
+            </div>
+            <div className="shrink-0">
+              <LogoutDialog onLogout={handleLogout} />
+            </div>
           </div>
-          <div className="flex flex-1 flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="text-xs font-semibold text-foreground truncate">
-              {user?.displayName || "Preacher"}
-            </span>
-            <span className="text-[11px] text-muted-foreground/75 truncate">
-              {user?.email}
-            </span>
-          </div>
-          <div className="group-data-[collapsible=icon]:hidden shrink-0">
-            <LogoutDialog onLogout={handleLogout} />
-          </div>
-        </div>
+        )}
       </SidebarFooter>
 
+      <SidebarRail />
     </Sidebar>
   )
 }

@@ -1572,31 +1572,19 @@ function ActivityCard({
 
         {/* Footer: 1 Clean Attendance CTA + 3-dots Menu */}
         <div className="flex items-center justify-between pt-2.5 border-t border-border/60">
-          <ViewAttendeesDialog
-            activity={activity}
-            onAttendanceUpdated={onAttendanceChange}
+          <div
+            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            title={`${count ?? 0} attendees recorded`}
           >
-            <button
-              type="button"
-              disabled={!hasAttendees}
-              className={cn(
-                "flex items-center gap-1.5 text-xs transition-colors cursor-pointer",
-                hasAttendees
-                  ? "text-primary hover:underline font-medium"
-                  : "text-muted-foreground cursor-default"
-              )}
-              title={hasAttendees ? "Click to view attendees" : "No attendees"}
-            >
-              <Users className="h-3.5 w-3.5" />
-              {isCountLoading ? (
-                <Skeleton className="h-3.5 w-10" />
-              ) : (
-                <span>
-                  {count ?? 0} {count === 1 ? "attendee" : "attendees"}
-                </span>
-              )}
-            </button>
-          </ViewAttendeesDialog>
+            <Users className="h-3.5 w-3.5" />
+            {isCountLoading ? (
+              <Skeleton className="h-3.5 w-10" />
+            ) : (
+              <span>
+                {count ?? 0} {count === 1 ? "attendee" : "attendees"}
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-1.5">
             <AttendanceDialog
@@ -1624,20 +1612,6 @@ function ActivityCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <ViewAttendeesDialog
-                  activity={activity}
-                  onAttendanceUpdated={onAttendanceChange}
-                >
-                  <DropdownMenuItem
-                    disabled={!hasAttendees}
-                    onSelect={(e) => {
-                      if (!hasAttendees) e.preventDefault()
-                    }}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    <span>View Attendees ({count ?? 0})</span>
-                  </DropdownMenuItem>
-                </ViewAttendeesDialog>
 
                 <DropdownMenuItem onSelect={(e) => {
                   e.preventDefault()

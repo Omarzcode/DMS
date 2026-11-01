@@ -41,7 +41,7 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
   const [formData, setFormData] = useState({
     name: beneficiary.name,
     phone: beneficiary.phone,
-    batch: beneficiary.batch,
+    batch: beneficiary.batch || "",
     da_wa_stage: beneficiary.da_wa_stage,
     notes: beneficiary.notes || "",
   })
@@ -52,7 +52,7 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       setFormData({
         name: beneficiary.name,
         phone: beneficiary.phone,
-        batch: beneficiary.batch,
+        batch: beneficiary.batch || "",
         da_wa_stage: beneficiary.da_wa_stage,
         notes: beneficiary.notes || "",
       })
@@ -66,7 +66,7 @@ export function EditBeneficiaryDialog({ beneficiary, onBeneficiaryUpdated, child
       setFormData({
         name: beneficiary.name,
         phone: beneficiary.phone,
-        batch: beneficiary.batch,
+        batch: beneficiary.batch || "",
         da_wa_stage: beneficiary.da_wa_stage,
         notes: beneficiary.notes || "",
       })

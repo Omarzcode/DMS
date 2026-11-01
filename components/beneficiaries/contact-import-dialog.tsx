@@ -79,6 +79,9 @@ const IMPORT_BATCH_SIZE  = 25
 interface ContactImportDialogProps {
   onImportComplete?: () => void
   assignedPreacherId?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  trigger?: React.ReactNode
 }
 
 interface ContactRecord {
@@ -174,10 +177,22 @@ function makeDefaultSettings(
 export function ContactImportDialog({
   onImportComplete,
   assignedPreacherId,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  trigger,
 }: ContactImportDialogProps) {
   const { user, userRole } = useAuth()
 
-  const [open, setOpen]                         = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const [internalOpen, setInternalOpen]         = useState(false)
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = useCallback((val: boolean) => {
+    if (isControlled) {
+      setControlledOpen?.(val)
+    } else {
+      setInternalOpen(val)
+    }
+  }, [isControlled, setControlledOpen])
   const [loading, setLoading]                   = useState(false)
   const [error, setError]                       = useState<string | null>(null)
   const [contacts, setContacts]                 = useState<ContactRecord[]>([])
@@ -912,27 +927,31 @@ export function ContactImportDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="gap-2 hover:bg-primary/5 transition-colors">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Import Contacts</span>
-            <span className="sm:hidden">Import</span>
-          </Button>
-        </DialogTrigger>
+        {trigger ? (
+          <DialogTrigger asChild>{trigger}</DialogTrigger>
+        ) : !isControlled ? (
+          <DialogTrigger asChild>
+            <Button variant="outline" className="gap-2 hover:bg-primary/5 transition-colors">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Import Contacts</span>
+              <span className="sm:hidden">Import</span>
+            </Button>
+          </DialogTrigger>
+        ) : null}
 
         <DialogContent className="max-w-[95vw] lg:max-w-5xl max-h-[90dvh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
-            <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
+            <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <Smartphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <div>Import Contacts</div>
+                <DialogTitle className="text-lg sm:text-xl font-semibold">Import Contacts</DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm mt-1">
                   {fileName ? `File: ${fileName}` : "Bulk import contacts from files"}
                 </DialogDescription>
               </div>
-            </DialogTitle>
+            </div>
 
             {/* Progress Steps */}
             <div className="flex items-center justify-between mt-4 px-2">

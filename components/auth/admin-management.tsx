@@ -323,9 +323,9 @@ export function AdminManagement() {
                 )}
               </div>
               <div className="flex-1 space-y-1.5">
-                <DialogTitle className="text-lg font-semibold">{dialogConfig?.title}</DialogTitle>
+                <DialogTitle className="text-lg font-semibold">{dialogConfig?.title || "Confirmation"}</DialogTitle>
                 <DialogDescription className="text-sm leading-relaxed">
-                  {dialogConfig?.description}
+                  {dialogConfig?.description || "Please confirm to proceed."}
                 </DialogDescription>
               </div>
             </div>

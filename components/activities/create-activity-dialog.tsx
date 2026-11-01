@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { collection, addDoc } from "firebase/firestore"
+import { useState, useCallback, useEffect, useMemo } from "react"
+import { collection, addDoc, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 import {
@@ -44,7 +44,7 @@ import {
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import type { Activity } from "@/lib/firestore-collections"
+import type { Activity, ActivityFolder } from "@/lib/firestore-collections"
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -139,6 +139,56 @@ export function CreateActivityDialog({
     type: activityType || "maqari",
   })
 
+  // ─── Folder Selection State ──────────────────────────────────
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderId ?? null)
+  const [availableFolders, setAvailableFolders] = useState<ActivityFolder[]>([])
+  const [loadingFolders, setLoadingFolders] = useState(false)
+
+  // Load folders when dialog opens
+  useEffect(() => {
+    if (open) {
+      const loadFolders = async () => {
+        try {
+          setLoadingFolders(true)
+          const snap = await getDocs(collection(db, "folders"))
+          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as ActivityFolder[]
+          setAvailableFolders(list)
+        } catch (err) {
+          console.error("Failed to load folders for activity creation:", err)
+        } finally {
+          setLoadingFolders(false)
+        }
+      }
+      loadFolders()
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (folderId !== undefined) {
+      setSelectedFolderId(folderId)
+    }
+  }, [folderId])
+
+  // Filter folders matching current activity type (or general folders)
+  const filteredFolders = useMemo(() => {
+    return availableFolders.filter((f) => {
+      if (!f.category || f.category === "all") return true
+      return f.category === formData.type
+    })
+  }, [availableFolders, formData.type])
+
+  // Top level folders (no parent) and sub-folders
+  const topLevelFolders = useMemo(() => {
+    return filteredFolders.filter((f) => !f.parent_id)
+  }, [filteredFolders])
+
+  const getSubFolders = useCallback(
+    (parentId: string) => {
+      return filteredFolders.filter((f) => f.parent_id === parentId)
+    },
+    [filteredFolders]
+  )
+
   // ─── Helpers ─────────────────────────────────────────────────
 
   const currentConfig = ACTIVITY_CONFIG[formData.type]
@@ -153,9 +203,10 @@ export function CreateActivityDialog({
       type: activityType || "maqari",
     })
     setSelectedDate(undefined)
+    setSelectedFolderId(folderId ?? null)
     setError(null)
     setFieldErrors({})
-  }, [activityType])
+  }, [activityType, folderId])
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!isControlled) setInternalOpen(newOpen)
@@ -215,6 +266,9 @@ export function CreateActivityDialog({
       setLoading(true)
       setError(null)
 
+      const finalFolderId =
+        selectedFolderId && selectedFolderId !== "none" ? selectedFolderId : null
+
       const newActivity: Omit<Activity, "id"> = {
         name: formData.name.trim(),
         creator_id: user.uid,
@@ -224,7 +278,7 @@ export function CreateActivityDialog({
         ...(formData.description.trim() && {
           description: formData.description.trim(),
         }),
-        ...(folderId ? { folder_id: folderId } : {}),
+        ...(finalFolderId ? { folder_id: finalFolderId } : {}),
       }
 
       const docRef = await addDoc(
@@ -233,8 +287,9 @@ export function CreateActivityDialog({
       )
       const createdActivity = { id: docRef.id, ...newActivity }
 
+      const targetFolderObj = availableFolders.find((f) => f.id === finalFolderId)
       toast.success(`${currentConfig.label} created`, {
-        description: `"${formData.name.trim()}" has been created successfully.`,
+        description: `"${formData.name.trim()}" has been created successfully${targetFolderObj ? ` in folder "${targetFolderObj.name}"` : ""}.`,
       })
 
       onActivityCreated?.(createdActivity)
@@ -325,46 +380,68 @@ export function CreateActivityDialog({
             </div>
           )}
 
-          {/* Folder Location Banner */}
-          {folderName && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
-              <Folder className="h-4 w-4 shrink-0 text-primary" />
-              <span>Inside Folder: <strong>{folderName}</strong></span>
+          {/* Target Folder Selector */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="folder-select" className="flex items-center gap-1.5 text-xs font-semibold">
+                <Folder className="h-3.5 w-3.5 text-primary" />
+                <span>Target Folder (المجلد المختار)</span>
+              </Label>
+              {loadingFolders && (
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading folders...
+                </span>
+              )}
             </div>
-          )}
 
-          {/* Quick Presets for Activity Title */}
-          <div className="space-y-1.5">
-            <span className="text-xs text-muted-foreground">Quick Title Suggestions (اقتراحات سريعة):</span>
-            <div className="flex flex-wrap gap-1.5">
-              {(folderName?.toLowerCase().includes("monday") || folderName?.toLowerCase().includes("thursday") || folderName?.includes("الاثنين") || folderName?.includes("الخميس")
-                ? [
-                    "مقرأة الأسبوع (Weekly Maqra'a)",
-                    "حلقة استغفار (Istighfar Circle)",
-                    "تلاوة وتجويد (Tajweed Recitation)",
-                    "تدبر القرآن (Quran Tadabbur)",
-                    "الأسبوع 1 (Week 1)",
-                    "الأسبوع 2 (Week 2)",
-                  ]
-                : [
-                    "جلسة الاثنين (Monday Session)",
-                    "جلسة الخميس (Thursday Session)",
-                    "جلسة الأحد (Sunday Session)",
-                    "جلسة الثلاثاء (Tuesday Session)",
-                    "مقرأة استغفار (Istighfar Maqra'a)",
-                  ]
-              ).map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => updateField("name", preset)}
-                  className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 cursor-pointer"
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
+            <Select
+              value={selectedFolderId || "none"}
+              onValueChange={(val) => setSelectedFolderId(val === "none" ? null : val)}
+            >
+              <SelectTrigger id="folder-select" className="w-full">
+                <SelectValue placeholder="Choose target folder..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="none">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Folder className="h-3.5 w-3.5 text-muted-foreground/60" />
+                    <span>No folder (Root level)</span>
+                  </span>
+                </SelectItem>
+                {topLevelFolders.map((top) => {
+                  const children = getSubFolders(top.id)
+                  return (
+                    <div key={top.id} className="py-0.5">
+                      <SelectItem value={top.id} className="font-medium text-foreground">
+                        <span className="flex items-center gap-2">
+                          <Folder className="h-3.5 w-3.5 text-primary" />
+                          <span>📁 {top.name}</span>
+                        </span>
+                      </SelectItem>
+                      {children.map((child) => (
+                        <SelectItem key={child.id} value={child.id} className="pl-6 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-2">
+                            <span>↳ 📂 {child.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </div>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+
+            {selectedFolderId && selectedFolderId !== "none" && (
+              <p className="text-[11px] text-primary/80 flex items-center gap-1">
+                <span>✓ Activity will be saved inside: </span>
+                <strong className="font-semibold">
+                  {availableFolders.find((f) => f.id === selectedFolderId)?.name || folderName || "Selected folder"}
+                </strong>
+              </p>
+            )}
           </div>
+
 
           {/* Activity Name */}
           <div className="space-y-2">

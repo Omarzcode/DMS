@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbLink,
 } from "@/components/ui/breadcrumb"
-import { ActivitiesOverview } from "@/components/activities/activities-overview"
+import { AllActivities } from "@/components/activities/all-activities"
 import { MobileActivitySubNav } from "@/components/activities/mobile-activity-subnav"
 
 export default function AdminActivitiesPage() {
@@ -42,11 +42,7 @@ export default function AdminActivitiesPage() {
 
           <div className="flex flex-1 flex-col gap-4 p-4">
             <MobileActivitySubNav basePath="/admin/activities" />
-            <ActivitiesOverview
-              basePath="/admin/activities"
-              title="Activities"
-              description="Browse and manage all activity types. Click a category to view its activities."
-            />
+            <AllActivities />
           </div>
         </SidebarInset>
       </SidebarProvider>

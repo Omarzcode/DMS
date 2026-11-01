@@ -66,27 +66,6 @@ export function CreateFolderDialog({
 
   const setOpen = (val: boolean) => handleOpenChange(val)
 
-  // Days of the week presets (when creating inside a semester like Fall 26)
-  const dayPresets = [
-    "Monday (الاثنين)",
-    "Thursday (الخميس)",
-    "Sunday (الأحد)",
-    "Tuesday (الثلاثاء)",
-    "Wednesday (الأربعاء)",
-    "Friday (الجمعة)",
-    "Saturday (السبت)",
-  ]
-
-  // Semester presets (when creating at top level)
-  const semesterPresets = [
-    "Fall 26",
-    "Spring 26",
-    "Fall 25",
-    "Spring 27",
-    "Summer 25",
-    "Fall 24",
-    "Spring 25",
-  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -181,31 +160,6 @@ export function CreateFolderDialog({
           </ResponsiveDialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Quick Presets */}
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                {isDayFolder
-                  ? "Choose Day (اختر اليوم):"
-                  : "Semester Presets (الفصول الدراسية):"}
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {(isDayFolder ? dayPresets : semesterPresets).map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setName(preset)}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-all border cursor-pointer ${
-                      name === preset
-                        ? "bg-primary text-primary-foreground border-primary font-semibold"
-                        : "bg-secondary hover:bg-secondary/80 text-secondary-foreground border-border/50"
-                    }`}
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Folder Name */}
             <div className="space-y-1.5">

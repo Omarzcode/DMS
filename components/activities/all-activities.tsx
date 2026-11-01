@@ -833,21 +833,6 @@ export function AllActivities() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <ViewAttendeesDialog
-                            activity={activity}
-                            onAttendanceUpdated={handleAttendanceChange}
-                          >
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              // Fix 14: Explicit — disabled only when we know count is 0
-                              disabled={!hasAttendees}
-                              aria-label={`View attendees for ${activity.name}`}
-                            >
-                              View
-                            </Button>
-                          </ViewAttendeesDialog>
-
                           <AttendanceDialog
                             activity={activity}
                             onAttendanceSaved={handleAttendanceChange}

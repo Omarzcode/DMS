@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbLink,
 } from "@/components/ui/breadcrumb"
-import { ActivitiesOverview } from "@/components/activities/activities-overview"
+import { AllActivities } from "@/components/activities/all-activities"
 import { MobileActivitySubNav } from "@/components/activities/mobile-activity-subnav"
 
 export default function DashboardActivitiesPage() {
@@ -19,7 +19,7 @@ export default function DashboardActivitiesPage() {
         <PreacherSidebar />
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6">
-            <SidebarTrigger className="-mr-1 text-primary hover:bg-muted" />
+            <SidebarTrigger className="-ml-1 text-primary hover:bg-muted" />
             <Separator orientation="vertical" className="ml-2 h-4 bg-muted" />
             <Breadcrumb>
               <BreadcrumbList>
@@ -42,11 +42,7 @@ export default function DashboardActivitiesPage() {
 
           <div className="flex flex-1 flex-col gap-4 p-4">
             <MobileActivitySubNav basePath="/dashboard/activities" />
-            <ActivitiesOverview
-              basePath="/dashboard/activities"
-              title="Activities"
-              description="Browse all activity types. Click a category to view its activities."
-            />
+            <AllActivities />
           </div>
         </SidebarInset>
       </SidebarProvider>

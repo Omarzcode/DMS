@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Users, CalendarDays, TrendingUp, Shield } from "lucide-react"
+import { BarChart3, Users, BookOpen, TrendingUp, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   { title: "Dashboard",     url: "/admin",                      icon: BarChart3   },
   { title: "Beneficiaries", url: "/admin/beneficiaries",        icon: Users       },
-  { title: "Activities",    url: "/admin/activities",           icon: CalendarDays },
+  { title: "Maqra'a",       url: "/admin/activities/maqari",    icon: BookOpen    },
   { title: "Analytics",     url: "/admin/analytics/preachers",  icon: TrendingUp  },
   { title: "Users",         url: "/admin/users",                icon: Shield      },
 ]
@@ -19,6 +19,7 @@ export function AdminBottomNav() {
   const isActive = (url: string) => {
     if (url === "/admin") return pathname === "/admin"
     if (url.startsWith("/admin/analytics")) return pathname.startsWith("/admin/analytics")
+    if (url === "/admin/activities/maqari") return pathname.startsWith("/admin/activities/maqari")
     return pathname.startsWith(url)
   }
 

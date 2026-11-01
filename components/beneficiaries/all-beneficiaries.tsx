@@ -45,13 +45,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Users,
   Search,
   UserPlus,
   X,
   Download,
-  TrendingUp,
-  Activity,
   RefreshCw,
   ChevronLeft,
   ChevronRight,
@@ -66,13 +71,14 @@ import {
   PencilLine,
   CheckSquare,
   XSquare,
+  SlidersHorizontal,
+  HeartPulse,
 } from "lucide-react"
 import type { Beneficiary, Preacher } from "@/lib/firestore-collections"
 import { DAWA_STAGES } from "@/lib/firestore-collections"
 import { AddBeneficiaryDialog } from "./add-beneficiary-dialog"
 import { BeneficiaryDetailsDialog } from "./beneficiary-details-dialog"
 import { EmptyState } from "@/components/ui/empty-state"
-import { StatsCard } from "@/components/ui/stats-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ContactImportDialog } from "./contact-import-dialog"
 import { DataHealthCheck } from "./data-health-check"
@@ -89,14 +95,6 @@ type BulkSheet = "transfer" | "edit" | "delete" | null
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 const FIRESTORE_BATCH_LIMIT = 500
-
-const ADVANCED_STAGE_INDICES = [
-  DAWA_STAGES.indexOf("Committed Learner"),
-].filter((i) => i !== -1)
-
-const ADVANCED_STAGE_SET = new Set(
-  ADVANCED_STAGE_INDICES.map((i) => DAWA_STAGES[i]).filter(Boolean)
-)
 
 // ─── Utilities ────────────────────────────────────────────────────
 
@@ -182,6 +180,10 @@ export function AllBeneficiaries() {
   // ── Restore ───────────────────────────────────────────────────
   const [restoringId, setRestoringId] = useState<string | null>(null)
   const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null)
+
+  // ── Controlled Dialogs ─────────────────────────────────────────
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [isHealthCheckOpen, setIsHealthCheckOpen] = useState(false)
 
   // ── Filters ───────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ViewTab>("active")
@@ -307,19 +309,6 @@ export function AllBeneficiaries() {
     () => Boolean(searchTerm || stageFilter !== "all" || preacherFilter !== "all"),
     [searchTerm, stageFilter, preacherFilter]
   )
-
-  const stats = useMemo(() => {
-    const now = new Date()
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    return {
-      activeThisMonth: activeBeneficiaries.filter(
-        (b) => getDateValue(b.created_at) >= thisMonth
-      ).length,
-      advancedStage: activeBeneficiaries.filter((b) =>
-        ADVANCED_STAGE_SET.has(b.da_wa_stage)
-      ).length,
-    }
-  }, [activeBeneficiaries])
 
   // ─── Selection helpers ────────────────────────────────────────
 
@@ -1204,55 +1193,79 @@ export function AllBeneficiaries() {
       </Sheet>
 
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Users className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-          <h2 className="text-lg sm:text-2xl font-bold truncate">
-            All Beneficiaries
-          </h2>
-          <Badge variant="secondary" className="text-xs flex-shrink-0">
-            {activeBeneficiaries.length}
-          </Badge>
-          {archivedBeneficiaries.length > 0 && (
-            <Badge variant="outline" className="text-xs gap-1 flex-shrink-0">
-              <Archive className="h-3 w-3" />
-              {archivedBeneficiaries.length}
-            </Badge>
-          )}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+                Beneficiaries
+              </h2>
+              <Badge variant="secondary" className="text-xs font-semibold">
+                {activeBeneficiaries.length}
+              </Badge>
+              {archivedBeneficiaries.length > 0 && (
+                <Badge variant="outline" className="text-xs text-muted-foreground">
+                  {archivedBeneficiaries.length} archived
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Directory of beneficiaries, stages, assignments, and attendance
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            aria-label="Refresh data"
-            className="h-9 w-9"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          </Button>
+        {/* Action Controls: 1 primary CTA + 1 clean Actions Menu */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+          <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToCSV}
-            disabled={loading || filteredAndSorted.length === 0}
-            className="h-9"
-          >
-            <Download className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">
-              Export ({filteredAndSorted.length})
-            </span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-1.5 px-3">
+                <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">Actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => fetchData(true)} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                <span>Refresh Data</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsImportOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                <span>Import Contacts</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={exportToCSV}
+                disabled={loading || filteredAndSorted.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                <span>Export to CSV ({filteredAndSorted.length})</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setIsHealthCheckOpen(true)}>
+                <HeartPulse className="h-4 w-4 mr-2 text-primary" />
+                <span>Data Health Check</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
+          {/* Controlled Modals */}
+          <ContactImportDialog
+            open={isImportOpen}
+            onOpenChange={setIsImportOpen}
+            onImportComplete={() => fetchData(true)}
+          />
           <DataHealthCheck
+            open={isHealthCheckOpen}
+            onOpenChange={setIsHealthCheckOpen}
             beneficiaries={activeBeneficiaries}
             preachers={preachers}
             onDataChanged={() => fetchData(true)}
           />
-          <ContactImportDialog onImportComplete={() => fetchData(true)} />
-          <AddBeneficiaryDialog onBeneficiaryAdded={() => fetchData(true)} />
         </div>
       </div>
 
@@ -1274,69 +1287,77 @@ export function AllBeneficiaries() {
         </Alert>
       )}
 
-      {/* Stats */}
-      {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatsCard title="Total Beneficiaries" value={activeBeneficiaries.length} icon={Users} />
-          <StatsCard title="Search Results" value={filteredAndSorted.length} icon={Search} />
-          <StatsCard title="New This Month" value={stats.activeThisMonth} icon={Activity} />
-          <StatsCard title="Advanced Stages" value={stats.advancedStage} icon={TrendingUp} />
-        </div>
-      )}
-
-      {/* ── Tabs ──────────────────────────────────────────────── */}
+      {/* ── Tabs & Unified Toolbar ─────────────────────────────── */}
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as ViewTab)}
+        className="space-y-4"
       >
-        <TabsList className="mb-4">
-          <TabsTrigger value="active" className="gap-2">
-            <Users className="h-4 w-4" />
-            Active
-            <Badge variant="secondary" className="text-[10px] px-1.5">
-              {activeBeneficiaries.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="archived" className="gap-2">
-            <Archive className="h-4 w-4" />
-            Archived
-            {archivedBeneficiaries.length > 0 && (
-              <Badge variant="outline" className="text-[10px] px-1.5">
-                {archivedBeneficiaries.length}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <TabsList className="bg-muted/60 p-1 rounded-lg">
+            <TabsTrigger value="active" className="gap-2 text-xs">
+              Active
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {activeBeneficiaries.length}
               </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+            </TabsTrigger>
+            <TabsTrigger value="archived" className="gap-2 text-xs">
+              <Archive className="h-3.5 w-3.5" />
+              Archived
+              {archivedBeneficiaries.length > 0 && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  {archivedBeneficiaries.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <div className="flex flex-col gap-3 mb-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-2 self-end sm:self-center">
+            <span>
+              Showing {filteredAndSorted.length} of {activeTab === "active" ? activeBeneficiaries.length : archivedBeneficiaries.length}
+            </span>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-6 text-xs px-2 text-primary hover:text-primary/80 gap-1 font-medium"
+              >
+                <X className="h-3 w-3" />
+                Reset filters
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Compact 1-Row Search & Filter Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
           {/* Search */}
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="sm:col-span-5 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Search by name or phone…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 pl-10 sm:pl-12 h-11"
+              className="pl-8 pr-8 h-9 text-xs rounded-lg"
             />
             {searchTerm && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
+              <button
+                type="button"
                 onClick={() => setSearchTerm("")}
                 aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                <X className="h-4 w-4" />
-              </Button>
+                <X className="h-3.5 w-3.5" />
+              </button>
             )}
           </div>
 
-          {/* Filter dropdowns — horizontal scroll on mobile */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+          {/* Stage Dropdown */}
+          <div className="sm:col-span-3">
             <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-40 flex-shrink-0 h-9 text-xs">
-                <SelectValue placeholder="Stage" />
+              <SelectTrigger className="h-9 text-xs rounded-lg">
+                <SelectValue placeholder="All Stages" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
@@ -1345,10 +1366,13 @@ export function AllBeneficiaries() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
 
+          {/* Preacher Dropdown */}
+          <div className="sm:col-span-2">
             <Select value={preacherFilter} onValueChange={setPreacherFilter}>
-              <SelectTrigger className="w-40 flex-shrink-0 h-9 text-xs">
-                <SelectValue placeholder="Preacher" />
+              <SelectTrigger className="h-9 text-xs rounded-lg">
+                <SelectValue placeholder="All Preachers" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Preachers</SelectItem>
@@ -1361,9 +1385,12 @@ export function AllBeneficiaries() {
                   ))}
               </SelectContent>
             </Select>
+          </div>
 
+          {/* Sort Dropdown */}
+          <div className="sm:col-span-2">
             <Select value={sortValue} onValueChange={handleSortValueChange}>
-              <SelectTrigger className="w-40 flex-shrink-0 h-9 text-xs">
+              <SelectTrigger className="h-9 text-xs rounded-lg">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
@@ -1376,58 +1403,10 @@ export function AllBeneficiaries() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* Active filter badges */}
-          {hasActiveFilters && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted-foreground">Filters:</span>
-              {searchTerm && (
-                <Badge variant="secondary" className="gap-1.5 text-xs">
-                  &ldquo;{searchTerm}&rdquo;
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    role="button"
-                    aria-label="Clear search filter"
-                    onClick={() => setSearchTerm("")}
-                  />
-                </Badge>
-              )}
-              {stageFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1.5 text-xs">
-                  {stageFilter}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    role="button"
-                    aria-label="Clear stage filter"
-                    onClick={() => setStageFilter("all")}
-                  />
-                </Badge>
-              )}
-              {preacherFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1.5 text-xs">
-                  {getPreacherName(preacherFilter)}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    role="button"
-                    aria-label="Clear preacher filter"
-                    onClick={() => setPreacherFilter("all")}
-                  />
-                </Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="h-7 text-xs px-2"
-              >
-                Clear All
-              </Button>
-            </div>
-          )}
-
-          {/* Bulk toolbar */}
-          <BulkToolbar />
         </div>
+
+        {/* Bulk toolbar (only shown when rows are checked) */}
+        <BulkToolbar />
 
         <TabsContent value="active" className="mt-0">{renderList()}</TabsContent>
         <TabsContent value="archived" className="mt-0">{renderList()}</TabsContent>

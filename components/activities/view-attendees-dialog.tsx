@@ -58,7 +58,10 @@ import { BeneficiaryDetailsDialog } from "@/components/beneficiaries/beneficiary
 // ─── Types ───────────────────────────────────────────────────────
 
 interface ViewAttendeesDialogProps {
-  activity: Activity & { type: string }
+  activity?: (Activity & { type?: string }) | null
+  activityId?: string
+  activityName?: string
+  activityType?: string
   children: React.ReactNode
   onAttendanceUpdated?: (activityId: string, newCount: number) => void
 }
@@ -195,9 +198,16 @@ function exportAttendeesCSV(
 
 export function ViewAttendeesDialog({
   activity,
+  activityId: propActivityId,
+  activityName: propActivityName,
+  activityType: propActivityType,
   children,
   onAttendanceUpdated,
 }: ViewAttendeesDialogProps) {
+  const activityId = activity?.id || propActivityId || ""
+  const activityName = activity?.name || propActivityName || "Activity"
+  const activityType = activity?.type || propActivityType || "activity"
+
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [attendees, setAttendees] = useState<AttendanceRecord[]>([])
@@ -240,13 +250,14 @@ export function ViewAttendeesDialog({
   // ─── Data Fetching ───────────────────────────────────────────
 
   const fetchAttendees = useCallback(async () => {
+    if (!activityId) return
     setLoading(true)
     setError(null)
     try {
       const snap = await getDocs(
         query(
           collection(db, "attendance"),
-          where("activity_id", "==", activity.id),
+          where("activity_id", "==", activityId),
           where("present", "==", true)
         )
       )
@@ -262,7 +273,7 @@ export function ViewAttendeesDialog({
     } finally {
       setLoading(false)
     }
-  }, [activity.id])
+  }, [activityId])
 
   useEffect(() => {
     if (open) fetchAttendees()
@@ -297,7 +308,9 @@ export function ViewAttendeesDialog({
 
       setAttendees((prev) => {
         const updated = prev.filter((a) => a.id !== record.id)
-        onAttendanceUpdatedRef.current?.(activity.id, updated.length)
+        if (activityId) {
+          onAttendanceUpdatedRef.current?.(activityId, updated.length)
+        }
         return updated
       })
 
@@ -310,7 +323,7 @@ export function ViewAttendeesDialog({
     } finally {
       setRemovingId(null)
     }
-  }, [removeConfirm.record, activity.id])
+  }, [removeConfirm.record, activityId])
 
   // ─── Bulk remove attendance ──────────────────────────────────
 
@@ -332,7 +345,9 @@ export function ViewAttendeesDialog({
 
       setAttendees((prev) => {
         const updated = prev.filter((a) => !selectedIds.has(a.id))
-        onAttendanceUpdatedRef.current?.(activity.id, updated.length)
+        if (activityId) {
+          onAttendanceUpdatedRef.current?.(activityId, updated.length)
+        }
         return updated
       })
 
@@ -346,7 +361,7 @@ export function ViewAttendeesDialog({
     } finally {
       setRemovingIds([])
     }
-  }, [activity.id, selectedIds])
+  }, [activityId, selectedIds])
 
   // ─── Sort handlers ────────────────────────────────────────────
 
@@ -482,7 +497,7 @@ export function ViewAttendeesDialog({
                 <ResponsiveDialogDescription className="mt-1 text-xs">
                   {loading
                     ? "Loading attendees..."
-                    : `${attendees.length} ${attendees.length === 1 ? "person" : "people"} attended "${activity.name}"`}
+                    : `${attendees.length} ${attendees.length === 1 ? "person" : "people"} attended "${activityName}"`}
                 </ResponsiveDialogDescription>
               </div>
 
@@ -492,7 +507,7 @@ export function ViewAttendeesDialog({
                   variant="outline"
                   size="sm"
                   className="gap-1.5 flex-shrink-0"
-                  onClick={() => exportAttendeesCSV(filteredAndSorted, activity.name)}
+                  onClick={() => exportAttendeesCSV(filteredAndSorted, activityName)}
                   aria-label="Export attendees to CSV"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -837,7 +852,7 @@ export function ViewAttendeesDialog({
             title="Remove attendance record?"
             description={
               removeConfirm.record
-                ? `This will remove "${removeConfirm.record.beneficiary_name}" from the attendees list for "${activity.name}". This action cannot be undone.`
+                ? `This will remove "${removeConfirm.record.beneficiary_name}" from the attendees list for "${activityName}". This action cannot be undone.`
                 : ""
             }
             confirmText="Yes, Remove"
@@ -850,7 +865,7 @@ export function ViewAttendeesDialog({
             onOpenChange={setBulkRemoveConfirmOpen}
             onConfirm={handleBulkRemoveAttendance}
             title={`Remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"}?`}
-            description={`This will remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"} from "${activity.name}". This action cannot be undone.`}
+            description={`This will remove ${selectedCount} selected attendee${selectedCount === 1 ? "" : "s"} from "${activityName}". This action cannot be undone.`}
             confirmText="Yes, Remove All"
             cancelText="Cancel"
           />
