@@ -7,28 +7,14 @@ import type { Activity, ActivityFolder, FirestoreDate } from "@/lib/firestore-co
 import { CreateActivityDialog } from "@/components/activities/create-activity-dialog"
 import { AttendanceDialog } from "@/components/activities/attendance-dialog"
 import { ViewAttendeesDialog } from "@/components/activities/view-attendees-dialog"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Folder,
-  BookOpen,
-  Calendar,
   Plus,
   Users,
   CheckCircle2,
   ArrowRight,
-  ChevronRight,
-  Layers,
-  Sparkles,
 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
@@ -133,36 +119,50 @@ export function PreacherWorkspace() {
   return (
     <div className="space-y-6">
       {/* ── Section 1: Chosen Folders Quick Navigator ── */}
-      <Card className="border border-border/70 shadow-xs backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <div className="space-y-1">
-            <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-              <Folder className="h-5 w-5 text-primary" />
-              <span>Maqra'a & Events Folders</span>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Select a folder or day circle below to create sessions directly inside it.
-            </CardDescription>
+      <div className="rounded-xl border border-border/70 bg-card p-5 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-0.5">
+              Workspace Folders
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
+              Maqra&apos;a & Events Directory
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Select a semester or day circle to create and log sessions directly.
+            </p>
           </div>
-        </CardHeader>
 
-        <CardContent>
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 text-xs font-medium self-start sm:self-auto border-border/70 hover:border-primary/40 bg-card/60"
+          >
+            <Link href="/dashboard/activities/maqari">
+              <Plus className="h-3.5 w-3.5 text-primary" />
+              <span>Manage Folders</span>
+            </Link>
+          </Button>
+        </div>
+
+        <div>
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="p-3.5 rounded-xl border border-border/40 space-y-2">
+                <div key={i} className="p-4 rounded-xl border border-border/50 bg-muted/10 space-y-2.5">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
               ))}
             </div>
           ) : topFolders.length === 0 ? (
-            <div className="text-center py-8 px-4 rounded-xl border border-dashed border-border/70 bg-muted/20 space-y-3">
-              <Folder className="h-8 w-8 mx-auto text-muted-foreground/60" />
+            <div className="text-center py-10 px-4 rounded-xl border border-dashed border-border/70 bg-muted/10 space-y-3">
+              <Folder className="h-8 w-8 mx-auto text-muted-foreground/50" />
               <div className="space-y-1">
-                <p className="text-sm font-semibold">No folders created yet</p>
+                <p className="text-sm font-semibold text-foreground">No folders configured yet</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Organize your Maqra'a and Events into semesters and weekly day circles.
+                  Organize your Maqra&apos;a study circles and central events into semesters and weekly day groups.
                 </p>
               </div>
               <Button
@@ -189,22 +189,28 @@ export function PreacherWorkspace() {
                 return (
                   <div
                     key={top.id}
-                    className="group flex flex-col justify-between p-3.5 rounded-xl border border-border/60 bg-card/60 hover:border-primary/40 hover:shadow-xs transition-all"
+                    className="group min-w-0 flex flex-col justify-between p-4 rounded-xl border border-border/70 bg-muted/15 hover:border-primary/50 hover:bg-muted/25 transition-all duration-200"
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="font-semibold text-sm text-foreground flex items-center gap-1.5 truncate">
-                          <Folder className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate">{top.name}</span>
-                        </span>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium shrink-0">
-                          {totalInSemester} {totalInSemester === 1 ? "session" : "sessions"}
-                        </Badge>
+                    <div className="min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200">
+                            <Folder className="h-4 w-4 shrink-0" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors" title={top.name}>
+                              {top.name}
+                            </h3>
+                            <span className="text-[11px] text-muted-foreground font-mono tabular-nums block truncate">
+                              {totalInSemester} {totalInSemester === 1 ? "session" : "sessions"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Sub-day circles */}
                       {subDays.length > 0 ? (
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-3 pt-2.5 border-t border-border/40 min-w-0">
                           {subDays.map((sub) => {
                             const subCount = folderCounts[sub.id] || 0
                             return (
@@ -213,29 +219,29 @@ export function PreacherWorkspace() {
                                 type="button"
                                 onClick={() => handleCreateInFolder(sub.id, `${top.name} > ${sub.name}`, "maqari")}
                                 title={`Create session in ${top.name} > ${sub.name}`}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/60 hover:bg-primary/10 hover:text-primary text-[11px] text-muted-foreground transition-colors border border-border/40"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-background/80 hover:bg-primary hover:text-primary-foreground text-xs text-foreground/80 hover:text-foreground transition-all border border-border/60 cursor-pointer shadow-2xs max-w-full min-w-0"
                               >
-                                <span>{sub.name}</span>
-                                <span className="opacity-60 text-[9px]">({subCount})</span>
+                                <span className="truncate max-w-[140px] sm:max-w-[180px]">{sub.name}</span>
+                                <span className="opacity-60 text-[10px] font-mono tabular-nums shrink-0">({subCount})</span>
                               </button>
                             )
                           })}
                         </div>
                       ) : (
-                        <p className="text-[11px] text-muted-foreground/75 mt-1">
+                        <p className="text-[11px] text-muted-foreground/75 mt-2 pt-2 border-t border-border/40 truncate">
                           Top-level semester folder
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-start mt-3 pt-2.5 border-t border-border/40 text-xs">
+                    <div className="flex items-center justify-start mt-3 pt-2 text-xs">
                       <button
                         type="button"
                         onClick={() => handleCreateInFolder(top.id, top.name, "maqari")}
-                        className="text-primary hover:underline font-medium text-[11px] flex items-center gap-1 cursor-pointer"
+                        className="text-primary hover:underline font-medium text-[11px] flex items-center gap-1 cursor-pointer truncate"
                       >
-                        <Plus className="h-3 w-3" />
-                        <span>Add in this folder</span>
+                        <Plus className="h-3 w-3 shrink-0" />
+                        <span>Add session in folder</span>
                       </button>
                     </div>
                   </div>
@@ -243,28 +249,38 @@ export function PreacherWorkspace() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ── Section 2: Recent Sessions & Quick Attendance ── */}
-      <Card className="border border-border/70 shadow-xs backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <div className="space-y-1">
-            <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <span>Recent Sessions & Attendance</span>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Take attendance or review past attendee records with one click.
-            </CardDescription>
+      <div className="rounded-xl border border-border/70 bg-card p-5 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-0.5">
+              Activity Feed
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
+              Recent Sessions & Quick Attendance
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Take attendance or review attendee records with one click.
+            </p>
           </div>
-        </CardHeader>
 
-        <CardContent>
+          <Link
+            href="/dashboard/activities/maqari"
+            className="text-xs text-primary hover:underline font-medium flex items-center gap-1 self-start sm:self-auto shrink-0 group"
+          >
+            <span>View all sessions</span>
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+
+        <div>
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="p-3 rounded-lg border border-border/40 flex items-center justify-between">
+                <div key={i} className="p-3.5 rounded-lg border border-border/40 flex items-center justify-between">
                   <Skeleton className="h-4 w-40" />
                   <Skeleton className="h-8 w-24" />
                 </div>
@@ -275,7 +291,7 @@ export function PreacherWorkspace() {
               No recent sessions found. Click &ldquo;+ New Session&rdquo; above to create one.
             </div>
           ) : (
-            <div className="divide-y divide-border/40">
+            <div className="divide-y divide-border/50">
               {recentSessions.map((session) => {
                 const folderObj = session.folder_id
                   ? folders.find((f) => f.id === session.folder_id)
@@ -285,34 +301,36 @@ export function PreacherWorkspace() {
                 return (
                   <div
                     key={`${session.type}-${session.id}`}
-                    className="py-3 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm text-foreground truncate">
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className="font-semibold text-sm text-foreground break-words sm:truncate max-w-full sm:max-w-md" title={session.name}>
                           {session.name}
                         </span>
-                        <Badge
-                          variant="outline"
-                          className={
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wider shrink-0 ${
                             isMaqra
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px]"
-                              : "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-[10px]"
-                          }
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25"
+                              : "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25"
+                          }`}
                         >
                           {isMaqra ? "Maqra'a" : "Event"}
-                        </Badge>
+                        </span>
                         {folderObj && (
-                          <Badge variant="secondary" className="text-[10px] gap-1 px-1.5 py-0 font-normal">
-                            <Folder className="h-2.5 w-2.5" />
-                            <span>{folderObj.name}</span>
-                          </Badge>
+                          <span className="text-[11px] text-muted-foreground flex items-center gap-1 shrink-0">
+                            <span>·</span>
+                            <Folder className="h-3 w-3 opacity-60 shrink-0" />
+                            <span className="truncate max-w-[130px]">{folderObj.name}</span>
+                          </span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-3">
-                        <span>{formatDate(session.event_date || session.created_at)}</span>
+                      <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
+                        <span className="font-mono text-[11px] text-muted-foreground/90 shrink-0">
+                          {formatDate(session.event_date || session.created_at)}
+                        </span>
                         {session.creator_name && (
-                          <span className="opacity-75">by {session.creator_name}</span>
+                          <span className="opacity-75 truncate max-w-[160px]">by {session.creator_name}</span>
                         )}
                       </div>
                     </div>
@@ -327,7 +345,7 @@ export function PreacherWorkspace() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs gap-1.5 shadow-2xs"
+                          className="h-8 text-xs font-medium gap-1.5 shadow-2xs border-border/70 hover:border-primary/40"
                         >
                           <Users className="h-3.5 w-3.5 text-muted-foreground" />
                           <span>Attendees</span>
@@ -343,7 +361,7 @@ export function PreacherWorkspace() {
                       >
                         <Button
                           size="sm"
-                          className="h-8 text-xs gap-1.5 shadow-xs"
+                          className="h-8 text-xs font-medium gap-1.5 shadow-xs transition-all hover:translate-y-[-1px]"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <span>Take Attendance</span>
@@ -355,8 +373,8 @@ export function PreacherWorkspace() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Target Folder Activity Creation Modal */}
       <CreateActivityDialog

@@ -5,27 +5,15 @@ import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Beneficiary } from "@/lib/firestore-collections"
 import { AddBeneficiaryDialog } from "@/components/beneficiaries/add-beneficiary-dialog"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Search,
   UserPlus,
   CheckCircle2,
   AlertCircle,
-  Phone,
-  Users,
   X,
   ArrowRight,
-  Sparkles,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -76,33 +64,43 @@ export function BeneficiaryIntakeWidget() {
   }
 
   return (
-    <Card className="border border-border/70 shadow-xs backdrop-blur-sm">
-      <CardHeader className="pb-3">
-        <div className="space-y-1">
-          <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <span>Beneficiary Database Check & Intake</span>
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Instantly check if a beneficiary is already in the database before adding them.
-          </CardDescription>
+    <div className="rounded-xl border border-border/70 bg-card p-5 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-0.5">
+            Directory Intake
+          </div>
+          <h2 className="text-base sm:text-lg font-bold text-foreground">
+            Beneficiary Verification & Quick Check
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Search before adding to check if a beneficiary already exists in the system.
+          </p>
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4">
+        <Link
+          href="/dashboard/beneficiaries"
+          className="text-xs text-primary hover:underline font-medium flex items-center gap-1 self-start sm:self-auto shrink-0 group"
+        >
+          <span>View all {beneficiaries.length} records</span>
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </div>
+
+      <div className="space-y-3.5">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, phone number (01xxxxxxxxx), or batch..."
-            className="pl-9 pr-9 h-10 text-sm bg-background/50 focus-visible:ring-primary/40"
+            placeholder="Type name, Egyptian phone number (01xxxxxxxxx), or batch code..."
+            className="pl-10 pr-10 h-11 text-sm bg-background/60 border-border/80 focus-visible:ring-primary/40 focus-visible:border-primary/50 transition-all rounded-lg"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />
@@ -112,32 +110,31 @@ export function BeneficiaryIntakeWidget() {
 
         {/* State: Not Found -> Direct CTA to Add */}
         {notFound && (
-          <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <span className="text-xs">
-                No matching beneficiary found in database for <strong>&ldquo;{searchTerm}&rdquo;</strong>.
+          <div className="p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>
+                No record matches <strong>&ldquo;{searchTerm}&rdquo;</strong> in the database.
               </span>
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => handleOpenAdd(searchTerm)}
-                className="gap-1.5 shrink-0 self-start sm:self-auto bg-amber-600 hover:bg-amber-700 text-white border-0 shadow-xs"
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                <span>Add &ldquo;{searchTerm.slice(0, 18)}&rdquo; to Database</span>
-              </Button>
-            </AlertDescription>
-          </Alert>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => handleOpenAdd(searchTerm)}
+              className="h-8 gap-1.5 text-xs font-medium shrink-0 self-start sm:self-auto shadow-xs"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>Register &ldquo;{searchTerm.slice(0, 16)}&rdquo;</span>
+            </Button>
+          </div>
         )}
 
         {/* State: Matching Results Found */}
         {hasSearched && searchResults.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-medium text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                Found {searchResults.length} existing {searchResults.length === 1 ? "beneficiary" : "beneficiaries"} in database:
+                Found {searchResults.length} existing {searchResults.length === 1 ? "beneficiary" : "beneficiaries"}:
               </span>
               <Button
                 variant="link"
@@ -153,25 +150,23 @@ export function BeneficiaryIntakeWidget() {
               {searchResults.slice(0, 6).map((b) => (
                 <div
                   key={b.id}
-                  className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-card/60 hover:border-primary/30 transition-all text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:border-primary/40 hover:bg-muted/30 transition-all text-xs min-w-0 gap-2"
                 >
-                  <div className="min-w-0 pr-2">
-                    <div className="font-semibold text-foreground truncate">{b.name}</div>
-                    <div className="flex items-center gap-2 text-muted-foreground mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {b.phone}
-                      </span>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="font-semibold text-foreground truncate" title={b.name}>{b.name}</div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] min-w-0">
+                      <span className="font-mono text-foreground/80 shrink-0">{b.phone || "No phone"}</span>
                       {b.batch && (
-                        <Badge variant="outline" className="text-[10px] py-0 px-1.5">
-                          {b.batch}
-                        </Badge>
+                        <>
+                          <span className="shrink-0">·</span>
+                          <span className="text-muted-foreground truncate max-w-[110px]" title={b.batch}>{b.batch}</span>
+                        </>
                       )}
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] shrink-0 font-medium">
-                    {b.da_wa_stage}
-                  </Badge>
+                  <div className="text-[11px] font-medium text-muted-foreground bg-background/80 px-2 py-0.5 rounded border border-border/50 shrink-0 whitespace-nowrap">
+                    {b.da_wa_stage || "Registered"}
+                  </div>
                 </div>
               ))}
             </div>
@@ -180,23 +175,16 @@ export function BeneficiaryIntakeWidget() {
 
         {/* Default State: Quick overview & helper */}
         {!hasSearched && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary shrink-0" />
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/70" />
               <span>
-                Total accessible beneficiaries in database: <strong className="text-foreground">{beneficiaries.length}</strong>
+                Active database directory: <strong className="text-foreground font-semibold tabular-nums">{beneficiaries.length}</strong> registered beneficiaries
               </span>
-            </div>
-            <Link
-              href="/dashboard/beneficiaries"
-              className="text-primary hover:underline font-medium flex items-center gap-1 self-start sm:self-auto"
-            >
-              <span>Manage all beneficiaries</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            </span>
           </div>
         )}
-      </CardContent>
+      </div>
 
       {/* Embedded Add Beneficiary Dialog */}
       <AddBeneficiaryDialog
@@ -208,6 +196,6 @@ export function BeneficiaryIntakeWidget() {
           setSearchTerm("")
         }}
       />
-    </Card>
+    </div>
   )
 }

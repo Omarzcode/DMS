@@ -9,18 +9,15 @@ import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Users,
   BookOpen,
-  Calendar,
   UserCheck,
   TrendingUp,
   ArrowUpIcon,
   AlertCircle,
   RefreshCw,
-  Sparkles,
   Award,
 } from "lucide-react"
 import type { Beneficiary, FirestoreDate, AttendanceRecord } from "@/lib/firestore-collections"
@@ -176,46 +173,46 @@ export function PreacherStats() {
     if (user) fetchStats()
   }, [user, fetchStats])
 
-  const statCards = useMemo<StatCardConfig[]>(() => {
+  const statCards = useMemo(() => {
     if (!metrics) return []
     return [
       {
-        title: "Attendance Logged by Me",
+        title: "Attendance Logged",
         value: metrics.myTotalAttendance,
-        description:
+        category: "Personal Log",
+        detail:
           metrics.myAttendanceThisMonth > 0
-            ? `+${metrics.myAttendanceThisMonth} this month • Logged by you`
-            : "Total attendee entries recorded by you",
+            ? `+${metrics.myAttendanceThisMonth} this month`
+            : "Total attendee entries recorded",
         icon: UserCheck,
-        badge: "My Log",
         showTrend: metrics.myAttendanceThisMonth > 0,
-        trendText: `+${metrics.myAttendanceThisMonth}`,
+        trendText: `+${metrics.myAttendanceThisMonth} this month`,
         href: "/dashboard/activities/maqari",
       },
       {
-        title: "Sessions Led by Me",
+        title: "Sessions Led",
         value: metrics.mySessionsCount,
-        description: `${metrics.mySessionsCount} organized by you • ${metrics.totalMinistrySessions} in system`,
+        category: "Maqari & Events",
+        detail: `${metrics.totalMinistrySessions} total sessions in ministry`,
         icon: BookOpen,
-        badge: "Maqari & Events",
         showTrend: false,
         href: "/dashboard/activities/maqari",
       },
       {
         title: "Learners Engaged",
         value: metrics.myUniqueBeneficiariesCount,
-        description: "Unique individuals who attended your circles",
+        category: "Direct Reach",
+        detail: "Unique attendees in your circles",
         icon: Users,
-        badge: "Direct Reach",
-        showTrend: metrics.myUniqueBeneficiariesCount > 0,
+        showTrend: false,
         href: "/dashboard/beneficiaries",
       },
       {
-        title: "Beneficiaries Database",
+        title: "Beneficiaries",
         value: metrics.totalBeneficiaries,
-        description: `${metrics.assignedToMeCount > 0 ? `${metrics.assignedToMeCount} assigned • ` : ""}All accessible for intake`,
+        category: "Directory",
+        detail: metrics.assignedToMeCount > 0 ? `${metrics.assignedToMeCount} assigned to you` : "Complete database access",
         icon: TrendingUp,
-        badge: "Full Access",
         showTrend: false,
         href: "/dashboard/beneficiaries",
       },
@@ -229,10 +226,10 @@ export function PreacherStats() {
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
+            <Card key={i} className="border-border/60">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
               </CardHeader>
               <CardContent>
                 <Skeleton className="h-8 w-16 mb-2" />
@@ -272,86 +269,82 @@ export function PreacherStats() {
 
   return (
     <div className="space-y-3">
-      {/* 4 Role-Specific KPI Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* 4 Role-Specific KPI Cards - Fluid responsive grid to prevent card squishing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((stat) => {
           const Content = (
-            <Card className="h-full hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer group relative overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium group-hover:text-primary transition-colors flex items-center gap-1.5">
-                  <span>{stat.title}</span>
-                </CardTitle>
-                <stat.icon
-                  className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0"
-                  aria-hidden="true"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline justify-between gap-1">
-                  <div className="text-xl sm:text-2xl font-bold">
-                    {stat.value.toLocaleString()}
-                  </div>
-                  {stat.badge && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] px-1.5 py-0 font-normal shrink-0"
-                    >
-                      {stat.badge}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
-                  {stat.showTrend && stat.trendText && (
-                    <span className="flex items-center text-green-600 dark:text-green-400 font-medium shrink-0">
-                      <ArrowUpIcon className="h-3 w-3 mr-0.5" />
-                      {stat.trendText}
+            <div className="min-w-0 h-full rounded-xl border border-border/70 bg-card p-4 sm:p-5 hover:border-primary/50 hover:bg-card/90 transition-all duration-200 cursor-pointer group flex flex-col justify-between">
+              <div className="min-w-0">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 block truncate">
+                      {stat.category}
                     </span>
-                  )}
-                  <span className="truncate">{stat.description}</span>
+                    <h3 className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                      {stat.title}
+                    </h3>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200">
+                    <stat.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground tabular-nums truncate">
+                  {stat.value.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="min-w-0 mt-3 pt-2.5 border-t border-border/40 text-[11px] text-muted-foreground flex items-center justify-between gap-2">
+                <span className="truncate flex-1 min-w-0">{stat.detail}</span>
+                {stat.showTrend && (
+                  <span className="text-emerald-500 font-medium shrink-0 flex items-center gap-0.5 text-xs">
+                    <ArrowUpIcon className="h-3 w-3" />
+                  </span>
+                )}
+              </div>
+            </div>
           )
 
           return stat.href ? (
-            <Link key={stat.title} href={stat.href} className="block">
+            <Link key={stat.title} href={stat.href} className="block h-full min-w-0">
               {Content}
             </Link>
           ) : (
-            <div key={stat.title}>{Content}</div>
+            <div key={stat.title} className="h-full min-w-0">{Content}</div>
           )
         })}
       </div>
 
       {/* Preacher Personal Engagement & Impact Summary Ribbon */}
-      <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
-            <Award className="h-4 w-4" />
+      <div className="px-4 py-3 rounded-xl border border-border/60 bg-muted/20 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-7 h-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Award className="h-3.5 w-3.5" />
           </div>
-          <div>
-            <span className="font-semibold text-foreground">
+          <div className="leading-snug min-w-0 flex-1">
+            <span className="font-medium text-foreground break-words">
               {metrics.myTotalAttendance > 0
-                ? `You have personally recorded ${metrics.myTotalAttendance} attendee entries across ${metrics.mySessionsCount} sessions.`
-                : "Welcome! You have full access to create sessions and log attendance across all folders."}
+                ? `You have logged ${metrics.myTotalAttendance} attendee entries across ${metrics.mySessionsCount} sessions.`
+                : "Welcome to your home logging portal. You have full access across all folders."}
             </span>
-            <span className="text-muted-foreground block sm:inline sm:ml-1.5">
-              {metrics.myUniqueBeneficiariesCount > 0 &&
-                `Engaged ${metrics.myUniqueBeneficiariesCount} individual learners.`}
-            </span>
+            {metrics.myUniqueBeneficiariesCount > 0 && (
+              <span className="text-muted-foreground ml-1.5 inline-block">
+                ({metrics.myUniqueBeneficiariesCount} unique learners reached)
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 text-muted-foreground">
+        <div className="flex items-center gap-3 shrink-0 text-muted-foreground text-[11px] flex-wrap">
           {metrics.myAttendanceThisWeek > 0 && (
-            <Badge variant="outline" className="text-[11px] gap-1 border-primary/30 text-primary">
-              <Sparkles className="h-3 w-3" />
-              <span>+{metrics.myAttendanceThisWeek} logged this week</span>
-            </Badge>
+            <span className="inline-flex items-center gap-1.5 text-foreground font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              +{metrics.myAttendanceThisWeek} logged this week
+            </span>
           )}
           {metrics.averagePerSession > 0 && metrics.mySessionsCount > 0 && (
-            <span className="text-[11px]">
-              Avg: ~<strong className="text-foreground">{metrics.averagePerSession}</strong>/session
+            <span className="hidden md:inline text-muted-foreground">
+              ~<strong className="text-foreground font-semibold">{metrics.averagePerSession}</strong> avg / session
             </span>
           )}
         </div>

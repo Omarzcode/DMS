@@ -118,10 +118,26 @@ interface ConfirmConfig {
 // ─── Phone Utilities (module-level — Fix 1 & Fix 7) ──────────────
 // Defined outside the component so parsers don't capture stale closures
 
+function toAsciiDigits(str: string): string {
+  return str
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+}
+
+function decodeQuotedPrintable(str: string): string {
+  if (!str.includes("=")) return str
+  try {
+    return decodeURIComponent(str.replace(/=([0-9A-Fa-f]{2})/g, "%$1"))
+  } catch {
+    return str
+  }
+}
+
 function formatEgyptianPhone(phone: string): string {
-  // Fix 7: Strip non-digits AFTER handling the + prefix
-  // so that "+20" is caught before the + is removed
-  let clean = phone.trim()
+  if (!phone) return ""
+
+  // Convert Eastern Arabic / Persian numerals to ASCII digits
+  let clean = toAsciiDigits(phone).trim()
 
   // Handle +20 prefix before stripping symbols
   if (clean.startsWith("+20"))       clean = clean.slice(3)
@@ -134,7 +150,7 @@ function formatEgyptianPhone(phone: string): string {
   // Handle 20XXXXXXXXXX (country code without +)
   if (clean.startsWith("20") && clean.length === 12) clean = clean.slice(2)
 
-  // 10-digit number missing leading 0
+  // 10-digit number missing leading 0 (e.g. 1012345678 -> 01012345678)
   if (clean.length === 10 && /^1[0-2,5]/.test(clean)) clean = "0" + clean
 
   // Valid Egyptian mobile
@@ -370,20 +386,25 @@ export function ContactImportDialog({
 
       if (line.startsWith("FN:") || line.startsWith("FN;")) {
         const value = line.substring(line.indexOf(":") + 1).trim()
-        if (value) current.name = value
+        if (value) current.name = decodeQuotedPrintable(value)
       } else if (line.startsWith("TEL;") || line.startsWith("TEL:")) {
         const telLine = line.substring(line.indexOf(":") + 1).trim()
-        if (!current.phone && telLine) current.phone = telLine
+        if (telLine) {
+          // If no phone yet, or if current phone is invalid and this one is valid, pick it
+          if (!current.phone || (!isValidEgyptianPhone(current.phone) && isValidEgyptianPhone(telLine))) {
+            current.phone = telLine
+          }
+        }
       } else if ((line.startsWith("N:") || line.startsWith("N;")) && !current.name) {
         const value    = line.substring(line.indexOf(":") + 1)
         const parts    = value.split(";")
         const fullName = [parts[1]?.trim(), parts[0]?.trim()].filter(Boolean).join(" ")
-        if (fullName) current.name = fullName
+        if (fullName) current.name = decodeQuotedPrintable(fullName)
       }
     }
 
     return records
-  }, []) // No commonSettings dependency — Fix 1
+  }, [])
 
   const parseCSV = useCallback((csvContent: string): Omit<ContactRecord, "da_wa_stage" | "da_i_id" | "notes" | "batch">[] => {
     const records: Omit<ContactRecord, "da_wa_stage" | "da_i_id" | "notes" | "batch">[] = []
@@ -485,7 +506,8 @@ export function ContactImportDialog({
       const reader    = new FileReader()
       reader.onload   = (e) => {
         try {
-          const fileContent = e.target?.result as string
+          const rawContent = e.target?.result as string
+          const fileContent = rawContent ? rawContent.replace(/^\uFEFF/, "") : ""
 
           // Parse to bare records (no settings applied yet — Fix 1)
           const bareRecords =
@@ -744,9 +766,8 @@ export function ContactImportDialog({
     })
   }, [contacts, filterStatus, searchQuery])
 
-  // Fix 12: selectedCount is consistent — only pending contacts that are selected
   const selectedCount = useMemo(() =>
-    contacts.filter((c) => c.selected && c.status === "pending").length,
+    contacts.filter((c) => c.selected && (c.status === "pending" || c.status === "duplicate")).length,
   [contacts])
 
   const selectableFilteredContacts = useMemo(() =>
@@ -771,20 +792,12 @@ export function ContactImportDialog({
   // ─── Import (Fix 3) ───────────────────────────────────────────
 
   const handleImport = async () => {
-    const selectedContacts = contacts.filter(
-      (c) => c.selected && c.status === "pending"
-    )
-
-    if (selectedContacts.length === 0) {
-      toast.error("No contacts selected for import")
-      return
-    }
-
-    // Fix 2: Use AlertDialog portal instead of window.confirm
+    // Check if duplicate contacts are selected
     const duplicateSelected = contacts.filter(
       (c) => c.selected && c.status === "duplicate"
     ).length
 
+    let allowDuplicates = false
     if (duplicateSelected > 0) {
       const confirmed = await confirm({
         title:       "Duplicate contacts selected",
@@ -794,6 +807,16 @@ export function ContactImportDialog({
         variant:     "danger",
       })
       if (!confirmed) return
+      allowDuplicates = true
+    }
+
+    const selectedContacts = contacts.filter(
+      (c) => c.selected && (c.status === "pending" || (allowDuplicates && c.status === "duplicate"))
+    )
+
+    if (selectedContacts.length === 0) {
+      toast.error("No contacts selected for import")
+      return
     }
 
     // Validate required fields
@@ -812,7 +835,6 @@ export function ContactImportDialog({
     let failed     = 0
 
     // Collect all status updates and apply them in one go per batch
-    // Fix 3: No updateContact calls inside the loop
     const statusUpdates = new Map<string, Pick<ContactRecord, "status" | "error">>()
 
     try {
@@ -831,11 +853,11 @@ export function ContactImportDialog({
           const newBeneficiary: Omit<Beneficiary, "id"> = {
             name:        contact.name.trim(),
             phone:       contact.formattedPhone,
-            da_i_id:     contact.da_i_id,
-            da_wa_stage: contact.da_wa_stage as "New Contact" | "Initial Interest" | "Regular Attendance" | "Committed Learner",
-            // Fix 10: Include batch field
+            da_i_id:     contact.da_i_id || commonSettings.da_i_id,
+            da_wa_stage: (contact.da_wa_stage || commonSettings.da_wa_stage) as "New Contact" | "Initial Interest" | "Regular Attendance" | "Committed Learner",
             batch:       contact.batch.trim() || commonSettings.batch.trim() || "—",
-            notes:       contact.notes.trim(),
+            notes:       contact.notes.trim() || commonSettings.notes.trim() || "",
+            deleted:     false,
             created_at:  new Date(),
           }
 
@@ -1338,13 +1360,13 @@ export function ContactImportDialog({
                         <thead className="bg-muted sticky top-0 z-10">
                           <tr className="border-b text-xs text-muted-foreground">
                             <th className="p-3 text-center w-12">#</th>
-                            <th className="p-3 text-right">Name</th>
-                            <th className="p-3 text-right">Phone</th>
+                            <th className="p-3 text-left">Name</th>
+                            <th className="p-3 text-left">Phone</th>
                             {showDetails && (
                               <>
-                                <th className="p-3 text-right">Stage</th>
-                                <th className="p-3 text-right">Batch</th>
-                                <th className="p-3 text-right">Notes</th>
+                                <th className="p-3 text-left">Stage</th>
+                                <th className="p-3 text-left">Batch</th>
+                                <th className="p-3 text-left">Notes</th>
                               </>
                             )}
                             <th className="p-3 text-center">Status</th>
