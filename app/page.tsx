@@ -4,7 +4,9 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogOut, Clock } from "lucide-react"
+import { Loader2, LogOut, Clock, Mail, Lock, AlertCircle } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle"
 import Image from "next/image"
 import { Logo } from "@/components/ui/logo"
@@ -135,9 +137,15 @@ function useStagger(count: number, delay = 120) {
 }
 
 export default function HomePage() {
-  const { user, userRole, loading, signInWithGoogle, logout } = useAuth()
+  const { user, userRole, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout } = useAuth()
   const router = useRouter()
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [name, setName] = useState("")
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [showEmailAuth, setShowEmailAuth] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const show = useStagger(5, 150)
 
@@ -153,6 +161,7 @@ export default function HomePage() {
 
   const handleSignIn = async () => {
     setIsSigningIn(true)
+    setAuthError(null)
     try {
       await signInWithGoogle()
     } catch (e: any) {
@@ -161,13 +170,51 @@ export default function HomePage() {
         e?.code !== "auth/cancelled-popup-request"
       ) {
         console.warn("Sign-in notice:", e?.message || e)
+        setAuthError("فشل الدخول عبر Google. يمكنك استخدام البريد وكلمة المرور أدناه.")
       }
     } finally {
       setIsSigningIn(false)
     }
   }
 
-    if (loading) {
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !password) {
+      setAuthError("يرجى إدخال البريد الإلكتروني وكلمة المرور")
+      return
+    }
+    setIsSigningIn(true)
+    setAuthError(null)
+    try {
+      if (isSignUp) {
+        await signUpWithEmail(email, password, name)
+      } else {
+        await signInWithEmail(email, password)
+      }
+    } catch (err: any) {
+      console.error("Auth error:", err)
+      const code = err?.code || ""
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/user-not-found" ||
+        code === "auth/wrong-password"
+      ) {
+        setAuthError("البريد الإلكتروني أو كلمة المرور غير صحيحة")
+      } else if (code === "auth/email-already-in-use") {
+        setAuthError("هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول")
+      } else if (code === "auth/weak-password") {
+        setAuthError("كلمة المرور يجب أن لا تقل عن 6 أحرف")
+      } else if (code === "auth/invalid-email") {
+        setAuthError("صيغة البريد الإلكتروني غير صحيحة")
+      } else {
+        setAuthError(err?.message || "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى")
+      }
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
         <div className="animate-breathe">
@@ -182,7 +229,7 @@ export default function HomePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4 py-8">
         <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" />
 
         <div className="fixed top-4 end-4 z-50">
@@ -198,7 +245,6 @@ export default function HomePage() {
             }}
           >
             <Logo size={56} className="mx-auto mb-6" />
-              
           </div>
 
           <div
@@ -223,7 +269,7 @@ export default function HomePage() {
               transform: show[2] ? "scaleX(1)" : "scaleX(0)",
             }}
           >
-            <div className="my-8 h-px w-full bg-border" />
+            <div className="my-6 h-px w-full bg-border" />
           </div>
 
           <div
@@ -233,22 +279,106 @@ export default function HomePage() {
               transform: show[3] ? "translateY(0)" : "translateY(20px)",
             }}
           >
-            <p className="mb-5 text-sm text-muted-foreground">
-              Sign in to continue
-            </p>
+            {authError && (
+              <Alert variant="destructive" className="mb-4 text-start py-2.5 px-3 rounded-xl">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <AlertDescription className="text-xs leading-relaxed">{authError}</AlertDescription>
+              </Alert>
+            )}
+
             <Button
               onClick={handleSignIn}
               disabled={isSigningIn}
               className="w-full h-12 gap-2.5 text-sm font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
               size="lg"
             >
-              {isSigningIn ? (
+              {isSigningIn && !showEmailAuth ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <GoogleIcon />
               )}
-              {isSigningIn ? "Signing in…" : "Continue with Google"}
+              {isSigningIn && !showEmailAuth ? "Signing in…" : "Continue with Google"}
             </Button>
+
+            {/* Email / Password divider & toggle */}
+            <div className="relative my-5 flex items-center justify-center">
+              <div className="border-t border-border w-full" />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailAuth(!showEmailAuth)
+                  setAuthError(null)
+                }}
+                className="absolute bg-background px-3 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+              >
+                {showEmailAuth ? "Hide Email Login ▲" : "Or use Email & Password ▼"}
+              </button>
+            </div>
+
+            {/* In-app Email/Password form (Works 100% inside Android APK without browser redirects) */}
+            {showEmailAuth && (
+              <form onSubmit={handleEmailAuth} className="space-y-3 pt-1 text-start">
+                {isSignUp && (
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="Full Name / الاسم الكامل"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-11 rounded-xl text-sm"
+                      required
+                    />
+                  </div>
+                )}
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email / البريد الإلكتروني"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 rounded-xl text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Password / كلمة المرور"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 rounded-xl text-sm"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isSigningIn}
+                  className="w-full h-11 rounded-xl font-medium text-sm transition-all"
+                >
+                  {isSigningIn && showEmailAuth ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isSignUp ? (
+                    "Create Account / إنشاء حساب"
+                  ) : (
+                    "Sign In with Email / دخول"
+                  )}
+                </Button>
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp)
+                      setAuthError(null)
+                    }}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    {isSignUp
+                      ? "Already have an account? Sign In"
+                      : "Need an account? Sign Up with Email"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           <div

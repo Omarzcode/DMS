@@ -2,7 +2,17 @@
 
 import type React from "react"
 import { useState, useEffect, createContext, useContext } from "react"
-import { type User, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth"
+import {
+  type User,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signOut,
+} from "firebase/auth"
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import type { Preacher, UserRole } from "@/lib/firestore-collections"
@@ -13,6 +23,8 @@ interface AuthContextType {
   userProfile: Preacher | null
   loading: boolean
   signInWithGoogle: () => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<any>
+  signUpWithEmail: (email: string, password: string, name?: string) => Promise<any>
   logout: () => Promise<void>
 }
 
@@ -93,6 +105,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
+    // Process redirect result if coming back from OAuth redirect
+    getRedirectResult(auth).catch((err) => {
+      if (err?.code !== "auth/null-user") {
+        console.warn("OAuth redirect result:", err)
+      }
+    })
+
     return unsubscribe
   }, [])
 
@@ -100,20 +119,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, googleProvider)
     } catch (error: any) {
-      // User closed or cancelled the popup dialog - this is normal user behavior, not an unhandled error
       if (
         error?.code === "auth/popup-closed-by-user" ||
         error?.code === "auth/cancelled-popup-request"
       ) {
         return
       }
-      if (error?.code === "auth/popup-blocked") {
-        console.warn("Google sign-in popup was blocked by browser settings.")
-        throw error
+      // If popup is blocked or unsupported in Android WebView, try redirect
+      if (
+        error?.code === "auth/popup-blocked" ||
+        error?.code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        console.warn("Popup blocked or unsupported, falling back to redirect...")
+        await signInWithRedirect(auth, googleProvider)
+        return
       }
       console.error("Error signing in with Google:", error)
       throw error
     }
+  }
+
+  const signInWithEmail = async (email: string, password: string) => {
+    return await signInWithEmailAndPassword(auth, email.trim(), password)
+  }
+
+  const signUpWithEmail = async (email: string, password: string, name?: string) => {
+    const cred = await createUserWithEmailAndPassword(auth, email.trim(), password)
+    if (name && cred.user) {
+      await updateProfile(cred.user, { displayName: name.trim() }).catch(console.warn)
+    }
+    return cred
   }
 
   const logout = async () => {
@@ -131,6 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userProfile,
     loading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     logout,
   }
 
