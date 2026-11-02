@@ -5,7 +5,7 @@
 
 # next.js
 /.next/
-/out/
+# /out/ (tracked for Capacitor CI sync)
 
 # production & build
 /build
