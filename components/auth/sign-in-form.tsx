@@ -5,18 +5,20 @@ import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertCircle } from "lucide-react"
+import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 
 export function SignInForm() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth()
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, loading } = useAuth()
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [showEmailAuth, setShowEmailAuth] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
   const [isSignUp, setIsSignUp] = useState(false)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
 
   const handleGoogleSignIn = async () => {
     try {
@@ -36,6 +38,25 @@ export function SignInForm() {
     }
   }
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email) {
+      setError("Please enter your email first.")
+      return
+    }
+    setIsSigningIn(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      await resetPassword(email)
+      setSuccess("Password setup link sent to your email! Open the link to set your password, then return here to log in.")
+    } catch (err: any) {
+      setError(err?.message || "Failed to send reset link.")
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
@@ -44,6 +65,7 @@ export function SignInForm() {
     }
     setIsSigningIn(true)
     setError(null)
+    setSuccess(null)
     try {
       if (isSignUp) {
         await signUpWithEmail(email, password, name)
@@ -58,7 +80,7 @@ export function SignInForm() {
         code === "auth/user-not-found" ||
         code === "auth/wrong-password"
       ) {
-        setError("Invalid email or password.")
+        setError("Invalid email or password. If you used Google before, click 'Forgot password?' to set a password.")
       } else if (code === "auth/email-already-in-use") {
         setError("This email is already in use. Please sign in.")
       } else if (code === "auth/weak-password") {
@@ -96,6 +118,14 @@ export function SignInForm() {
           </Alert>
         )}
 
+        {/* Success */}
+        {success && (
+          <Alert className="mb-4 text-start rounded-xl border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300">
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+            <AlertDescription className="text-xs leading-relaxed">{success}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Sign in with Google */}
         <Button
           onClick={handleGoogleSignIn}
@@ -119,6 +149,8 @@ export function SignInForm() {
             onClick={() => {
               setShowEmailAuth(!showEmailAuth)
               setError(null)
+              setSuccess(null)
+              setIsForgotPassword(false)
             }}
             className="absolute bg-background px-3 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
           >
@@ -128,67 +160,126 @@ export function SignInForm() {
 
         {/* Email/Password form */}
         {showEmailAuth && (
-          <form onSubmit={handleEmailAuth} className="space-y-3 pt-1 text-start">
-            {isSignUp && (
-              <div>
-                <Input
-                  type="text"
-                  placeholder="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-11 rounded-xl text-sm"
-                  required
-                />
-              </div>
+          <div className="pt-1">
+            {isForgotPassword ? (
+              <form onSubmit={handleResetPassword} className="space-y-3 text-start">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Enter your registered email and we will send you a link to set/reset your password.
+                </p>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 rounded-xl text-sm"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isSigningIn}
+                  className="w-full h-11 rounded-xl font-medium text-sm transition-all"
+                >
+                  {isSigningIn ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Send Password Link"
+                  )}
+                </Button>
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(false)
+                      setError(null)
+                    }}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleEmailAuth} className="space-y-3 text-start">
+                {isSignUp && (
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="Full Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-11 rounded-xl text-sm"
+                      required
+                    />
+                  </div>
+                )}
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 rounded-xl text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 rounded-xl text-sm"
+                    required
+                  />
+                </div>
+                {!isSignUp && (
+                  <div className="text-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(true)
+                        setError(null)
+                        setSuccess(null)
+                      }}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={isSigningIn}
+                  className="w-full h-11 rounded-xl font-medium text-sm transition-all"
+                >
+                  {isSigningIn && showEmailAuth ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isSignUp ? (
+                    "Create Account"
+                  ) : (
+                    "Sign In with Email"
+                  )}
+                </Button>
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp)
+                      setError(null)
+                    }}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    {isSignUp
+                      ? "Already have an account? Sign In"
+                      : "Need an account? Sign Up with Email"}
+                  </button>
+                </div>
+              </form>
             )}
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11 rounded-xl text-sm"
-                required
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11 rounded-xl text-sm"
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={isSigningIn}
-              className="w-full h-11 rounded-xl font-medium text-sm transition-all"
-            >
-              {isSigningIn && showEmailAuth ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isSignUp ? (
-                "Create Account"
-              ) : (
-                "Sign In with Email"
-              )}
-            </Button>
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp)
-                  setError(null)
-                }}
-                className="text-xs text-primary hover:underline transition-colors"
-              >
-                {isSignUp
-                  ? "Already have an account? Sign In"
-                  : "Need an account? Sign Up with Email"}
-              </button>
-            </div>
-          </form>
+          </div>
         )}
 
         {/* Footer */}

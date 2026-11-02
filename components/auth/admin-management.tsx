@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { collection, query, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { sendPasswordResetEmail } from "firebase/auth"
+import { db, auth } from "@/lib/firebase"
 import type { Preacher, UserRole } from "@/lib/firestore-collections"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,6 +34,7 @@ import {
   ShieldCheck,
   RefreshCw,
   Mail,
+  KeyRound,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import Image from "next/image"
@@ -242,6 +244,23 @@ export function AdminManagement() {
       newRole,
     })
     setDialogOpen(true)
+  }
+
+  const sendPasswordLink = async (user: Preacher) => {
+    if (!user.email) {
+      setError("This user does not have a valid email.")
+      return
+    }
+    try {
+      setProcessingUser(user.id)
+      setError(null)
+      await sendPasswordResetEmail(auth, user.email.trim())
+      setSuccessMessage(`Password setup link sent to ${user.email}. They can set their password and log in with email & password while keeping all their data!`)
+    } catch (err: any) {
+      setError(err?.message || "Failed to send password setup email.")
+    } finally {
+      setProcessingUser(null)
+    }
   }
 
   useEffect(() => {
@@ -630,12 +649,28 @@ export function AdminManagement() {
                           </Select>
                         </div>
 
-                        <div className="pt-5">
+                        <div className="pt-5 flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => sendPasswordLink(preacher)}
+                            disabled={processingUser === preacher.id}
+                            title="Send Password Setup / Reset Link"
+                            className="h-9 w-9 text-primary hover:text-primary hover:bg-primary/10 border-primary/30"
+                          >
+                            {processingUser === preacher.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <KeyRound className="h-4 w-4" />
+                            )}
+                          </Button>
+
                           <Button
                             variant="outline"
                             size="icon"
                             onClick={() => showDeleteDialog(preacher)}
                             disabled={processingUser === preacher.id}
+                            title="Delete User"
                             className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
                           >
                             {processingUser === preacher.id ? (

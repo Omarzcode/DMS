@@ -10,10 +10,11 @@ import {
   getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile,
   signOut,
 } from "firebase/auth"
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
+import { doc, getDoc, setDoc, getDocs, collection, query, where, serverTimestamp } from "firebase/firestore"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import type { Preacher, UserRole } from "@/lib/firestore-collections"
 
@@ -25,6 +26,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<any>
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<any>
+  resetPassword: (email: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -76,16 +78,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUserProfile({ ...userData, role: effectiveRole })
             setUserRole(effectiveRole)
           } else {
-            const assignedRole: UserRole = isDesignatedAdmin ? "admin" : "da'i"
+            // Check if there's an existing preacher doc under this email (e.g., from prior Google auth or admin invite)
+            let existingData: Partial<Preacher> | null = null
+            try {
+              if (userEmail) {
+                const preacherQ = query(collection(db, "preachers"), where("email", "==", userEmail))
+                const preacherSnap = await getDocs(preacherQ)
+                if (!preacherSnap.empty) {
+                  existingData = preacherSnap.docs[0].data() as Preacher
+                }
+              }
+            } catch (queryErr) {
+              console.warn("Preacher query by email warning:", queryErr)
+            }
+
+            const assignedRole: UserRole = isDesignatedAdmin
+              ? "admin"
+              : (existingData?.role || "da'i")
 
             const newPreacher: Preacher = {
               id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email || "Unknown",
-              email: firebaseUser.email || "",
+              name: existingData?.name || firebaseUser.displayName || firebaseUser.email || "Unknown",
+              email: firebaseUser.email || userEmail,
               role: assignedRole,
-              created_at: serverTimestamp() as any,
+              created_at: existingData?.created_at || (serverTimestamp() as any),
             }
-            await setDoc(userDocRef, newPreacher)
+
+            await setDoc(userDocRef, newPreacher, { merge: true })
             setUser(firebaseUser)
             setUserProfile(newPreacher)
             setUserRole(assignedRole)
@@ -151,6 +170,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return cred
   }
 
+  const resetPassword = async (email: string) => {
+    return await sendPasswordResetEmail(auth, email.trim())
+  }
+
   const logout = async () => {
     try {
       await signOut(auth)
@@ -168,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    resetPassword,
     logout,
   }
 

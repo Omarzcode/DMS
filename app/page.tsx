@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogOut, Clock, Mail, Lock, AlertCircle } from "lucide-react"
+import { Loader2, LogOut, Clock, Mail, Lock, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggleButton } from "@/components/ui/theme-toggle"
@@ -137,14 +137,16 @@ function useStagger(count: number, delay = 120) {
 }
 
 export default function HomePage() {
-  const { user, userRole, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout } = useAuth()
+  const { user, userRole, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, logout } = useAuth()
   const router = useRouter()
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
   const [isSignUp, setIsSignUp] = useState(false)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null)
   const [showEmailAuth, setShowEmailAuth] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const show = useStagger(5, 150)
@@ -162,6 +164,7 @@ export default function HomePage() {
   const handleSignIn = async () => {
     setIsSigningIn(true)
     setAuthError(null)
+    setResetSuccess(null)
     try {
       await signInWithGoogle()
     } catch (e: any) {
@@ -177,6 +180,32 @@ export default function HomePage() {
     }
   }
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email) {
+      setAuthError("يرجى إدخال البريد الإلكتروني أولاً")
+      return
+    }
+    setIsSigningIn(true)
+    setAuthError(null)
+    setResetSuccess(null)
+    try {
+      await resetPassword(email)
+      setResetSuccess("تم إرسال رابط تعيين كلمة المرور إلى بريدك الإلكتروني! تفقّد بريدك (بما في ذلك مجلد الرسائل غير المرغوب فيها) لتعيين كلمة السر ثم ادخل هنا مباشرة وستبقى بياناتك كما هي.")
+    } catch (err: any) {
+      const code = err?.code || ""
+      if (code === "auth/user-not-found") {
+        setAuthError("هذا البريد الإلكتروني غير موجود في النظام")
+      } else if (code === "auth/invalid-email") {
+        setAuthError("صيغة البريد الإلكتروني غير صحيحة")
+      } else {
+        setAuthError(err?.message || "فشل إرسال الرابط. يرجى التأكد من البريد والمحاولة مرة أخرى")
+      }
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
@@ -185,6 +214,7 @@ export default function HomePage() {
     }
     setIsSigningIn(true)
     setAuthError(null)
+    setResetSuccess(null)
     try {
       if (isSignUp) {
         await signUpWithEmail(email, password, name)
@@ -199,9 +229,9 @@ export default function HomePage() {
         code === "auth/user-not-found" ||
         code === "auth/wrong-password"
       ) {
-        setAuthError("البريد الإلكتروني أو كلمة المرور غير صحيحة")
+        setAuthError("البريد الإلكتروني أو كلمة المرور غير صحيحة. إذا كان حسابك مسجلاً عبر Google سابقاً، اضغط 'نسيت كلمة المرور' لإنشاء كلمة سر له.")
       } else if (code === "auth/email-already-in-use") {
-        setAuthError("هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول")
+        setAuthError("هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول أو استعادة كلمة المرور.")
       } else if (code === "auth/weak-password") {
         setAuthError("كلمة المرور يجب أن لا تقل عن 6 أحرف")
       } else if (code === "auth/invalid-email") {
@@ -286,6 +316,13 @@ export default function HomePage() {
               </Alert>
             )}
 
+            {resetSuccess && (
+              <Alert className="mb-4 text-start py-2.5 px-3 rounded-xl border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300">
+                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-xs leading-relaxed">{resetSuccess}</AlertDescription>
+              </Alert>
+            )}
+
             <Button
               onClick={handleSignIn}
               disabled={isSigningIn}
@@ -308,6 +345,8 @@ export default function HomePage() {
                 onClick={() => {
                   setShowEmailAuth(!showEmailAuth)
                   setAuthError(null)
+                  setResetSuccess(null)
+                  setIsForgotPassword(false)
                 }}
                 className="absolute bg-background px-3 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
               >
@@ -317,67 +356,126 @@ export default function HomePage() {
 
             {/* In-app Email/Password form (Works 100% inside Android APK without browser redirects) */}
             {showEmailAuth && (
-              <form onSubmit={handleEmailAuth} className="space-y-3 pt-1 text-start">
-                {isSignUp && (
-                  <div>
-                    <Input
-                      type="text"
-                      placeholder="Full Name / الاسم الكامل"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="h-11 rounded-xl text-sm"
-                      required
-                    />
-                  </div>
+              <div className="pt-1">
+                {isForgotPassword ? (
+                  <form onSubmit={handleResetPassword} className="space-y-3 text-start">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لتحديد كلمة المرور. ستظل جميع بياناتك وأنشطتك كما هي تماماً.
+                    </p>
+                    <div>
+                      <Input
+                        type="email"
+                        placeholder="Email / البريد الإلكتروني"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-11 rounded-xl text-sm"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={isSigningIn}
+                      className="w-full h-11 rounded-xl font-medium text-sm transition-all"
+                    >
+                      {isSigningIn ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Send Reset Link / إرسال رابط التعيين"
+                      )}
+                    </Button>
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(false)
+                          setAuthError(null)
+                        }}
+                        className="text-xs text-primary hover:underline transition-colors"
+                      >
+                        العودة لتسجيل الدخول / Back to Sign In
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleEmailAuth} className="space-y-3 text-start">
+                    {isSignUp && (
+                      <div>
+                        <Input
+                          type="text"
+                          placeholder="Full Name / الاسم الكامل"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="h-11 rounded-xl text-sm"
+                          required
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <Input
+                        type="email"
+                        placeholder="Email / البريد الإلكتروني"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-11 rounded-xl text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="password"
+                        placeholder="Password / كلمة المرور"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-11 rounded-xl text-sm"
+                        required
+                      />
+                    </div>
+                    {!isSignUp && (
+                      <div className="text-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsForgotPassword(true)
+                            setAuthError(null)
+                            setResetSuccess(null)
+                          }}
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          نسيت كلمة المرور؟ / Forgot password?
+                        </button>
+                      </div>
+                    )}
+                    <Button
+                      type="submit"
+                      disabled={isSigningIn}
+                      className="w-full h-11 rounded-xl font-medium text-sm transition-all"
+                    >
+                      {isSigningIn && showEmailAuth ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : isSignUp ? (
+                        "Create Account / إنشاء حساب"
+                      ) : (
+                        "Sign In with Email / دخول"
+                      )}
+                    </Button>
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSignUp(!isSignUp)
+                          setAuthError(null)
+                        }}
+                        className="text-xs text-primary hover:underline transition-colors"
+                      >
+                        {isSignUp
+                          ? "Already have an account? Sign In"
+                          : "Need an account? Sign Up with Email"}
+                      </button>
+                    </div>
+                  </form>
                 )}
-                <div>
-                  <Input
-                    type="email"
-                    placeholder="Email / البريد الإلكتروني"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 rounded-xl text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="password"
-                    placeholder="Password / كلمة المرور"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 rounded-xl text-sm"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={isSigningIn}
-                  className="w-full h-11 rounded-xl font-medium text-sm transition-all"
-                >
-                  {isSigningIn && showEmailAuth ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isSignUp ? (
-                    "Create Account / إنشاء حساب"
-                  ) : (
-                    "Sign In with Email / دخول"
-                  )}
-                </Button>
-                <div className="text-center pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSignUp(!isSignUp)
-                      setAuthError(null)
-                    }}
-                    className="text-xs text-primary hover:underline transition-colors"
-                  >
-                    {isSignUp
-                      ? "Already have an account? Sign In"
-                      : "Need an account? Sign Up with Email"}
-                  </button>
-                </div>
-              </form>
+              </div>
             )}
           </div>
 
