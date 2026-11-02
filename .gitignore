@@ -33,3 +33,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# android build outputs
+android/app/build/
+android/.gradle/
+android/build/
+
+
