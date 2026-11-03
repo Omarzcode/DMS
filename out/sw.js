@@ -1,5 +1,5 @@
 // public/sw.js
-const CACHE_NAME = 'ems-v2'
+const CACHE_NAME = 'ems-v3'
 const OFFLINE_URL = '/offline'
 
 const STATIC_ASSETS = [
