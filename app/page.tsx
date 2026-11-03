@@ -232,23 +232,23 @@ export default function HomePage() {
         await signInWithEmail(targetEmail, targetPassword)
       }
     } catch (err: any) {
-      console.error("Auth error:", err)
       const code = err?.code || ""
+      console.warn("Auth attempt notice:", code || err?.message)
       if (
         code === "auth/invalid-credential" ||
         code === "auth/user-not-found" ||
         code === "auth/wrong-password" ||
         code === "auth/invalid-login-credentials"
       ) {
-        setAuthError("اسم المستخدم أو كلمة المرور غير صحيحة")
+        setAuthError("اسم المستخدم أو كلمة المرور غير صحيحة. إذا نسيت كلمة المرور، يمكنك استعادتها أدناه.")
       } else if (code === "auth/email-already-in-use") {
-        setAuthError("الحساب مسجل بالفعل، يرجى تسجيل الدخول")
+        setAuthError("هذا الحساب مسجل بالفعل، يرجى تسجيل الدخول أو استعادة كلمة المرور.")
       } else if (code === "auth/weak-password") {
         setAuthError("يجب أن تتكون كلمة المرور من 6 أحرف على الأقل")
       } else if (code === "auth/invalid-email") {
         setAuthError("صيغة اسم المستخدم أو البريد غير صالحة")
       } else {
-        setAuthError("حدث خطأ أثناء تسجيل الدخول. يرجى إعادة المحاولة.")
+        setAuthError("تعذر إتمام العملية. يرجى التحقق من البيانات وإعادة المحاولة.")
       }
     } finally {
       setIsSigningIn(false)

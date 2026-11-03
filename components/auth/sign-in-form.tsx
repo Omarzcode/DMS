@@ -90,21 +90,21 @@ export function SignInForm() {
         await signInWithEmail(targetEmail, targetPassword)
       }
     } catch (err: any) {
-      console.error("Auth error:", err)
       const code = err?.code || ""
+      console.warn("Auth attempt notice:", code || err?.message)
       if (
         code === "auth/invalid-credential" ||
         code === "auth/user-not-found" ||
         code === "auth/wrong-password" ||
         code === "auth/invalid-login-credentials"
       ) {
-        setError("اسم المستخدم أو كلمة المرور غير صحيحة")
+        setError("اسم المستخدم أو كلمة المرور غير صحيحة. إذا نسيت كلمة المرور، يمكنك استعادتها أدناه.")
       } else if (code === "auth/email-already-in-use") {
-        setError("هذا الحساب مسجل بالفعل")
+        setError("هذا الحساب مسجل بالفعل، يرجى تسجيل الدخول أو استعادة كلمة المرور.")
       } else if (code === "auth/weak-password") {
         setError("كلمة المرور يجب أن لا تقل عن 6 أحرف")
       } else {
-        setError("حدث خطأ أثناء تسجيل الدخول. يرجى إعادة المحاولة.")
+        setError("تعذر إتمام العملية. يرجى التحقق من البيانات والمحاولة مرة أخرى.")
       }
     } finally {
       setIsSigningIn(false)

@@ -159,11 +159,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signInWithEmail = async (email: string, password: string) => {
-    return await signInWithEmailAndPassword(auth, email.trim(), password)
+    const cleanEmail = email.trim().toLowerCase()
+    try {
+      return await signInWithEmailAndPassword(auth, cleanEmail, password)
+    } catch (err: any) {
+      const code = err?.code || ""
+      // If user is not yet created in Firebase Auth with email/password, attempt seamless creation
+      if (
+        (code === "auth/invalid-credential" ||
+          code === "auth/user-not-found" ||
+          code === "auth/invalid-login-credentials") &&
+        password.length >= 6
+      ) {
+        try {
+          return await createUserWithEmailAndPassword(auth, cleanEmail, password)
+        } catch (createErr: any) {
+          // If already in use under another credential/password, keep original sign-in error
+          console.warn("Auto-signup fallback notice:", createErr?.code || createErr?.message)
+        }
+      }
+      throw err
+    }
   }
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, email.trim(), password)
+    const cred = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password)
     if (name && cred.user) {
       await updateProfile(cred.user, { displayName: name.trim() }).catch(console.warn)
     }
