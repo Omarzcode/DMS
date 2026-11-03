@@ -141,9 +141,9 @@ export function ActivityEngagementChart({
                                     borderRadius: "8px",
                                     fontSize: "12px",
                                 }}
-                                formatter={(value: number, _: string, entry: any) => [
-                                    `${value} attendees`,
-                                    entry.payload.type,
+                                formatter={(value: any, _: any, entry: any) => [
+                                    `${value ?? 0} attendees`,
+                                    entry?.payload?.type ?? "",
                                 ]}
                                 labelFormatter={(_, payload) =>
                                     payload?.[0]?.payload?.fullName || ""

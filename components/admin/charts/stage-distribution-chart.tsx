@@ -133,8 +133,8 @@ export function StageDistributionChart({
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}
-                formatter={(value: number, _: string, entry: any) => [
-                  `${value} (${entry.payload.percentage}%)`,
+                formatter={(value: any, _: any, entry: any) => [
+                  `${value ?? 0} (${entry?.payload?.percentage ?? 0}%)`,
                   "Beneficiaries",
                 ]}
                 labelFormatter={(_, payload) =>

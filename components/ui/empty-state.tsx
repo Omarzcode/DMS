@@ -2,7 +2,7 @@ import type React from "react"
 import { LucideIcon } from "lucide-react"
 
 interface EmptyStateProps {
-  icon: LucideIcon
+  icon: LucideIcon | React.ComponentType<{ className?: string }>
   title: string
   description: string
   action?: React.ReactNode

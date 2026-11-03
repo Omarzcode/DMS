@@ -55,7 +55,7 @@ export interface ActivityFolder {
   name:         string
   parent_id:    string | null // null for top-level Year folders
   category:     string // 'maqari' | 'events' | 'lessons' | 'sections' | 'all'
-  folder_type:  "year" | "semester" | "topic" | "custom"
+  folder_type:  "year" | "semester" | "day" | "topic" | "custom"
   creator_id:   string
   creator_name: string
   created_at:   FirestoreDate

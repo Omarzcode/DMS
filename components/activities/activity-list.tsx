@@ -63,6 +63,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ArrowLeft,
+  type LucideIcon,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
@@ -113,7 +114,7 @@ const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   sections: "Section",
 }
 
-const ACTIVITY_TYPE_ICONS: Record<ActivityType, React.ElementType> = {
+const ACTIVITY_TYPE_ICONS: Record<ActivityType, LucideIcon> = {
   maqari: BookOpen,
   events: Calendar,
   lessons: ActivityIcon,

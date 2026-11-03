@@ -20,6 +20,7 @@ interface ConfirmDialogProps {
   confirmText?: string
   cancelText?: string
   variant?: "default" | "destructive"
+  loading?: boolean
 }
 
 export function ConfirmDialog({
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   confirmText = "Confirm",
   cancelText = "Cancel",
   variant = "destructive",
+  loading = false,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
